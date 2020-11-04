@@ -23,7 +23,7 @@ jobs:
           node-version: 14
       - name: Install dependencies
         working-directory: ./kre-entrypoint
-        run: npm ci
+        run: npm install
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.PATNAME }}
