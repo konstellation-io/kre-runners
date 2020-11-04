@@ -1,4 +1,4 @@
-name: RUNNER kre-entrypoint Docker
+name: kre-entrypoint Docker
 
 on:
   push:
