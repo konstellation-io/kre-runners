@@ -21,7 +21,7 @@ jobs:
           go-version: 1.14.x
       - name: Test
         # TODO: Add tests
-        run: echo "" > kre-entrypoint/coverage.out
+        run: touch coverage.out
         working-directory: ./kre-entrypoint
       - name: Archive code coverage results
         uses: actions/upload-artifact@v2
