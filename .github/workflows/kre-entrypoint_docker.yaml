@@ -3,7 +3,7 @@ name: kre-entrypoint Docker
 on:
   push:
     tags:
-      - 'kre-entrypoint-v*.*.*'
+      - kre-entrypoint-v*.*.*
 
 jobs:
   docker-build:
