@@ -1,7 +1,7 @@
 name: kre-py Docker
 
 on:
-  push:
+  create:
     tags:
       - 'kre-py-v*.*.*'
 
