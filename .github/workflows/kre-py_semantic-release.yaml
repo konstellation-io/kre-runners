@@ -26,6 +26,6 @@ jobs:
         run: npm install
       - name: Release
         env:
-          GITHUB_TOKEN: ${{ secrets.PATNAME }}
+          GH_TOKEN: ${{ secrets.PATNAME }}
         working-directory: ./kre-py
         run: npx semantic-release --debug
