@@ -1,7 +1,7 @@
 name: kre-entrypoint Docker
 
 on:
-  push:
+  create:
     tags:
       - kre-entrypoint-v*.*.*
 
