@@ -28,4 +28,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.PATNAME }}
         working-directory: ./kre-py
-        run: npx semantic-release
+        run: npx semantic-release --debug
