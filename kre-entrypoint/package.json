@@ -5,8 +5,9 @@
     "url": "https://github.com/konstellation-io/kre-runners.git"
   },
   "dependencies": {
-    "semantic-release": "17.1.1",
-    "semantic-release-monorepo": "7.0.2"
+    "@semantic-release/exec": "5.0.0",
+    "semantic-release": "17.2.2",
+    "semantic-release-monorepo": "7.0.3"
   },
   "release": {
     "branches": [
@@ -15,7 +16,13 @@
     "extends": "semantic-release-monorepo",
     "plugins": [
       "@semantic-release/commit-analyzer",
-      "@semantic-release/release-notes-generator"
+      "@semantic-release/release-notes-generator",
+      [
+        "@semantic-release/exec",
+        {
+          "verifyReleaseCmd": "echo ${nextRelease.version} > release_version.txt"
+        }
+      ]
     ]
   }
 }
