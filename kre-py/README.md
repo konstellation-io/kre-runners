@@ -10,7 +10,7 @@ This image is built on top of `nvidia/cuda-10.2-devel` to add GPU support on the
 
 The injected code must implement a `handler(ctx, data)` function and optionally a `init(ctx)` function.
 
-The context object received by theses functions, has the following methods:
+The context object received by these functions, has the following methods:
 
 ```python
 ctx.path("relative/path.xxx")
