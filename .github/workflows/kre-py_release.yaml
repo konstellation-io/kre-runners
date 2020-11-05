@@ -1,4 +1,4 @@
-name: kre-py Semantic Release
+name: kre-py Release
 
 on:
   workflow_run:
@@ -13,23 +13,28 @@ jobs:
     name: Semantic Release
     runs-on: ubuntu-latest
     steps:
+
       - name: Checkout code
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
+
       - name: Setup Node.js
         uses: actions/setup-node@v1
         with:
           node-version: 14
+
       - name: Install dependencies
         working-directory: ./kre-py
         run: npm install
+
       - name: Release
         id: semantic_release
         env:
           GITHUB_TOKEN: ${{ secrets.PATNAME }}
         working-directory: ./kre-py
         run: npx semantic-release --debug
+
       - name: Upload release_version
         uses: actions/upload-artifact@v2
         with:
@@ -41,6 +46,12 @@ jobs:
     runs-on: ubuntu-latest
     needs: semantic-release
     steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
       - name: Download release_version
         uses: actions/download-artifact@v2
         with:
@@ -72,5 +83,5 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            konstellation/kre-runtime-entrypoint:${{ steps.release_version.outputs.RELEASE_VERSION }}
-            konstellation/kre-runtime-entrypoint:latest
+            konstellation/kre-py:${{ steps.release_version.outputs.RELEASE_VERSION }}
+            konstellation/kre-py:latest
