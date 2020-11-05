@@ -21,7 +21,15 @@ jobs:
         with:
           go-version: 1.14.x
       - name: Test
-        run: go test ./... -cover -v -coverprofile=coverage.out
+        env:
+          # TODO: add nats mock or service
+          KRT_MONGO_URI: "mongodb"
+          KRT_INFLUX_URI: "influx"
+          KRT_VERSION_ID: "test"
+        # TODO: Enable all tests
+        run: |
+          # go test ./... -cover -v -coverprofile=coverage.out
+          go test -run TestHandlerContext_SaveData -cover -v -coverprofile=coverage.out
         working-directory: ./kre-go
       - name: Archive code coverage results
         uses: actions/upload-artifact@v2
