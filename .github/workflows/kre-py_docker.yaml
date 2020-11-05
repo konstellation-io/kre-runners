@@ -3,7 +3,7 @@ name: kre-py Docker
 on:
   push:
     tags:
-      - kre-py-v*.*.*
+      - 'kre-py-v*.*.*'
 
 jobs:
   docker-build:
