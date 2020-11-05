@@ -19,6 +19,7 @@ jobs:
           fetch-depth: 0
       - name: Semantic Release
         uses: cycjimmy/semantic-release-action@v2
+        working-directory: ./kre-py
         id: semantic_release
         with:
           branch: main
@@ -29,7 +30,6 @@ jobs:
             semantic-release-monorepo
         env:
           GH_TOKEN: ${{ secrets.PATNAME }}
-        working-directory: ./kre-py
 
       - name: New release published for kre-py
         if: steps.semantic_release.outputs.new_release_published == 'true'
