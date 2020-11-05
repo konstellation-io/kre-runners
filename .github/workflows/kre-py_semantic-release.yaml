@@ -22,13 +22,13 @@ jobs:
         with:
           node-version: 14
       - name: Install dependencies
-        working-directory: ./kre-entrypoint
+        working-directory: ./kre-py
         run: npm install
       - name: Release
         id: semantic_release
         env:
           GITHUB_TOKEN: ${{ secrets.PATNAME }}
-        working-directory: ./kre-entrypoint
+        working-directory: ./kre-py
         run: npx semantic-release --debug
       - name: Upload release_version
         uses: actions/upload-artifact@v2
@@ -67,8 +67,8 @@ jobs:
       - name: Push to Docker Hub
         uses: docker/build-push-action@v2
         with:
-          context: ./kre-entrypoint
-          file: ./kre-entrypoint/Dockerfile
+          context: ./kre-py
+          file: ./kre-py/Dockerfile
           platforms: linux/amd64
           push: true
           tags: |
