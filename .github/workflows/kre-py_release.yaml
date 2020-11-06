@@ -88,5 +88,5 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            konstellation/kre-py:${{ $RELEASE_VERSION }}
+            konstellation/kre-py:$RELEASE_VERSION
             konstellation/kre-py:latest
