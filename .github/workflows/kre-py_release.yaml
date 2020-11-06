@@ -64,6 +64,7 @@ jobs:
           echo "RELEASE_VERSION=$(cat kre-py/release_version.txt)" >> $GITHUB_ENV
           if [ "$RELEASE_VERSION" = "" ]; then
             echo "::warning::There are no new version released."
+          fi
 
       - name: Checkout code
         if: env.RELEASE_VERSION != ''
