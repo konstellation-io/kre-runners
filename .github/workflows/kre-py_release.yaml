@@ -28,6 +28,10 @@ jobs:
         working-directory: ./kre-py
         run: npm install
 
+      - name: Create empty release_version file
+        working-directory: ./kre-py
+        run: touch release_version.txt
+
       - name: Release
         id: semantic_release
         env:
@@ -47,11 +51,6 @@ jobs:
     needs: semantic-release
     steps:
 
-      - name: Checkout code
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
       - name: Download release_version
         uses: actions/download-artifact@v2
         with:
@@ -63,6 +62,12 @@ jobs:
         # Set RELEASE_VERSION environment variable
         run: |
           echo "RELEASE_VERSION=$(cat kre-py/release_version.txt)" >> $GITHUB_ENV
+
+      - name: Checkout code
+        if: ${{ env.RELEASE_VERSION != '' }}
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
 
       - name: Set up QEMU
         if: ${{ env.RELEASE_VERSION != '' }}
