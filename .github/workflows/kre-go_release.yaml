@@ -46,6 +46,8 @@ jobs:
           path: kre-go/release_version.txt
 
   docker:
+    # TODO: use output from previous job adding an if condiction instead one per step
+    # https://lannonbr.com/blog/2020-04-16-gh-actions-job-outputs
     name: Docker
     runs-on: ubuntu-latest
     needs: semantic-release
