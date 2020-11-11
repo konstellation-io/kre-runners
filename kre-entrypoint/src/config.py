@@ -15,4 +15,5 @@ class Config:
             self.nats_subjects_file = os.environ['KRT_NATS_SUBJECTS_FILE']
             self.influx_uri = os.environ['KRT_INFLUX_URI']
         except Exception as err:
-            raise Exception(f"error reading config: the {str(err)} env var is missing")
+            raise Exception(
+                f"error reading config: the {str(err)} env var is missing")

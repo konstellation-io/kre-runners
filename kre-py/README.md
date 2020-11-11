@@ -65,6 +65,9 @@ import pickle
 import numpy as np
 import pandas as pd
 
+# Import the proto message types
+from public_input_pb2 import Request, Response
+
 # this function will be executed once when the runner is starting
 def init(ctx):
   # load file and save in memory to be used within the handler
@@ -72,18 +75,19 @@ def init(ctx):
 
 # this function will be executed when a message is received
 async def handler(ctx, data):
-  # data is the received message from the queue
   categories = ctx.get("categories")
 
-  # Saves metrics in MongoDB DB sending a message to the MongoWriter queue
-  await ctx.prediction.save(date="2020-04-06T09:02:09.277853Z",predicted_value="class_x",true_value="class_y")
-  await ctx.prediction.save(error=ctx.ERR_MISSING_VALUES, date="2020-04-07T00:00:00.0Z")
-  await ctx.prediction.save(error=ctx.ERR_NEW_LABELS) # If the date is not set, the 'date' field value will be now
+  # data is the received message from the queue
+  req = Request()
+  data.Unpack(req)
 
   normalized_data = np.xxx(categories)
   normalized_data = pd.xxx(normalized_data)
 
-  return normalized_data # returned value will be published in the output queue
+  res = Response()
+  res.normalized_data = normalized_data
+
+  return res # return a protobuf for the next node
 ```
 
 ## Development

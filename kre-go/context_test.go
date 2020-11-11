@@ -29,6 +29,7 @@ func TestHandlerContext_GetData(t *testing.T) {
 	const inputSubject = "test-subject-input"
 	setEnvVars(t, map[string]string{
 		"KRT_VERSION":           "testVersion1",
+		"KRT_VERSION_ID":        "version.12345",
 		"KRT_NODE_NAME":         "nodeA",
 		"KRT_BASE_PATH":         "./test",
 		"KRT_NATS_SERVER":       "localhost:4222",
@@ -36,6 +37,7 @@ func TestHandlerContext_GetData(t *testing.T) {
 		"KRT_NATS_OUTPUT":       "",
 		"KRT_NATS_MONGO_WRITER": "mongo_writer",
 		"KRT_MONGO_URI":         "mongodb://mock",
+		"KRT_INFLUX_URI":        "influxdb-uri",
 	})
 
 	cfg := config.NewConfig(logger)
