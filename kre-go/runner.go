@@ -1,18 +1,30 @@
 package kre
 
 import (
+	"bytes"
+	"compress/gzip"
 	"errors"
 	"fmt"
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes"
-	"github.com/nats-io/nats.go"
+	"io/ioutil"
 	"time"
 
-	"github.com/konstellation-io/kre-runners/kre-go/config"
+	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/konstellation-io/kre/libs/simplelogger"
+	"github.com/nats-io/nats.go"
+
+	"github.com/konstellation-io/kre-runners/kre-go/config"
 )
 
-const ISO8601 = "2006-01-02T15:04:05.000000"
+const (
+	ISO8601          = "2006-01-02T15:04:05.000000"
+	MessageThreshold = 1024 * 1024
+	CompressLevel    = 9
+	gzipID1          = 0x1f
+	gzipID2          = 0x8b
+)
+
+var ErrMessageToBig = errors.New("compressed message exceeds maximum size allowed of 1 MB.")
 
 type Runner struct {
 	logger         *simplelogger.SimpleLogger
@@ -46,8 +58,7 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 	r.logger.Infof("Received a message on '%s' with reply '%s'", msg.Subject, msg.Reply)
 
 	// Parse incoming message
-	requestMsg := &KreNatsMessage{}
-	err := proto.Unmarshal(msg.Data, requestMsg)
+	requestMsg, err := r.getRequestMessage(msg.Data)
 	if err != nil {
 		r.logger.Errorf("Error parsing msg.data because is not a valid protobuf: %s", err)
 		return
@@ -161,10 +172,96 @@ func (r *Runner) sendOutputMsg(replySubject string, responseMsg *KreNatsMessage)
 	}
 
 	outputSubject := r.getOutputSubject(replySubject)
+
+	outputMsg, err = r.prepareOutputMessage(outputMsg)
+	if err != nil {
+		r.logger.Errorf("Error preparing output msg: %s", err)
+		return
+	}
+
 	r.logger.Infof("Publishing response to '%s' subject", outputSubject)
 
 	err = r.nc.Publish(outputSubject, outputMsg)
 	if err != nil {
 		r.logger.Errorf("Error publishing output: %s", err)
 	}
+}
+
+// prepareOutputMessage check the length of the message and compress if necessary.
+// fails on compressed messages bigger than the threshold.
+func (r *Runner) prepareOutputMessage(msg []byte) ([]byte, error) {
+	if len(msg) <= MessageThreshold {
+		return msg, nil
+	}
+
+	out_msg, err := r.compressData(msg)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(out_msg) > MessageThreshold {
+		return nil, ErrMessageToBig
+	}
+
+	r.logger.Infof("Original message size: %s. Compressed: %s", sizeInKB(msg), sizeInKB(out_msg))
+
+	return out_msg, nil
+}
+
+// isCompressed check if the input string is compressed.
+func (r *Runner) isCompressed(data []byte) bool {
+	return data[0] == gzipID1 && data[1] == gzipID2
+}
+
+// compressData creates compressed []byte.
+func (r *Runner) compressData(data []byte) ([]byte, error) {
+	var b bytes.Buffer
+	gz, err := gzip.NewWriterLevel(&b, CompressLevel)
+	if err != nil {
+		return nil, err
+	}
+	_, err = gz.Write(data)
+	if err != nil {
+		return nil, err
+	}
+	err = gz.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	return b.Bytes(), nil
+}
+
+// uncompressData open gzip and return uncompressed []byte.
+func (r *Runner) uncompressData(data []byte) ([]byte, error) {
+	rd := bytes.NewReader(data)
+	gr, err := gzip.NewReader(rd)
+	if err != nil {
+		return nil, err
+	}
+
+	defer gr.Close()
+	return ioutil.ReadAll(gr)
+}
+
+// getRequestMessage creates an instance of KreNatsMessage for the input string. decompress if necessary
+func (r *Runner) getRequestMessage(data []byte) (*KreNatsMessage, error) {
+	requestMsg := &KreNatsMessage{}
+
+	var err error
+	if r.isCompressed(data) {
+		data, err = r.uncompressData(data)
+		if err != nil {
+			r.logger.Errorf("error reading compressed message: %s", err)
+			return nil, err
+		}
+	}
+
+	err = proto.Unmarshal(data, requestMsg)
+
+	return requestMsg, err
+}
+
+func sizeInKB(s []byte) string {
+	return fmt.Sprintf("%.2f KB", float32(len(s))/1024)
 }

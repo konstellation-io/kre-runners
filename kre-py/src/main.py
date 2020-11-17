@@ -1,6 +1,7 @@
 import asyncio
 from datetime import datetime
 import importlib.util
+import gzip
 import os
 import sys
 import traceback
@@ -11,6 +12,10 @@ from kre_nats_msg_pb2 import KreNatsMessage
 from context import HandlerContext
 from kre_runner import Runner
 from config import Config
+
+COMPRESS_LEVEL = 9
+MESSAGE_THRESHOLD = 1024 * 1024
+GZIP_HEADER = b'\x1f\x8b'
 
 
 class NodeRunner(Runner):
@@ -55,6 +60,28 @@ class NodeRunner(Runner):
         self.logger.info(
             f"handler script was loaded from '{handler_full_path}'")
 
+    def prepare_output_message(self, msg: bytes) -> bytes:
+        if len(msg) <= MESSAGE_THRESHOLD:
+            return msg
+
+        out = gzip.compress(msg, compresslevel=COMPRESS_LEVEL)
+
+        if len(out) > MESSAGE_THRESHOLD:
+            raise Exception("compressed message exceeds maximum size allowed of 1 MB.")
+
+        self.logger.info(f"Original message size: {size_in_kb(msg)}. Compressed: {size_in_kb(out)}")
+
+        return out
+
+    def get_request_message(self, data: bytes) -> KreNatsMessage:
+        if data.startswith(GZIP_HEADER):
+            data = gzip.decompress(data)
+
+        request_msg = KreNatsMessage()
+        request_msg.ParseFromString(data)
+
+        return request_msg
+
     async def process_messages(self):
         self.logger.info(f"connecting to MongoDB...")
         self.mongo_conn = pymongo.MongoClient(
@@ -88,8 +115,7 @@ class NodeRunner(Runner):
     def create_message_cb(self):
         async def message_cb(msg):
             start = datetime.utcnow().isoformat()
-            request_msg = KreNatsMessage()
-            request_msg.ParseFromString(msg.data)
+            request_msg = self.get_request_message(msg.data)
 
             try:
                 if msg.reply == "" and request_msg.reply == "":
@@ -123,7 +149,8 @@ class NodeRunner(Runner):
                 t.start = start
                 t.end = end
 
-                await self.nc.publish(output_subject, response_msg.SerializeToString())
+                serialized_response_msg = self.prepare_output_message(response_msg.SerializeToString())
+                await self.nc.publish(output_subject, serialized_response_msg)
                 self.logger.info(
                     f"published response to '{output_subject}' with final reply '{request_msg.reply}'")
 
@@ -137,6 +164,10 @@ class NodeRunner(Runner):
                 await self.nc.publish(request_msg.reply, response_err.SerializeToString())
 
         return message_cb
+
+
+def size_in_kb(s: bytes) -> str:
+    return f"{(len(s) / 1024):.2f} KB"
 
 
 if __name__ == '__main__':

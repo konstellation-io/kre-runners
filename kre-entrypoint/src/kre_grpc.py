@@ -1,5 +1,6 @@
 import abc
 from datetime import datetime
+import gzip
 import traceback
 import uuid
 
@@ -8,6 +9,10 @@ from grpclib.const import Status
 
 from kre_nats_msg_pb2 import KreNatsMessage
 from kre_measurements import KreMeasurements
+
+COMPRESS_LEVEL = 9
+MESSAGE_THRESHOLD = 1024 * 1024
+GZIP_HEADER = b'\x1f\x8b'
 
 
 # NOTE: EntrypointKRE will be extended by Entrypoint class auto-generated
@@ -40,12 +45,16 @@ class EntrypointKRE:
             self.logger.info(
                 f"Starting request/reply on NATS subject: '{nats_subject}'")
 
-            nats_reply = await self.nc.request(nats_subject, request_msg.SerializeToString(),
+            nats_message = self._prepare_nats_request(request_msg.SerializeToString())
+
+            nats_reply = await self.nc.request(nats_subject, nats_message,
                                                timeout=self.config.request_timeout)
+
+            response_data = self._prepare_nats_response(nats_reply.data)
 
             self.logger.info(f"creating a response from message reply")
             response_msg = KreNatsMessage()
-            response_msg.ParseFromString(nats_reply.data)
+            response_msg.ParseFromString(response_data)
 
             if response_msg.error != "":
                 self.logger.error(
@@ -69,6 +78,25 @@ class EntrypointKRE:
 
             if isinstance(err, GRPCError):
                 raise err
+
+    def _prepare_nats_request(self, msg: bytes) -> bytes:
+        if len(msg) <= MESSAGE_THRESHOLD:
+            return msg
+
+        out = gzip.compress(msg, compresslevel=COMPRESS_LEVEL)
+
+        if len(out) > MESSAGE_THRESHOLD:
+            raise Exception("compressed message exceeds maximum size allowed of 1 MB.")
+
+        self.logger.info(f"Original message size: {size_in_kb(msg)}. Compressed: {size_in_kb(out)}")
+
+        return out
+
+    def _prepare_nats_response(self, msg: bytes) -> bytes:
+        if msg.startswith(GZIP_HEADER):
+            return gzip.decompress(msg)
+
+        return msg
 
     def save_elapsed_times(self, entrypoint_start: datetime, tracking_id: str,
                            subject: str, tracking: [KreNatsMessage.Tracking]) -> None:
@@ -110,3 +138,7 @@ class EntrypointKRE:
                 "waiting_ms": waiting.total_seconds() * 1000
             }
             self.measurements.save("node_elapsed_time", fields, tags)
+
+
+def size_in_kb(s: bytes) -> str:
+    return f"{(len(s) / 1024):.2f} KB"
