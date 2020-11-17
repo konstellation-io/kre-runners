@@ -5,6 +5,10 @@ from nats.aio.client import Client as NATS
 from nats.aio.errors import ErrTimeout
 
 
+from kre_nats_msg_pb2 import KreNatsMessage
+from test_msg_pb2 import TestInput, TestOutput
+
+
 async def run(loop):
     print("Connecting to NATS...")
     nc = NATS()
@@ -12,15 +16,18 @@ async def run(loop):
 
     input_subject = "test-subject-input"
     try:
-        payload = {
-            "data": {"name": "John Doe"},
-        }
+        req = TestInput()
+        req.name = "John Doe"
+
+        natsMsg = KreNatsMessage()
+        natsMsg.payload.Pack(req)
 
         async def message_handler(msg):
             subject = msg.subject
             reply = msg.reply
             data = msg.data.decode()
-            print(f"[WRITER] Received a message on '{subject} {reply}': {data}")
+            print(
+                f"[WRITER] Received a message on '{subject} {reply}': {data}")
             try:
                 await nc.publish(reply, bytes("{\"success\": true }", encoding='utf-8'))
                 print(f"[WRITER] reply ok")
@@ -34,11 +41,16 @@ async def run(loop):
         await nc.auto_unsubscribe(sid, 4)
 
         print(f"Sending a test message to {input_subject}...")
-        payload["data"] = json.dumps(payload["data"])
-        msg = await nc.request(input_subject, bytes(json.dumps(payload), encoding='utf-8'), timeout=10)
-        res = json.loads(msg.data.decode())
-        print("error -> ", res['error'])
-        print("data -> ", res['data'])
+        msg = await nc.request(input_subject, natsMsg.SerializeToString(), timeout=10)
+
+        res = KreNatsMessage()
+        res.ParseFromString(msg.data)
+
+        out = TestOutput()
+        res.payload.Unpack(out)
+
+        print("error -> ", res.error)
+        print("greeting -> ", out.greeting)
     except ErrTimeout:
         print("Request timed out")
 

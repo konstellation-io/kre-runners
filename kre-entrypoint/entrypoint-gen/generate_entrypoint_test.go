@@ -55,7 +55,7 @@ class Entrypoint(EntrypointBase, EntrypointKRE):
     def make_response_object(self, subject, kre_nats_msg):
         if subject == 'Test':
             self.logger.info(f"call to Test(Request)"
-                             f" responses with 'Response'. Data: {kre_nats_msg.data}")
+                             f" responses with 'Response'")
 
             if kre_nats_msg.error:
                 return public_input_pb2.Response(error=kre_nats_msg.error)

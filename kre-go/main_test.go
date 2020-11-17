@@ -1,8 +1,11 @@
 package kre
 
 import (
-	"encoding/json"
 	"fmt"
+	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/any"
+	"github.com/konstellation-io/kre/libs/simplelogger"
 	"log"
 	"os"
 	"testing"
@@ -13,19 +16,11 @@ import (
 	"github.com/konstellation-io/kre-runners/kre-go/config"
 )
 
-type Input struct {
-	Name string `json:"name"`
-}
-
-type Output struct {
-	Greeting string `json:"greeting"`
-}
-
-func handler(ctx *HandlerContext, data []byte) (interface{}, error) {
+func handler(ctx *HandlerContext, data *any.Any) (proto.Message, error) {
 	ctx.Logger.Info("[worker handler]")
 
-	input := Input{}
-	err := json.Unmarshal(data, &input)
+	input := &TestInput{}
+	err := ptypes.UnmarshalAny(data, input)
 	if err != nil {
 		return nil, err
 	}
@@ -33,13 +28,9 @@ func handler(ctx *HandlerContext, data []byte) (interface{}, error) {
 	greetingText := fmt.Sprintf("%s %s!", ctx.Get("greeting"), input.Name)
 	ctx.Logger.Info(greetingText)
 
-	// Saves metrics in MongoDB DB sending a message to the MongoWriter queue
-	// ctx.Prediction.Save(time.Now(), "class_x", "class_y")
-	// ctx.Prediction.SaveError(ErrNewLabels)
-
-	out := Output{}
+	out := &TestOutput{}
 	out.Greeting = greetingText
-	return out, nil // Must be a serializable JSON
+	return out, nil
 }
 
 func setEnvVars(t *testing.T, envVars map[string]string) {
@@ -51,10 +42,11 @@ func setEnvVars(t *testing.T, envVars map[string]string) {
 	}
 }
 
-func TestRunner(t *testing.T) {
+func TestStart(t *testing.T) {
 	const inputSubject = "test-subject-input"
 	setEnvVars(t, map[string]string{
 		"KRT_VERSION":           "testVersion1",
+		"KRT_VERSION_ID":        "version.12345",
 		"KRT_NODE_NAME":         "nodeA",
 		"KRT_BASE_PATH":         "./test",
 		"KRT_NATS_SERVER":       "localhost:4222",
@@ -62,25 +54,28 @@ func TestRunner(t *testing.T) {
 		"KRT_NATS_OUTPUT":       "",
 		"KRT_NATS_MONGO_WRITER": "mongo_writer",
 		"KRT_MONGO_URI":         "mongodb://localhost:27017",
+		"KRT_INFLUX_URI":        "influxdb-uri",
 	})
+	logger := simplelogger.New(simplelogger.LevelDebug)
 
-	cfg := config.NewConfig(nil)
+	cfg := config.NewConfig(logger)
 	nc, err := nats.Connect(cfg.NATS.Server)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer nc.Close()
 
-	input := Input{Name: "John"}
-	inputData, err := json.Marshal(input)
+	input := &TestInput{Name: "John"}
+	inputData, err := ptypes.MarshalAny(input)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	msg, err := json.Marshal(Result{
-		Reply: "",
-		Data:  string(inputData),
-	})
+	kreNatsMsg := &KreNatsMessage{
+		TrackingId: "msg.12345",
+		Payload:    inputData,
+	}
+	msg, err := proto.Marshal(kreNatsMsg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -111,14 +106,14 @@ func TestRunner(t *testing.T) {
 	}
 
 	expectedRes := "Hello John!"
-	result := &Result{}
-	err = json.Unmarshal(res.Data, result)
+	result := &KreNatsMessage{}
+	err = proto.Unmarshal(res.Data, result)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	resultData := &Output{}
-	err = json.Unmarshal([]byte(result.Data), resultData)
+	resultData := &TestOutput{}
+	err = ptypes.UnmarshalAny(result.Payload, resultData)
 	if err != nil {
 		t.Fatal(err)
 	}
