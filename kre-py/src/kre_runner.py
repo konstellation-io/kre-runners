@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import abc
+import time
 
 from nats.aio.client import Client as NATS
 
@@ -9,9 +10,10 @@ class Runner:
     def __init__(self, runner_name, config):
         logging.basicConfig(
             level=logging.INFO,
-            format="%(asctime)s %(levelname)s %(message)s",
-            datefmt="%Y-%m-%dT%H:%M:%S%z"
+            format="%(asctime)s.%(msecs)03dZ %(levelname)s %(message)s",
+            datefmt="%Y-%m-%dT%H:%M:%S"
         )
+        logging.Formatter.converter = time.gmtime
         logging.addLevelName(logging.DEBUG, 'DEBUG')
         logging.addLevelName(logging.WARNING, 'WARN')
         logging.addLevelName(logging.FATAL, 'ERROR')
