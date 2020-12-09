@@ -1,5 +1,17 @@
 FROM  nvidia/cuda:10.2-devel-ubuntu18.04
 
+# Create kre user.
+ENV USER=kre
+ENV UID=10001
+RUN adduser \
+    --disabled-password \
+    --gecos "" \
+    --home "/nonexistent" \
+    --shell "/sbin/nologin" \
+    --no-create-home \
+    --uid "${UID}" \
+    "${USER}"
+
 # Fix error installing pipenv:
 #   RuntimeError: Click will abort further execution because
 #   Python 3 was configured to use ASCII as encoding for the environment.
@@ -22,5 +34,13 @@ COPY install_stopwords.py ./
 RUN python3 /kre/install_stopwords.py
 
 COPY src src
+
+RUN chown -R kre:0 /kre \
+    && chmod -R g+w /kre \
+    && mkdir /var/log/app -p \
+    && chown -R kre:0 /var/log/app \
+    && chmod -R g+w /var/log/app
+
+USER kre
 
 CMD ["sh","-c","/usr/bin/python3 /kre/src/main.py 2>&1 | tee -a /var/log/app/app.log"]
