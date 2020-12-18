@@ -1,0 +1,28 @@
+{
+  "name": "krt-files-downloader",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/konstellation-io/kre-runners.git"
+  },
+  "dependencies": {
+    "@semantic-release/exec": "5.0.0",
+    "semantic-release": "17.2.2",
+    "semantic-release-monorepo": "7.0.3"
+  },
+  "release": {
+    "branches": [
+      "main"
+    ],
+    "extends": "semantic-release-monorepo",
+    "plugins": [
+      "@semantic-release/commit-analyzer",
+      "@semantic-release/release-notes-generator",
+      [
+        "@semantic-release/exec",
+        {
+          "verifyReleaseCmd": "echo ${nextRelease.version} > release_version.txt"
+        }
+      ]
+    ]
+  }
+}
