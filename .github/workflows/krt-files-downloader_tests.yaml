@@ -19,10 +19,10 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.14.x
+          go-version: 1.15.x
       - name: Test
         run: |
-          go test ./... -cover -v -coverprofile=coverage.out
+          go test -cover -v -coverprofile=coverage.out -covermode=atomic -coverpkg=./... ./...
         working-directory: ./krt-files-downloader
       - name: Archive code coverage results
         uses: actions/upload-artifact@v2
@@ -49,4 +49,4 @@ jobs:
           projectBaseDir: krt-files-downloader
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_KRE_GO }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_KRT_FD }}
