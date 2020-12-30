@@ -28,8 +28,8 @@ jobs:
           KRT_VERSION_ID: "test"
         # TODO: Enable all tests
         run: |
-          # go test ./... -cover -v -coverprofile=coverage.out
-          go test -run TestHandlerContext_SaveData -cover -v -coverprofile=coverage.out
+          # go test -cover -v -coverprofile=coverage.out -covermode=atomic -coverpkg=./... ./...
+          go test -run TestHandlerContext_SaveData -cover -v -coverprofile=coverage.out -covermode=atomic -coverpkg=./...
         working-directory: ./kre-go
       - name: Archive code coverage results
         uses: actions/upload-artifact@v2
