@@ -23,6 +23,18 @@ RUN pipfile2req > /app/requirements.txt
 # Final image build
 FROM ubuntu:18.04
 
+# Create kre user.
+ENV USER=kre
+ENV UID=10001
+RUN adduser \
+    --disabled-password \
+    --gecos "" \
+    --home "/nonexistent" \
+    --shell "/sbin/nologin" \
+    --no-create-home \
+    --uid "${UID}" \
+    "${USER}"
+
 # Fix error installing pipenv:
 #   RuntimeError: Click will abort further execution because
 #   Python 3 was configured to use ASCII as encoding for the environment.
@@ -50,5 +62,10 @@ COPY --from=builder /build/entrypoint-gen .
 COPY --from=builder /build/entrypoint.py.tmpl .
 
 ENV PYTHONPATH="/app/src/entrypoint"
+
+RUN chown -R kre:0 /app \
+    && chmod -R g+w /app 
+
+USER kre
 
 CMD ["/app/entrypoint.sh"]
