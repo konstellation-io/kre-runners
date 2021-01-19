@@ -12,11 +12,12 @@ RUN adduser \
     --uid "${UID}" \
     "${USER}"
 
+WORKDIR /app
 RUN mkdir -p /var/log/app
 COPY entrypoint.sh entrypoint.sh
 
-RUN chown chown -R kre:0 /kre \
-    && chmod -R g+w /kre \
+RUN chown -R kre:0 /app \
+    && chmod -R g+w /app \
     && mkdir /var/log/app -p \
     && chown -R kre:0 /var/log/app \
     && chmod -R g+w /var/log/app
