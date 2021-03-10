@@ -6,7 +6,7 @@ ENV UID=10001
 RUN adduser \
     --disabled-password \
     --gecos "" \
-    --home "/nonexistent" \
+    --home "/kre" \
     --shell "/sbin/nologin" \
     --no-create-home \
     --uid "${UID}" \
@@ -31,7 +31,6 @@ RUN python3 -m pip install pipenv && \
     pipenv install --system --deploy
 
 COPY install_stopwords.py ./
-RUN python3 /kre/install_stopwords.py
 
 COPY src src
 
@@ -42,5 +41,8 @@ RUN chown -R kre:0 /kre \
     && chmod -R g+w /var/log/app
 
 USER kre
+
+RUN python3 /kre/install_stopwords.py
+
 
 CMD ["sh","-c","/usr/bin/python3 /kre/src/main.py 2>&1 | tee -a /var/log/app/app.log"]
