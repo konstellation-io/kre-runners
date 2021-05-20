@@ -15,4 +15,5 @@ message KreNatsMessage {
   string reply = 3;
   google.protobuf.Any payload = 4;
   string error = 5;
+  bool replied = 6;
 }

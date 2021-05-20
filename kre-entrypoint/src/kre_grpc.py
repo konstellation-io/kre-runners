@@ -22,7 +22,6 @@ class EntrypointKRE:
         self.subjects = subjects
         self.nc = nc
         self.config = config
-        self.measurements = KreMeasurements(config)
 
     @abc.abstractmethod
     async def make_response_object(self, subject, response):
@@ -30,7 +29,7 @@ class EntrypointKRE:
         pass
 
     async def process_message(self, stream, subject) -> None:
-        start = datetime.utcnow()
+        start = datetime.utcnow().isoformat()
         tracking_id = str(uuid.uuid4())
 
         try:
@@ -40,12 +39,17 @@ class EntrypointKRE:
             request_msg = KreNatsMessage()
             request_msg.tracking_id = tracking_id
             request_msg.payload.Pack(raw_msg)
+            t = request_msg.tracking.add()
+            t.node_name = "entrypoint"
+            t.start = start
+            t.end = datetime.utcnow().isoformat()
 
             nats_subject = self.subjects[subject]
             self.logger.info(
                 f"Starting request/reply on NATS subject: '{nats_subject}'")
 
-            nats_message = self._prepare_nats_request(request_msg.SerializeToString())
+            nats_message = self._prepare_nats_request(
+                request_msg.SerializeToString())
 
             nats_reply = await self.nc.request(nats_subject, nats_message,
                                                timeout=self.config.request_timeout)
@@ -68,9 +72,6 @@ class EntrypointKRE:
 
             self.logger.info(f'gRPC successfully response')
 
-            self.save_elapsed_times(
-                start, tracking_id, subject, response_msg.tracking)
-
         except Exception as err:
             err_msg = f'Exception on gRPC call : {err}'
             self.logger.error(err_msg)
@@ -86,9 +87,11 @@ class EntrypointKRE:
         out = gzip.compress(msg, compresslevel=COMPRESS_LEVEL)
 
         if len(out) > MESSAGE_THRESHOLD:
-            raise Exception("compressed message exceeds maximum size allowed of 1 MB.")
+            raise Exception(
+                "compressed message exceeds maximum size allowed of 1 MB.")
 
-        self.logger.info(f"Original message size: {size_in_kb(msg)}. Compressed: {size_in_kb(out)}")
+        self.logger.info(
+            f"Original message size: {size_in_kb(msg)}. Compressed: {size_in_kb(out)}")
 
         return out
 
@@ -97,47 +100,6 @@ class EntrypointKRE:
             return gzip.decompress(msg)
 
         return msg
-
-    def save_elapsed_times(self, entrypoint_start: datetime, tracking_id: str,
-                           subject: str, tracking: [KreNatsMessage.Tracking]) -> None:
-        entrypoint_end = datetime.utcnow()
-        elapsed = (entrypoint_end - entrypoint_start).total_seconds() * 1000
-
-        # Save the elapsed time measurement
-        fields = {"elapsed_ms": elapsed, "tracking_id": tracking_id}
-        tags = {
-            "workflow": subject,
-            "version": self.config.krt_version,
-        }
-        self.measurements.save("workflow_elapsed_time", fields, tags)
-
-        # Save the elapsed time for each node
-        for idx, t in enumerate(tracking):
-            tags = {
-                "workflow": subject,
-                "version": self.config.krt_version,
-                "node": t.node_name
-            }
-
-            if idx == 0:
-                prev_node_name = "entrypoint"
-                prev_node_end = entrypoint_start
-            else:
-                prev_node = tracking[idx-1]
-                prev_node_name = prev_node.node_name
-                prev_node_end = datetime.fromisoformat(prev_node.end)
-
-            node_start = datetime.fromisoformat(t.start)
-            node_end = datetime.fromisoformat(t.end)
-            elapsed = node_end - node_start
-            waiting = node_start - prev_node_end
-            fields = {
-                "tracking_id": tracking_id,
-                "node_from": prev_node_name,
-                "elapsed_ms": elapsed.total_seconds() * 1000,
-                "waiting_ms": waiting.total_seconds() * 1000
-            }
-            self.measurements.save("node_elapsed_time", fields, tags)
 
 
 def size_in_kb(s: bytes) -> str:

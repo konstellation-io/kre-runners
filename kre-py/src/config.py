@@ -7,6 +7,7 @@ class Config:
     def __init__(self):
         # Mandatory variables
         try:
+            self.krt_workflow_name = os.environ['KRT_WORKFLOW_NAME']
             self.krt_version_id = os.environ['KRT_VERSION_ID']
             self.krt_version = os.environ['KRT_VERSION']
             self.krt_node_name = os.environ['KRT_NODE_NAME']

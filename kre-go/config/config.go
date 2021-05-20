@@ -7,13 +7,14 @@ import (
 )
 
 type Config struct {
-	VersionID string
-	Version   string
-	NodeName  string
-	BasePath  string
-	NATS      ConfigNATS
-	MongoDB   MongoDB
-	InfluxDB  InfluxDB
+	WorkflowName string
+	VersionID    string
+	Version      string
+	NodeName     string
+	BasePath     string
+	NATS         ConfigNATS
+	MongoDB      MongoDB
+	InfluxDB     InfluxDB
 }
 
 type MongoDB struct {
@@ -35,10 +36,11 @@ type InfluxDB struct {
 
 func NewConfig(logger *simplelogger.SimpleLogger) Config {
 	return Config{
-		VersionID: getCfgFromEnv(logger, "KRT_VERSION_ID"),
-		Version:   getCfgFromEnv(logger, "KRT_VERSION"),
-		NodeName:  getCfgFromEnv(logger, "KRT_NODE_NAME"),
-		BasePath:  getCfgFromEnv(logger, "KRT_BASE_PATH"),
+		WorkflowName: getCfgFromEnv(logger, "KRT_WORKFLOW_NAME"),
+		VersionID:    getCfgFromEnv(logger, "KRT_VERSION_ID"),
+		Version:      getCfgFromEnv(logger, "KRT_VERSION"),
+		NodeName:     getCfgFromEnv(logger, "KRT_NODE_NAME"),
+		BasePath:     getCfgFromEnv(logger, "KRT_BASE_PATH"),
 		NATS: ConfigNATS{
 			Server:             getCfgFromEnv(logger, "KRT_NATS_SERVER"),
 			InputSubject:       getCfgFromEnv(logger, "KRT_NATS_INPUT"),
