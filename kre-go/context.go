@@ -1,6 +1,8 @@
 package kre
 
 import (
+	"errors"
+	"github.com/golang/protobuf/proto"
 	"path"
 	"time"
 
@@ -17,19 +19,24 @@ var (
 	getDataTimeout    = 1 * time.Second
 )
 
+type ReplyFunc = func(subject string, response proto.Message) error
+
 type HandlerContext struct {
 	cfg         config.Config
 	values      map[string]interface{}
+	reply       ReplyFunc
+	reqMsg      *KreNatsMessage
 	Logger      *simplelogger.SimpleLogger
 	Prediction  *contextPrediction
 	Measurement *contextMeasurement
 	DB          *contextData
 }
 
-func NewHandlerContext(cfg config.Config, nc *nats.Conn, mongoM mongodb.Manager, logger *simplelogger.SimpleLogger) *HandlerContext {
+func NewHandlerContext(cfg config.Config, nc *nats.Conn, mongoM mongodb.Manager, logger *simplelogger.SimpleLogger, reply ReplyFunc) *HandlerContext {
 	return &HandlerContext{
 		cfg:    cfg,
 		values: map[string]interface{}{},
+		reply:  reply,
 		Logger: logger,
 		Prediction: &contextPrediction{
 			cfg:    cfg,
@@ -87,4 +94,15 @@ func (c *HandlerContext) GetFloat(key string) float64 {
 	}
 	c.Logger.Infof("Error getting value for key '%s' is not a float64", key)
 	return -1.0
+}
+
+// Reply sends a reply to the entrypoint. The workflow execution continues.
+// Use this function when you need to reply faster than the workflow execution duration.
+func (c *HandlerContext) Reply(response proto.Message) error {
+	if c.reqMsg.Replied {
+		return errors.New("error the message was replied previously")
+	}
+
+	c.reqMsg.Replied = true
+	return c.reply(c.reqMsg.Reply, response)
 }

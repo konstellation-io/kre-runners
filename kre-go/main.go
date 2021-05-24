@@ -42,12 +42,8 @@ func Start(handlerInit HandlerInit, handler Handler) {
 		os.Exit(1)
 	}
 
-	// Create handler context
-	c := NewHandlerContext(cfg, nc, mongoM, logger)
-	handlerInit(c)
-
 	// Handle incoming messages from NATS
-	runner := NewRunner(logger, cfg, nc, handler, c)
+	runner := NewRunner(logger, cfg, nc, handler, handlerInit, mongoM)
 	logger.Infof("Listening to '%s' subject...", cfg.NATS.InputSubject)
 	s, err := nc.Subscribe(cfg.NATS.InputSubject, runner.ProcessMessage)
 	if err != nil {
