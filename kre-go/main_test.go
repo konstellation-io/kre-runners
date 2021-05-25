@@ -74,6 +74,9 @@ func TestStart(t *testing.T) {
 	kreNatsMsg := &KreNatsMessage{
 		TrackingId: "msg.12345",
 		Payload:    inputData,
+		Tracking: []*KreNatsMessage_Tracking{
+			{NodeName: "nodeTest", Start: time.Now().Format(ISO8601), End: time.Now().Format(ISO8601)},
+		},
 	}
 	msg, err := proto.Marshal(kreNatsMsg)
 	if err != nil {
@@ -100,7 +103,7 @@ func TestStart(t *testing.T) {
 
 	<-doneCh
 
-	res, err := nc.Request(inputSubject, msg, 1*time.Second)
+	res, err := nc.Request(inputSubject, msg, 10*time.Second)
 	if err != nil {
 		t.Fatal(err)
 	}

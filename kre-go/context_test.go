@@ -28,6 +28,7 @@ func TestHandlerContext_GetData(t *testing.T) {
 	logger := simplelogger.New(simplelogger.LevelDebug)
 	const inputSubject = "test-subject-input"
 	setEnvVars(t, map[string]string{
+		"KRT_WORKFLOW_NAME":     "workflowTest",
 		"KRT_VERSION":           "testVersion1",
 		"KRT_VERSION_ID":        "version.12345",
 		"KRT_NODE_NAME":         "nodeA",
@@ -67,7 +68,7 @@ func TestHandlerContext_GetData(t *testing.T) {
 
 	mongoM := mocks.NewMockManager(ctrl)
 
-	ctx := NewHandlerContext(cfg, nc, mongoM, logger)
+	ctx := NewHandlerContext(cfg, nc, mongoM, logger, nil)
 
 	q := QueryData{
 		"TicketID": "1234",
@@ -118,13 +119,17 @@ func TestHandlerContext_SaveData(t *testing.T) {
 	logger := simplelogger.New(simplelogger.LevelDebug)
 	const inputSubject = "test-subject-input"
 	setEnvVars(t, map[string]string{
+		"KRT_WORKFLOW_NAME":     "workflowTest",
 		"KRT_VERSION":           "testVersion1",
+		"KRT_VERSION_ID":        "version.123456",
 		"KRT_NODE_NAME":         "nodeA",
 		"KRT_BASE_PATH":         "./test",
 		"KRT_NATS_SERVER":       "localhost:4222",
 		"KRT_NATS_INPUT":        inputSubject,
 		"KRT_NATS_OUTPUT":       "",
 		"KRT_NATS_MONGO_WRITER": "mongo_writer",
+		"KRT_MONGO_URI":         "mongodb://localhost:27017",
+		"KRT_INFLUX_URI":        "influxdb-uri",
 	})
 
 	cfg := config.NewConfig(logger)
@@ -152,7 +157,7 @@ func TestHandlerContext_SaveData(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mongoM := mocks.NewMockManager(ctrl)
 
-	ctx := NewHandlerContext(cfg, nc, mongoM, logger)
+	ctx := NewHandlerContext(cfg, nc, mongoM, logger, nil)
 	sentMsg := TestPrediction{
 		Time:       time.Now(),
 		Prediction: "Tested",
