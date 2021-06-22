@@ -18,12 +18,12 @@ ctx.path("relative/path.xxx")
 ctx.get("label")
 ctx.set("label", value)
 
-ctx.db.save(
+await ctx.db.save(
   coll,
   data
 )
 
-ctx.db.find(
+await ctx.db.find(
   coll,
   query
 )
@@ -48,6 +48,8 @@ await ctx.prediction.save(
 The runner will have the following environment variables:
 
 ```
+KRT_WORKFLOW_NAME
+KRT_VERSION_ID
 KRT_VERSION
 KRT_NODE_NAME
 KRT_NATS_SERVER
@@ -56,6 +58,8 @@ KRT_NATS_OUTPUT
 KRT_NATS_MONGO_WRITER
 KRT_BASE_PATH
 KRT_HANDLER_PATH
+KRT_MONGO_URI
+KRT_INFLUX_URI
 ```
 
 This is an example of the code that will be run by the docker py3 runner:
@@ -104,37 +108,20 @@ If you don't have pipenv installed (you must have python 3.7 installed in your s
 pip3 install --user pipenv
 ```
 
-You can test the code manually following these steps:
+### Integration tests
 
-1. Start the NATS server:
+You can run the integration tests following these steps:
+
+1. Start the NATS, MongoDB and InfluxDB services:
 
 ```shell script
 cd test
 docker-compose up
 ```
 
-2. Start the runner:
-
-You must provide the env vars.
-Inside the `test` folder should be a `env_vars.sh` file.
-If this file doesn't exist, execute the following command in the **root folder** (`/kre`):
-
-```shell script
-./scripts/replace_env_path.sh
-```
-
-To start the runner execute:
+2. When the services are ready then run the integration tests:
 
 ```shell script
 pipenv shell
-source test/env_vars.sh
-python3 src/main.py
+PYTHONPATH=src pytest -vv -m integration
 ```
-
-3. Send a message using the `test/test_runner.py`:
-
-```shell script
-pipenv shell
-python3 test/test_runner.py
-```
-

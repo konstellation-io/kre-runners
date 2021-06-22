@@ -10,6 +10,6 @@ services:
     ports:
       - "27017:27017"
   influx:
-    image: "quay.io/influxdb/influxdb:2.0.0-beta"
+    image: "influxdb:1.7-alpine"
     ports:
-      - "9999:9999"
+      - "8088:8088"

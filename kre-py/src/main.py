@@ -1,22 +1,19 @@
 import asyncio
-from datetime import datetime
+import copy
 import importlib.util
-import gzip
+import inspect
 import os
 import sys
 import traceback
+from datetime import datetime
+
 import pymongo
-import inspect
-import copy
 
-from kre_nats_msg_pb2 import KreNatsMessage
-from context import HandlerContext
-from kre_runner import Runner
+from compression import compress_if_needed, is_compressed, uncompress
 from config import Config
-
-COMPRESS_LEVEL = 9
-MESSAGE_THRESHOLD = 1024 * 1024
-GZIP_HEADER = b'\x1f\x8b'
+from context import HandlerContext
+from kre_nats_msg_pb2 import KreNatsMessage
+from kre_runner import Runner
 
 
 class NodeRunner(Runner):
@@ -31,40 +28,45 @@ class NodeRunner(Runner):
         self.load_handler()
 
     def load_handler(self):
-        self.logger.info(
-            f"loading handler script {self.config.handler_path}...")
+        self.logger.info(f"loading handler script {self.config.handler_path}...")
 
         handler_full_path = os.path.join(
-            self.config.base_path, self.config.handler_path)
+            self.config.base_path, self.config.handler_path
+        )
         handler_dirname = os.path.dirname(handler_full_path)
         sys.path.append(handler_dirname)
 
         try:
-            spec = importlib.util.spec_from_file_location(
-                "worker", handler_full_path)
+            spec = importlib.util.spec_from_file_location("worker", handler_full_path)
             handler_module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(handler_module)
         except Exception as err:
             tb = traceback.format_exc()
             self.logger.error(
-                f"error loading handler script {self.config.handler_path}: {err}\n\n{tb}")
+                f"error loading handler script {self.config.handler_path}: {err}\n\n{tb}"
+            )
             sys.exit(1)
 
         if not hasattr(handler_module, "handler"):
             raise Exception(
-                f"handler module '{handler_full_path}' must implement a function 'handler(ctx, data)'")
+                f"handler module '{handler_full_path}' must implement a function 'handler(ctx, data)'"
+            )
 
         if hasattr(handler_module, "init"):
             self.handler_init_fn = handler_module.init
 
         self.handler_fn = handler_module.handler
-        self.logger.info(
-            f"handler script was loaded from '{handler_full_path}'")
+        self.logger.info(f"handler script was loaded from '{handler_full_path}'")
 
     async def execute_handler_init(self):
         self.logger.info(f"creating handler context...")
         self.handler_ctx = HandlerContext(
-            self.config, self.nc, self.mongo_conn, self.logger, self.early_reply)
+            self.config,
+            self.nc,
+            self.mongo_conn,
+            self.logger,
+            self.early_reply,
+        )
 
         if not self.handler_init_fn:
             return
@@ -78,16 +80,16 @@ class NodeRunner(Runner):
     async def process_messages(self):
         self.logger.info(f"connecting to MongoDB...")
         self.mongo_conn = pymongo.MongoClient(
-            self.config.mongo_uri, socketTimeoutMS=10000, connectTimeoutMS=10000)
+            self.config.mongo_uri, socketTimeoutMS=10000, connectTimeoutMS=10000
+        )
 
         queue_name = f"queue_{self.config.nats_input}"
         self.subscription_sid = await self.nc.subscribe(
-            self.config.nats_input,
-            cb=self.create_message_cb(),
-            queue=queue_name
+            self.config.nats_input, cb=self.create_message_cb(), queue=queue_name
         )
         self.logger.info(
-            f"listening to '{self.config.nats_input}' subject with queue '{queue_name}'")
+            f"listening to '{self.config.nats_input}' subject with queue '{queue_name}'"
+        )
 
         await self.execute_handler_init()
 
@@ -111,7 +113,8 @@ class NodeRunner(Runner):
                     request_msg.reply = msg.reply
 
                 self.logger.info(
-                    f"received message on '{msg.subject}' with final reply '{request_msg.reply}'")
+                    f"received message on '{msg.subject}' with final reply '{request_msg.reply}'"
+                )
 
                 # Make a shallow copy of the ctx object to set inside the request msg.
                 ctx = copy.copy(self.handler_ctx)
@@ -122,35 +125,43 @@ class NodeRunner(Runner):
                 end = datetime.utcnow()
 
                 # Save the elapsed time for this node and for the workflow if it is the last node.
-                is_last_node = self.config.nats_output == ''
+                is_last_node = self.config.nats_output == ""
                 self.save_elapsed_time(request_msg, start, end, is_last_node)
 
                 # Ignore send reply if the msg was replied previously.
                 if is_last_node and request_msg.replied:
                     if handler_result is not None:
-                        self.logger.info("ignoring the last node response because the message was replied previously")
+                        self.logger.info(
+                            "ignoring the last node response because the message was replied previously"
+                        )
                     return
 
                 # Generate a KreNatsMessage response.
                 res = self.new_response_msg(request_msg, handler_result, start, end)
 
                 # Publish the response message to the output subject.
-                output_subject = request_msg.reply if is_last_node else self.config.nats_output
+                output_subject = (
+                    request_msg.reply if is_last_node else self.config.nats_output
+                )
                 await self.publish_response(output_subject, res)
 
             except Exception as err:
                 tb = traceback.format_exc()
                 self.logger.error(f"error executing handler: {err} \n\n{tb}")
                 response_err = KreNatsMessage()
-                response_err.error = f"error in '{self.config.krt_node_name}': {str(err)}"
-                await self.nc.publish(request_msg.reply, response_err.SerializeToString())
+                response_err.error = (
+                    f"error in '{self.config.krt_node_name}': {str(err)}"
+                )
+                await self.nc.publish(
+                    request_msg.reply, response_err.SerializeToString()
+                )
 
         return message_cb
 
     @staticmethod
     def new_request_msg(data: bytes) -> KreNatsMessage:
-        if data.startswith(GZIP_HEADER):
-            data = gzip.decompress(data)
+        if is_compressed(data):
+            data = uncompress(data)
 
         request_msg = KreNatsMessage()
         request_msg.ParseFromString(data)
@@ -159,7 +170,9 @@ class NodeRunner(Runner):
 
     # new_response_msg creates a KreNatsMessage maintaining the tracking ID and adding the
     # handler result and the tracking information for this node.
-    def new_response_msg(self, request_msg: KreNatsMessage, payload: any, start, end) -> KreNatsMessage:
+    def new_response_msg(
+        self, request_msg: KreNatsMessage, payload: any, start, end
+    ) -> KreNatsMessage:
         res = KreNatsMessage()
         res.replied = request_msg.replied
         res.reply = request_msg.reply
@@ -175,21 +188,10 @@ class NodeRunner(Runner):
 
         return res
 
-    def prepare_output_message(self, msg: bytes) -> bytes:
-        if len(msg) <= MESSAGE_THRESHOLD:
-            return msg
-
-        out = gzip.compress(msg, compresslevel=COMPRESS_LEVEL)
-
-        if len(out) > MESSAGE_THRESHOLD:
-            raise Exception("compressed message exceeds maximum size allowed of 1 MB.")
-
-        self.logger.info(f"Original message size: {size_in_kb(msg)}. Compressed: {size_in_kb(out)}")
-
-        return out
-
     async def publish_response(self, subject, response_msg):
-        serialized_response_msg = self.prepare_output_message(response_msg.SerializeToString())
+        serialized_response_msg = compress_if_needed(
+            response_msg.SerializeToString(), logger=self.logger
+        )
         await self.nc.publish(subject, serialized_response_msg)
 
         self.logger.info(f"published response to NATS subject '{subject}'")
@@ -200,7 +202,13 @@ class NodeRunner(Runner):
         res.payload.Pack(response)
         await self.publish_response(nats_reply_subject, res)
 
-    def save_elapsed_time(self, req_msg: KreNatsMessage, start: datetime, end: datetime, is_last_node: bool) -> None:
+    def save_elapsed_time(
+        self,
+        req_msg: KreNatsMessage,
+        start: datetime,
+        end: datetime,
+        is_last_node: bool,
+    ) -> None:
         """
         save_elapsed_time stores in InfluxDB the elapsed time for the current node and the total elapsed time
         of the complete workflow if it is the last node.
@@ -221,14 +229,14 @@ class NodeRunner(Runner):
         tags = {
             "workflow": self.config.krt_workflow_name,
             "version": self.config.krt_version,
-            "node": self.config.krt_node_name
+            "node": self.config.krt_node_name,
         }
 
         fields = {
             "tracking_id": req_msg.tracking_id,
             "node_from": prev.node_name,
             "elapsed_ms": elapsed.total_seconds() * 1000,
-            "waiting_ms": waiting.total_seconds() * 1000
+            "waiting_ms": waiting.total_seconds() * 1000,
         }
 
         self.handler_ctx.measurement.save("node_elapsed_time", fields, tags)
@@ -247,10 +255,6 @@ class NodeRunner(Runner):
             self.handler_ctx.measurement.save("workflow_elapsed_time", fields, tags)
 
 
-def size_in_kb(s: bytes) -> str:
-    return f"{(len(s) / 1024):.2f} KB"
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     runner = NodeRunner()
     runner.start()
