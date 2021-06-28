@@ -1,3 +1,5 @@
+from google.protobuf.any_pb2 import Any
+
 from public_input_for_testing_pb2 import Request, Response
 
 
@@ -6,7 +8,7 @@ def init(ctx):
     ctx.set("greeting", "Hello")
 
 
-async def handler(ctx, data):
+async def handler(ctx, data: Any):
     ctx.logger.info("[worker handler]")
 
     req = Request()
