@@ -4,7 +4,11 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
-pylint = "*"
+pylint = "==2.8.3"
+flake8 = "==3.9.2"
+black = "==21.5b2"
+pytest = "==6.2.4"
+pytest-asyncio = "==0.15.1"
 
 [packages]
 asyncio-nats-client = "==0.10.0"
@@ -25,3 +29,6 @@ torchvision= "==0.6.1"
 
 [requires]
 python_version = "3"
+
+[pipenv]
+allow_prereleases = true

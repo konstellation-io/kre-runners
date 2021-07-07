@@ -1,6 +1,6 @@
+import abc
 import asyncio
 import logging
-import abc
 import time
 
 from nats.aio.client import Client as NATS
@@ -11,13 +11,13 @@ class Runner:
         logging.basicConfig(
             level=logging.INFO,
             format="%(asctime)s.%(msecs)03dZ %(levelname)s %(message)s",
-            datefmt="%Y-%m-%dT%H:%M:%S"
+            datefmt="%Y-%m-%dT%H:%M:%S",
         )
         logging.Formatter.converter = time.gmtime
-        logging.addLevelName(logging.DEBUG, 'DEBUG')
-        logging.addLevelName(logging.WARNING, 'WARN')
-        logging.addLevelName(logging.FATAL, 'ERROR')
-        logging.addLevelName(logging.CRITICAL, 'ERROR')
+        logging.addLevelName(logging.DEBUG, "DEBUG")
+        logging.addLevelName(logging.WARNING, "WARN")
+        logging.addLevelName(logging.FATAL, "ERROR")
+        logging.addLevelName(logging.CRITICAL, "ERROR")
 
         self.logger = logging.getLogger(runner_name)
         self.loop = asyncio.get_event_loop()
@@ -40,7 +40,9 @@ class Runner:
 
     async def connect(self):
         self.logger.info(f"Connecting to NATS {self.config.nats_server}...")
-        await self.nc.connect(self.config.nats_server, loop=self.loop, name=self.runner_name)
+        await self.nc.connect(
+            self.config.nats_server, loop=self.loop, name=self.runner_name
+        )
 
     async def stop(self):
         if self.subscription_sid is not None:
