@@ -47,7 +47,7 @@ await ctx.prediction.save(
 
 The runner will have the following environment variables:
 
-```
+```bash
 KRT_WORKFLOW_NAME
 KRT_VERSION_ID
 KRT_VERSION
