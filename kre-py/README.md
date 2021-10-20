@@ -98,7 +98,7 @@ async def handler(ctx, data):
 
 First of all, install the dependencies using pipenv:
 
-```shell script
+```bash
 pipenv install --dev
 ```
 
