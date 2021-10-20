@@ -1,3 +1,10 @@
+# [kre-py-v1.27.3](https://github.com/konstellation-io/kre-runners/compare/kre-py-v1.27.2...kre-py-v1.27.3) (2021-10-20)
+
+
+### Bug Fixes
+
+* **kre-py:** Update docs ([319a1dd](https://github.com/konstellation-io/kre-runners/commit/319a1dd4ab144bdf1614ffbcae31f18e25e0e24e))
+
 # [kre-py-v1.27.2](https://github.com/konstellation-io/kre-runners/compare/kre-py-v1.27.1...kre-py-v1.27.2) (2021-10-20)
 
 
