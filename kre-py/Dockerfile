@@ -26,6 +26,7 @@ RUN apt-get update && apt-get -yq install --no-install-recommends \
         add-apt-repository ppa:deadsnakes/ppa -y && \
         apt-get install -yq --no-install-recommends \
             build-essential \
+            libgl1-mesa-glx \
             libsm6 \
             libxext6 \ 
             libxrender-dev \
