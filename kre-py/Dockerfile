@@ -55,7 +55,8 @@ WORKDIR /kre
 
 USER ${USER}
 
-COPY ["install_stopwords.py", "src", "./"]
+COPY --chown=kre:0 install_stopwords.py ./
+COPY --chown=kre:0 src /kre/src
 
 RUN python3 /kre/install_stopwords.py
 
