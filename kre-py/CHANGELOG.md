@@ -1,3 +1,10 @@
+# [kre-py-v1.27.4](https://github.com/konstellation-io/kre-runners/compare/kre-py-v1.27.3...kre-py-v1.27.4) (2021-10-21)
+
+
+### Bug Fixes
+
+* **kre-py:** Fix how files/dirs are being copied ([3f0b40a](https://github.com/konstellation-io/kre-runners/commit/3f0b40ae5d9740f77f131c43b2040359e0f5f0c4))
+
 # [kre-py-v1.27.3](https://github.com/konstellation-io/kre-runners/compare/kre-py-v1.27.2...kre-py-v1.27.3) (2021-10-20)
 
 
