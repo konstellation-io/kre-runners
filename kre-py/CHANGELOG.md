@@ -1,3 +1,10 @@
+# [kre-py-v1.28.0](https://github.com/konstellation-io/kre-runners/compare/kre-py-v1.27.4...kre-py-v1.28.0) (2022-03-15)
+
+
+### Features
+
+* **kre-py:** New base runners ([ae48fcc](https://github.com/konstellation-io/kre-runners/commit/ae48fcc24f2e53c5b3a3206910001b734b877bb5))
+
 # [kre-py-v1.27.4](https://github.com/konstellation-io/kre-runners/compare/kre-py-v1.27.3...kre-py-v1.27.4) (2021-10-21)
 
 
