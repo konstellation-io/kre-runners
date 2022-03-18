@@ -62,4 +62,4 @@ WORKDIR /kre
 
 COPY --chown=kre:0 src /kre/src
 
-CMD ["/usr/bin/python3.9", "/kre/src/main.py", "2>&1 | tee -a /var/log/app/app.log"]
+CMD ["sh","-c","/usr/bin/python3.9 /kre/src/main.py 2>&1 | tee -a /var/log/app/app.log"]
