@@ -1,3 +1,10 @@
+# [kre-py-v1.28.1](https://github.com/konstellation-io/kre-runners/compare/kre-py-v1.28.0...kre-py-v1.28.1) (2022-03-18)
+
+
+### Bug Fixes
+
+* **kre-py:** Logging issues ([c27a533](https://github.com/konstellation-io/kre-runners/commit/c27a533bf5ee68da32619b0ca44ba956b6b5c049))
+
 # [kre-py-v1.28.0](https://github.com/konstellation-io/kre-runners/compare/kre-py-v1.27.4...kre-py-v1.28.0) (2022-03-15)
 
 
