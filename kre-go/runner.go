@@ -3,8 +3,9 @@ package kre
 import (
 	"errors"
 	"fmt"
-	"github.com/konstellation-io/kre-runners/kre-go/mongodb"
 	"time"
+
+	"github.com/konstellation-io/kre-runners/kre-go/mongodb"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
@@ -251,14 +252,19 @@ func (r Runner) earlyReply(subject string, response proto.Message) error {
 // saveElapsedTime stores in InfluxDB the elapsed time for the current node and the total elapsed time of the
 // complete workflow if it is the last node.
 func (r *Runner) saveElapsedTime(reqMsg *KreNatsMessage, start time.Time, end time.Time, isLastNode bool) {
-	prev := reqMsg.Tracking[len(reqMsg.Tracking)-1]
-	prevEnd, err := time.Parse(ISO8601, prev.End)
-	if err != nil {
-		r.logger.Errorf("Error parsing previous node end time = \"%s\"", prev.End)
+	var waiting time.Duration
+	var prev *KreNatsMessage_Tracking
+
+	if len(reqMsg.Tracking) > 0 {
+		prev = reqMsg.Tracking[len(reqMsg.Tracking)-1]
+		prevEnd, err := time.Parse(ISO8601, prev.End)
+		if err != nil {
+			r.logger.Errorf("Error parsing previous node end time = \"%s\"", prev.End)
+		}
+		waiting = start.Sub(prevEnd)
 	}
 
 	elapsed := end.Sub(start)
-	waiting := start.Sub(prevEnd)
 
 	tags := map[string]string{
 		"workflow": r.cfg.WorkflowName,
