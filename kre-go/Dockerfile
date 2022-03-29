@@ -3,6 +3,12 @@ FROM ubuntu:20.04
 # Create kre user.
 ENV USER=kre
 ENV UID=10001
+
+RUN apt update && apt install -y ca-certificates && \
+    apt-get clean && \
+    apt-get autoremove && \
+    rm -rf /var/lib/apt/lists/*
+
 RUN adduser \
     --disabled-password \
     --gecos "" \
