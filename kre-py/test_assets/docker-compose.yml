@@ -1,7 +1,7 @@
 version: "3"
 services:
   nats:
-    image: "nats:2.1.6"
+    image: "nats-streaming:0.16.2"
     ports:
       - "4222:4222"
       - "8222:8222"
@@ -10,6 +10,34 @@ services:
     ports:
       - "27017:27017"
   influx:
-    image: "influxdb:1.7-alpine"
+    image: "influxdb:1.8-alpine"
     ports:
       - "8088:8088"
+    environment:
+      INFLUXDB_DB: "kre"
+  natsui:
+    image: "sphqxe/nats-webui:latest"
+    ports:
+      - "8080:80"
+  runner:
+    build:
+      context: "../"
+      dockerfile: "./Dockerfile"
+      args:
+        BUILD_ENV: "test"
+    volumes:
+      - "../test_assets:/tmp"
+    environment:
+      - KRT_WORKFLOW_NAME=workflow1
+      - KRT_VERSION_ID=version.1234
+      - KRT_VERSION=testVersion1
+      - KRT_NODE_NAME=nodeA
+      - KRT_NATS_SERVER=nats:4222
+      - KRT_NATS_INPUT=test-subject-input
+      - KRT_NATS_OUTPUT=""
+      - KRT_NATS_MONGO_WRITER=mongo_writer
+      - KRT_BASE_PATH=/tmp/myvol
+      - KRT_HANDLER_PATH=src/node/node_handler.py
+      - KRT_MONGO_URI=mongodb://admin:123456@mongo:27017/admin
+      - KRT_INFLUX_URI=http://influx:8086
+

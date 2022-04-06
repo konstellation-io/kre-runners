@@ -41,7 +41,7 @@ class Runner:
     async def connect(self):
         self.logger.info(f"Connecting to NATS {self.config.nats_server}...")
         await self.nc.connect(
-            self.config.nats_server, loop=self.loop, name=self.runner_name
+            self.config.nats_server, name=self.runner_name
         )
 
     async def stop(self):
