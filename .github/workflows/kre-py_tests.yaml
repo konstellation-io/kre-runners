@@ -12,13 +12,6 @@ jobs:
   test:
     name: Tests
     runs-on: ubuntu-latest
-    services:
-      influxdb: nats:2.1.6
-        image: influxdb:1.7-alpine
-      mongo:
-        image: mongo:4.2
-      nats:
-        image: nats:2.1.6
 
     steps:
     - uses: actions/checkout@v3
@@ -27,34 +20,35 @@ jobs:
       uses: actions/setup-python@v3
       with:
         python-version: "3.9"
+        cache: 'pipenv'
 
     - name: Install pipenv
       run: |
-        python -m pip install --upgrade pipenv wheel
+        pipx install pipenv
 
-    - id: cache-pipenv
-      uses: actions/cache@v1
-      working-directory: ./kre-py
-      with:
-        path: ~/.local/share/virtualenvs
-        key: ${{ runner.os }}-pipenv-${{ hashFiles('Pipfile.lock') }}
+    - name: Build the docker-compose stack
+      working-directory: ./kre-py/test_assets
+      run: docker-compose up -d --build
 
     - name: Install dependencies
-      if: steps.cache-pipenv.outputs.cache-hit != 'true'
       run: |
         pipenv install --deploy --dev
+      working-directory: ./kre-py
 
     - name: Test with pytest
       run: |
-        pipenv run test -svvv
-        touch coverage.out
+        pipenv run pytest --cov --cov-report=xml
       working-directory: ./kre-py
 
     - name: Archive code coverage results
       uses: actions/upload-artifact@v2
       with:
         name: coverage-report
-        path: kre-py/coverage.out
+        path: kre-py/coverage.xml
+  
+    - name: Stop the docker-compose stack
+      working-directory: ./kre-py/test_assets
+      run: docker-compose down
 
   sonarcloud:
     name: SonarCloud
