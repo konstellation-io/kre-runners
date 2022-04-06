@@ -33,11 +33,9 @@ async def test_main() -> None:
     req_nats_msg.payload.Pack(req)
 
     print(f"Sending a test message to {input_subject}...")
-    try:
-        msg = await nc.request(input_subject, req_nats_msg.SerializeToString(), timeout=20)
-    except Exception as e:
-        print(type(e))
-        print(f"Exception: {e}")
+
+    msg = await nc.request(input_subject, req_nats_msg.SerializeToString(), timeout=20)
+
     # Get the response
     res_nats_msg = KreNatsMessage()
     res_nats_msg.ParseFromString(msg.data)
@@ -48,4 +46,4 @@ async def test_main() -> None:
     assert res_nats_msg.error == ""
     assert res.greeting == "Hello John Doe!"
 
-    nc.drain()
+    nc.close()
