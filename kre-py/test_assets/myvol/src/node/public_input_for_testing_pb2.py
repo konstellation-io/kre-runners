@@ -3,6 +3,7 @@
 # source: public_input_for_testing.proto
 """Generated protocol buffer code."""
 from google.protobuf import descriptor as _descriptor
+from google.protobuf import descriptor_pool as _descriptor_pool
 from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
@@ -13,85 +14,12 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor.FileDescriptor(
-  name='public_input_for_testing.proto',
-  package='',
-  syntax='proto3',
-  serialized_options=None,
-  create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x1epublic_input_for_testing.proto\"\x17\n\x07Request\x12\x0c\n\x04name\x18\x01 \x01(\t\"\x1c\n\x08Response\x12\x10\n\x08greeting\x18\x01 \x01(\tb\x06proto3'
-)
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1epublic_input_for_testing.proto\"\x17\n\x07Request\x12\x0c\n\x04name\x18\x01 \x01(\t\"\x1c\n\x08Response\x12\x10\n\x08greeting\x18\x01 \x01(\tb\x06proto3')
 
 
 
-
-_REQUEST = _descriptor.Descriptor(
-  name='Request',
-  full_name='Request',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  create_key=_descriptor._internal_create_key,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='name', full_name='Request.name', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=b"".decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=34,
-  serialized_end=57,
-)
-
-
-_RESPONSE = _descriptor.Descriptor(
-  name='Response',
-  full_name='Response',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  create_key=_descriptor._internal_create_key,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='greeting', full_name='Response.greeting', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=b"".decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=59,
-  serialized_end=87,
-)
-
-DESCRIPTOR.message_types_by_name['Request'] = _REQUEST
-DESCRIPTOR.message_types_by_name['Response'] = _RESPONSE
-_sym_db.RegisterFileDescriptor(DESCRIPTOR)
-
+_REQUEST = DESCRIPTOR.message_types_by_name['Request']
+_RESPONSE = DESCRIPTOR.message_types_by_name['Response']
 Request = _reflection.GeneratedProtocolMessageType('Request', (_message.Message,), {
   'DESCRIPTOR' : _REQUEST,
   '__module__' : 'public_input_for_testing_pb2'
@@ -106,5 +34,11 @@ Response = _reflection.GeneratedProtocolMessageType('Response', (_message.Messag
   })
 _sym_db.RegisterMessage(Response)
 
+if _descriptor._USE_C_DESCRIPTORS == False:
 
+  DESCRIPTOR._options = None
+  _REQUEST._serialized_start=34
+  _REQUEST._serialized_end=57
+  _RESPONSE._serialized_start=59
+  _RESPONSE._serialized_end=87
 # @@protoc_insertion_point(module_scope)
