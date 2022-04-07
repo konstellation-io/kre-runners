@@ -1,6 +1,12 @@
 name: kre-py Tests
 
 on:
+  pull_request:
+    branches:
+      - "*"
+    paths:
+      - "kre-py/**/*"
+      - ".github/workflows/kre-py*"
   push:
     branches:
       - "*"
@@ -12,19 +18,43 @@ jobs:
   test:
     name: Tests
     runs-on: ubuntu-latest
+
     steps:
-    - uses: actions/checkout@v2
-    # TODO: add tests
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.9"
+        cache: 'pipenv'
+
+    - name: Install pipenv
+      run: |
+        pipx install pipenv
+
+    - name: Build the docker-compose stack
+      working-directory: ./kre-py/test_assets
+      run: docker-compose up -d --build
+
+    - name: Install dependencies
+      run: |
+        pipenv install --deploy --dev
+      working-directory: ./kre-py
+
     - name: Test with pytest
       run: |
-        echo "HERE PASS PYTHON TESTS"
-        touch coverage.out
+        pipenv run pytest --cov --cov-report=xml
       working-directory: ./kre-py
+
     - name: Archive code coverage results
       uses: actions/upload-artifact@v2
       with:
         name: coverage-report
-        path: kre-py/coverage.out
+        path: kre-py/coverage.xml
+  
+    - name: Stop the docker-compose stack
+      working-directory: ./kre-py/test_assets
+      run: docker-compose down
 
   sonarcloud:
     name: SonarCloud
@@ -43,6 +73,9 @@ jobs:
         uses: SonarSource/sonarcloud-github-action@master
         with:
           projectBaseDir: kre-py
+          args: >
+            -Dsonar.python.coverage.reportPaths=coverage.xml
+            -Dsonar.python.version=3.9
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_KRE_PY }}
