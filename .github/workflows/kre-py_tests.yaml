@@ -47,7 +47,7 @@ jobs:
       working-directory: ./kre-py
 
     - name: Archive code coverage results
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: coverage-report
         path: kre-py/coverage.xml

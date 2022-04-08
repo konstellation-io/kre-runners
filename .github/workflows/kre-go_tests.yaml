@@ -32,7 +32,7 @@ jobs:
           go test -run TestHandlerContext_SaveData -cover -v -coverprofile=coverage.out -covermode=atomic -coverpkg=./...
         working-directory: ./kre-go
       - name: Archive code coverage results
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: coverage-report
           path: kre-go/coverage.out

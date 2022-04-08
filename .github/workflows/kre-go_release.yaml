@@ -40,7 +40,7 @@ jobs:
         run: npx semantic-release --debug
 
       - name: Upload release_version
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: release_version
           path: kre-go/release_version.txt
