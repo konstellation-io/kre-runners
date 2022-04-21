@@ -39,6 +39,7 @@ jobs:
     - name: Install dependencies
       run: |
         pipenv install --deploy --dev
+        sleep 120
       working-directory: ./kre-py
 
     - name: Test with pytest
