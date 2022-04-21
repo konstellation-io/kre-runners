@@ -30,9 +30,7 @@ class NodeRunner(Runner):
     def load_handler(self):
         self.logger.info(f"loading handler script {self.config.handler_path}...")
 
-        handler_full_path = os.path.join(
-            self.config.base_path, self.config.handler_path
-        )
+        handler_full_path = os.path.join(self.config.base_path, self.config.handler_path)
         handler_dirname = os.path.dirname(handler_full_path)
         sys.path.append(handler_dirname)
 
@@ -49,7 +47,8 @@ class NodeRunner(Runner):
 
         if not hasattr(handler_module, "handler"):
             raise Exception(
-                f"handler module '{handler_full_path}' must implement a function 'handler(ctx, data)'"
+                f"handler module '{handler_full_path}' "
+                f"must implement a function 'handler(ctx, data)'"
             )
 
         if hasattr(handler_module, "init"):
@@ -105,7 +104,8 @@ class NodeRunner(Runner):
                 if msg.reply == "" and request_msg.reply == "":
                     raise Exception("the reply subject was not found")
 
-                # If the "msg.reply" has a value, it means that is the first message of the workflow.
+                # If the "msg.reply" has a value, it means that is the
+                # first message of the workflow.
                 # In other words, it comes from the initial entrypoint request.
                 # In this case we set this value into the "request_msg.reply" field in order
                 # to be propagated for the rest of workflow nodes.
@@ -132,7 +132,8 @@ class NodeRunner(Runner):
                 if is_last_node and request_msg.replied:
                     if handler_result is not None:
                         self.logger.info(
-                            "ignoring the last node response because the message was replied previously"
+                            "ignoring the last node response because the "
+                            "message was replied previously"
                         )
                     return
 
@@ -140,21 +141,15 @@ class NodeRunner(Runner):
                 res = self.new_response_msg(request_msg, handler_result, start, end)
 
                 # Publish the response message to the output subject.
-                output_subject = (
-                    request_msg.reply if is_last_node else self.config.nats_output
-                )
+                output_subject = request_msg.reply if is_last_node else self.config.nats_output
                 await self.publish_response(output_subject, res)
 
             except Exception as err:
                 tb = traceback.format_exc()
                 self.logger.error(f"error executing handler: {err} \n\n{tb}")
                 response_err = KreNatsMessage()
-                response_err.error = (
-                    f"error in '{self.config.krt_node_name}': {str(err)}"
-                )
-                await self.nc.publish(
-                    request_msg.reply, response_err.SerializeToString()
-                )
+                response_err.error = f"error in '{self.config.krt_node_name}': {str(err)}"
+                await self.nc.publish(request_msg.reply, response_err.SerializeToString())
 
         return message_cb
 
@@ -210,8 +205,8 @@ class NodeRunner(Runner):
         is_last_node: bool,
     ) -> None:
         """
-        save_elapsed_time stores in InfluxDB the elapsed time for the current node and the total elapsed time
-        of the complete workflow if it is the last node.
+        save_elapsed_time stores in InfluxDB the elapsed time for the current node and the total
+        elapsed time of the complete workflow if it is the last node.
 
         :param req_msg: the request message.
         :param start: when this node started.

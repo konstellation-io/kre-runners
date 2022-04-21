@@ -4,7 +4,7 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [packages]
-asyncio-nats-client = "==0.10.0"
+nats-py = "==2.1.0"
 grpcio = "==1.28.1"
 grpclib = "==0.3.2"
 grpcio-tools = "==1.28.1"

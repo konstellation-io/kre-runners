@@ -8,7 +8,6 @@ from kre_nats_msg_pb2 import KreNatsMessage
 from test_utils.public_input_for_testing_pb2 import Request, Response
 
 
-
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_main() -> None:
@@ -46,4 +45,4 @@ async def test_main() -> None:
     assert res_nats_msg.error == ""
     assert res.greeting == "Hello John Doe!"
 
-    nc.close()
+    await nc.close()

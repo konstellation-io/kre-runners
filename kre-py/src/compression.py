@@ -5,7 +5,8 @@ import logging
 MESSAGE_THRESHOLD = 1024 * 1024
 
 # The compresslevel argument is an integer from 0 to 9 controlling the level of compression;
-# 1 is fastest and produces the least compression, and 9 is slowest and produces the most compression.
+# 1 is fastest and produces the least compression,
+# and 9 is slowest and produces the most compression.
 # 0 is no compression.
 COMPRESS_LEVEL = 9
 
@@ -99,11 +100,10 @@ def compress_if_needed(
 
     if len(out) > max_size:
         raise Exception(
-            f"compressed message {size_in_kb(out)} exceeds maximum size allowed of {bytes_to_kb(max_size)}."
+            f"compressed message {size_in_kb(out)} exceeds "
+            f"maximum size allowed of {bytes_to_kb(max_size)}."
         )
 
-    logger.info(
-        "Original message size: %s. Compressed: %s", size_in_kb(data), size_in_kb(out)
-    )
+    logger.info("Original message size: %s. Compressed: %s", size_in_kb(data), size_in_kb(out))
 
     return out

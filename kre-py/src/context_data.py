@@ -1,6 +1,6 @@
 import json
 
-from nats.aio.client import ErrTimeout
+from nats.errors import TimeoutError
 
 from compression import compress_if_needed
 
@@ -26,7 +26,7 @@ class ContextData:
             res_json = json.loads(response.data.decode())
             if not res_json["success"]:
                 self.__logger__.error("Unexpected error saving data")
-        except ErrTimeout:
+        except TimeoutError:
             self.__logger__.error("Error saving data: request timed out")
 
     async def find(self, coll, query):
@@ -36,9 +36,7 @@ class ContextData:
             )
 
         if not isinstance(query, dict) or not query:
-            raise Exception(
-                f"[ctx.db.find] invalid 'query'='{query}', must be a nonempty dict"
-            )
+            raise Exception(f"[ctx.db.find] invalid 'query'='{query}', must be a nonempty dict")
 
         try:
             collection = self.__mongo_conn__[self.__config__.mongo_data_db_name][coll]

@@ -12,12 +12,12 @@ class Runner:
         logging.basicConfig(
             level=logging.INFO,
             format="%(asctime)s %(levelname)s %(message)s",
-            datefmt="%Y-%m-%dT%H:%M:%S%z"
+            datefmt="%Y-%m-%dT%H:%M:%S%z",
         )
-        logging.addLevelName(logging.DEBUG, 'DEBUG')
-        logging.addLevelName(logging.WARNING, 'WARN')
-        logging.addLevelName(logging.FATAL, 'ERROR')
-        logging.addLevelName(logging.CRITICAL, 'ERROR')
+        logging.addLevelName(logging.DEBUG, "DEBUG")
+        logging.addLevelName(logging.WARNING, "WARN")
+        logging.addLevelName(logging.FATAL, "ERROR")
+        logging.addLevelName(logging.CRITICAL, "ERROR")
 
         self.logger = logging.getLogger(runner_name)
         self.loop = asyncio.get_event_loop()

@@ -12,7 +12,7 @@ from kre_measurements import KreMeasurements
 
 COMPRESS_LEVEL = 9
 MESSAGE_THRESHOLD = 1024 * 1024
-GZIP_HEADER = b'\x1f\x8b'
+GZIP_HEADER = b"\x1f\x8b"
 
 
 # NOTE: EntrypointKRE will be extended by Entrypoint class auto-generated
@@ -35,7 +35,7 @@ class EntrypointKRE:
         try:
             raw_msg = await stream.recv_message()
 
-            self.logger.info(f'gRPC message received')
+            self.logger.info(f"gRPC message received")
             request_msg = KreNatsMessage()
             request_msg.tracking_id = tracking_id
             request_msg.payload.Pack(raw_msg)
@@ -45,14 +45,13 @@ class EntrypointKRE:
             t.end = datetime.utcnow().isoformat()
 
             nats_subject = self.subjects[subject]
-            self.logger.info(
-                f"Starting request/reply on NATS subject: '{nats_subject}'")
+            self.logger.info(f"Starting request/reply on NATS subject: '{nats_subject}'")
 
-            nats_message = self._prepare_nats_request(
-                request_msg.SerializeToString())
+            nats_message = self._prepare_nats_request(request_msg.SerializeToString())
 
-            nats_reply = await self.nc.request(nats_subject, nats_message,
-                                               timeout=self.config.request_timeout)
+            nats_reply = await self.nc.request(
+                nats_subject, nats_message, timeout=self.config.request_timeout
+            )
 
             response_data = self._prepare_nats_response(nats_reply.data)
 
@@ -61,8 +60,7 @@ class EntrypointKRE:
             response_msg.ParseFromString(response_data)
 
             if response_msg.error != "":
-                self.logger.error(
-                    f"received error message: {response_msg.error}")
+                self.logger.error(f"received error message: {response_msg.error}")
 
                 raise GRPCError(Status.INTERNAL, response_msg.error)
 
@@ -70,10 +68,10 @@ class EntrypointKRE:
 
             await stream.send_message(response)
 
-            self.logger.info(f'gRPC successfully response')
+            self.logger.info(f"gRPC successfully response")
 
         except Exception as err:
-            err_msg = f'Exception on gRPC call : {err}'
+            err_msg = f"Exception on gRPC call : {err}"
             self.logger.error(err_msg)
             traceback.print_exc()
 
@@ -87,11 +85,9 @@ class EntrypointKRE:
         out = gzip.compress(msg, compresslevel=COMPRESS_LEVEL)
 
         if len(out) > MESSAGE_THRESHOLD:
-            raise Exception(
-                "compressed message exceeds maximum size allowed of 1 MB.")
+            raise Exception("compressed message exceeds maximum size allowed of 1 MB.")
 
-        self.logger.info(
-            f"Original message size: {size_in_kb(msg)}. Compressed: {size_in_kb(out)}")
+        self.logger.info(f"Original message size: {size_in_kb(msg)}. Compressed: {size_in_kb(out)}")
 
         return out
 

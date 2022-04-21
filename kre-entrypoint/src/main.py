@@ -11,7 +11,7 @@ from config import Config
 
 
 class EntrypointRunner(Runner):
-    def __init__(self, host: str = '0.0.0.0', port: int = 9000):
+    def __init__(self, host: str = "0.0.0.0", port: int = 9000):
         Runner.__init__(self, "entrypoint", Config())
         self.host = host
         self.port = port
@@ -29,10 +29,10 @@ class EntrypointRunner(Runner):
         server = Server(services)
         with graceful_exit([server]):
             await server.start(self.host, self.port)
-            self.logger.info(f'Serving gPRC server on {self.host}:{self.port}')
+            self.logger.info(f"Serving gPRC server on {self.host}:{self.port}")
             await server.wait_closed()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     runner = EntrypointRunner()
     runner.start()
