@@ -27,6 +27,17 @@ class NodeRunner(Runner):
         self.mongo_conn = None
         self.load_handler()
 
+    async def connect(self):
+        self.logger.info(f"Connecting to NATS {self.config.nats_server}...")
+        await self.nc.connect(
+            self.config.nats_server, loop=self.loop, name=self.runner_name
+        )
+        self.subscription = await self.nc.subscribe(
+            subject=self.config.nats_input,
+            queue=self.config.krt_node_name,
+            cb=self.handler_fn
+        )
+
     def load_handler(self):
         self.logger.info(f"loading handler script {self.config.handler_path}...")
 

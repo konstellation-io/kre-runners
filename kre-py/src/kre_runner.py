@@ -25,6 +25,7 @@ class Runner:
         self.config = config
         self.subscription_sid = None
         self.runner_name = runner_name
+        self.subscription = None
 
     def start(self):
         try:
@@ -47,7 +48,7 @@ class Runner:
     async def stop(self):
         if self.subscription_sid is not None:
             self.logger.info(f"unsubscribe from sid '{self.subscription_sid}'")
-            await self.nc.unsubscribe(self.subscription_sid)
+            await self.subscription.unsubscribe(self.subscription_sid)
 
         if not self.nc.is_closed:
             self.logger.info("closing NATS connection")
