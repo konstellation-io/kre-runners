@@ -91,7 +91,10 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 
 	// Save the elapsed time for this node and for the workflow if it is the last node.
 	isLastNode := r.cfg.NATS.OutputSubject == ""
-	// r.saveElapsedTime(requestMsg, start, end, isLastNode)
+
+	if !requestMsg.IsIntermediateMessage {
+		r.saveElapsedTime(requestMsg, start, end, isLastNode)
+	}
 
 	// Ignore send reply if the msg was replied previously.
 	if isLastNode && requestMsg.Replied {
@@ -168,11 +171,12 @@ func (r *Runner) newResponseMsg(handlerResult proto.Message, requestMsg *KreNats
 	})
 
 	responseMsg := &KreNatsMessage{
-		Replied:    requestMsg.Replied,
-		Reply:      replySubject,
-		TrackingId: requestMsg.TrackingId,
-		Tracking:   tracking,
-		Payload:    payload,
+		Replied:               requestMsg.Replied,
+		Reply:                 replySubject,
+		TrackingId:            requestMsg.TrackingId,
+		Tracking:              tracking,
+		Payload:               payload,
+		IsIntermediateMessage: false,
 	}
 
 	return responseMsg, nil
@@ -256,8 +260,9 @@ func (r Runner) sendOutput(subject string, entrypointSubject string, response pr
 	}
 
 	res := &KreNatsMessage{
-		Payload: payload,
-		Reply:   entrypointSubject,
+		Payload:               payload,
+		Reply:                 entrypointSubject,
+		IsIntermediateMessage: true,
 	}
 
 	r.publishResponse(subject, res)
