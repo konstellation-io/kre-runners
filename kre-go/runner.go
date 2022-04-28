@@ -3,8 +3,9 @@ package kre
 import (
 	"errors"
 	"fmt"
-	"github.com/konstellation-io/kre-runners/kre-go/mongodb"
 	"time"
+
+	"github.com/konstellation-io/kre-runners/kre-go/mongodb"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
@@ -39,7 +40,7 @@ func NewRunner(logger *simplelogger.SimpleLogger, cfg config.Config, nc *nats.Co
 	}
 
 	// Create handler context
-	c := NewHandlerContext(cfg, nc, mongoM, logger, runner.earlyReply)
+	c := NewHandlerContext(cfg, nc, mongoM, logger, runner.earlyReply, runner.sendOutput)
 	handlerInit(c)
 
 	runner.handlerContext = c
@@ -90,7 +91,7 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 
 	// Save the elapsed time for this node and for the workflow if it is the last node.
 	isLastNode := r.cfg.NATS.OutputSubject == ""
-	r.saveElapsedTime(requestMsg, start, end, isLastNode)
+	// r.saveElapsedTime(requestMsg, start, end, isLastNode)
 
 	// Ignore send reply if the msg was replied previously.
 	if isLastNode && requestMsg.Replied {
@@ -241,6 +242,22 @@ func (r Runner) earlyReply(subject string, response proto.Message) error {
 
 	res := &KreNatsMessage{
 		Payload: payload,
+	}
+
+	r.publishResponse(subject, res)
+
+	return nil
+}
+
+func (r Runner) sendOutput(subject string, entrypointSubject string, response proto.Message) error {
+	payload, err := ptypes.MarshalAny(response)
+	if err != nil {
+		return fmt.Errorf("the handler result is not a valid protobuf: %w", err)
+	}
+
+	res := &KreNatsMessage{
+		Payload: payload,
+		Reply:   entrypointSubject,
 	}
 
 	r.publishResponse(subject, res)

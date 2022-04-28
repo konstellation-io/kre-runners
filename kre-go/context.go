@@ -2,9 +2,10 @@ package kre
 
 import (
 	"errors"
-	"github.com/golang/protobuf/proto"
 	"path"
 	"time"
+
+	"github.com/golang/protobuf/proto"
 
 	"github.com/konstellation-io/kre/libs/simplelogger"
 	"github.com/nats-io/nats.go"
@@ -20,11 +21,13 @@ var (
 )
 
 type ReplyFunc = func(subject string, response proto.Message) error
+type SendOutputFunc = func(subject string, entrypointSubject string, response proto.Message) error
 
 type HandlerContext struct {
 	cfg         config.Config
 	values      map[string]interface{}
 	reply       ReplyFunc
+	sendOutput  SendOutputFunc
 	reqMsg      *KreNatsMessage
 	Logger      *simplelogger.SimpleLogger
 	Prediction  *contextPrediction
@@ -32,12 +35,13 @@ type HandlerContext struct {
 	DB          *contextData
 }
 
-func NewHandlerContext(cfg config.Config, nc *nats.Conn, mongoM mongodb.Manager, logger *simplelogger.SimpleLogger, reply ReplyFunc) *HandlerContext {
+func NewHandlerContext(cfg config.Config, nc *nats.Conn, mongoM mongodb.Manager, logger *simplelogger.SimpleLogger, reply ReplyFunc, sendOutput SendOutputFunc) *HandlerContext {
 	return &HandlerContext{
-		cfg:    cfg,
-		values: map[string]interface{}{},
-		reply:  reply,
-		Logger: logger,
+		cfg:        cfg,
+		values:     map[string]interface{}{},
+		reply:      reply,
+		sendOutput: sendOutput,
+		Logger:     logger,
 		Prediction: &contextPrediction{
 			cfg:    cfg,
 			nc:     nc,
@@ -105,4 +109,11 @@ func (c *HandlerContext) Reply(response proto.Message) error {
 
 	c.reqMsg.Replied = true
 	return c.reply(c.reqMsg.Reply, response)
+}
+
+// Reply sends a reply to the entrypoint. The workflow execution continues.
+// Use this function when you need to reply faster than the workflow execution duration.
+func (c *HandlerContext) SendOutput(response proto.Message) error {
+
+	return c.sendOutput(c.cfg.NATS.OutputSubject, c.reqMsg.Reply, response)
 }

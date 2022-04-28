@@ -68,7 +68,7 @@ func TestHandlerContext_GetData(t *testing.T) {
 
 	mongoM := mocks.NewMockManager(ctrl)
 
-	ctx := NewHandlerContext(cfg, nc, mongoM, logger, nil)
+	ctx := NewHandlerContext(cfg, nc, mongoM, logger, nil, nil)
 
 	q := QueryData{
 		"TicketID": "1234",
@@ -157,7 +157,7 @@ func TestHandlerContext_SaveData(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mongoM := mocks.NewMockManager(ctrl)
 
-	ctx := NewHandlerContext(cfg, nc, mongoM, logger, nil)
+	ctx := NewHandlerContext(cfg, nc, mongoM, logger, nil, nil)
 	sentMsg := TestPrediction{
 		Time:       time.Now(),
 		Prediction: "Tested",
