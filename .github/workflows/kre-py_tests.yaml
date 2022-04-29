@@ -39,6 +39,7 @@ jobs:
     - name: Install dependencies
       run: |
         pipenv install --deploy --dev
+        # Wait until nats client connect to nats server 
         sleep 120
       working-directory: ./kre-py
 
