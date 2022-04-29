@@ -66,6 +66,7 @@ class NodeRunner(Runner):
             self.mongo_conn,
             self.logger,
             self.early_reply,
+            self.send_output,
         )
 
         if not self.handler_init_fn:
@@ -126,9 +127,10 @@ class NodeRunner(Runner):
 
                 # Save the elapsed time for this node and for the workflow if it is the last node.
                 is_last_node = self.config.nats_output == ""
-                self.save_elapsed_time(request_msg, start, end, is_last_node)
+                if not request_msg.isIntermediateMessage:
+                    self.save_elapsed_time(request_msg, start, end, is_last_node)
 
-                # Ignore send reply if the msg was replied previously.
+                # Ignore send reply if the msg was replied previousl y.
                 if is_last_node and request_msg.replied:
                     if handler_result is not None:
                         self.logger.info(
@@ -201,6 +203,13 @@ class NodeRunner(Runner):
         res = KreNatsMessage()
         res.payload.Pack(response)
         await self.publish_response(nats_reply_subject, res)
+
+    async def send_output(self, nats_output: str, nats_reply_subject: str, response: any):
+        res = KreNatsMessage()
+        res.payload.Pack(response)
+        res.isIntermediateMessage = True
+        res.reply = nats_reply_subject
+        await self.publish_response(nats_output, res)
 
     def save_elapsed_time(
         self,

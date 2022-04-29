@@ -6,10 +6,11 @@ from context_data import ContextData
 
 
 class HandlerContext:
-    def __init__(self, config, nc, mongo_conn, logger, reply):
+    def __init__(self, config, nc, mongo_conn, logger, reply, send_output):
         self.__data__ = lambda: None
         self.__config__ = config
         self.__reply__ = reply
+        self.__send_output__ = send_output
         self.__request_msg__ = None
         self.logger = logger
         self.prediction = ContextPrediction(config, nc, logger)
@@ -31,3 +32,6 @@ class HandlerContext:
 
         self.__request_msg__.replied = True
         await self.__reply__(self.__request_msg__.reply, response)
+
+    async def send_output(self, response):
+        await self.__send_output__(self.__config__.nats_output, self.__config__.nats_input, response)
