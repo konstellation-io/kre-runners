@@ -20,6 +20,7 @@ class Config:
             self.mongo_data_db_name = "data"
             self.mongo_uri = os.environ['KRT_MONGO_URI']
             self.influx_uri = os.environ['KRT_INFLUX_URI']
+            # self.influx_uri = os.environ.get("KRT_INFLUX_URI", "https://influx:8086")
             self.nats_flush_timeout = NATS_FLUSH_TIMEOUT
 
         except Exception as err:

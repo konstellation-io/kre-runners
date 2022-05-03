@@ -21,6 +21,7 @@ class EntrypointKRE:
         self.logger = logger
         self.subjects = subjects
         self.nc = nc
+        self.js = self.nc.jetstream()
         self.config = config
 
     @abc.abstractmethod
@@ -36,6 +37,7 @@ class EntrypointKRE:
             raw_msg = await stream.recv_message()
 
             self.logger.info(f'gRPC message received')
+            self.logger.info(raw_msg)
             request_msg = KreNatsMessage()
             request_msg.tracking_id = tracking_id
             request_msg.payload.Pack(raw_msg)
@@ -45,20 +47,50 @@ class EntrypointKRE:
             t.end = datetime.utcnow().isoformat()
 
             nats_subject = self.subjects[subject]
+
             self.logger.info(
                 f"Starting request/reply on NATS subject: '{nats_subject}'")
 
             nats_message = self._prepare_nats_request(
                 request_msg.SerializeToString())
 
-            nats_reply = await self.nc.request(nats_subject, nats_message,
-                                               timeout=self.config.request_timeout)
+            self.logger.info(self.js)
 
-            response_data = self._prepare_nats_response(nats_reply.data)
+            # psub = await self.js.pull_subscribe(nats_subject, durable=True)
+            #print(psub)
+            # msg = await psub.fetch(timeout=100)
+            # for msg in msgs:
+            #    self.logger.info(msg)
+
+            # msg = await self.nc.request(nats_subject, nats_message, timeout=self.config.request_timeout)
+
+            #for i in range(0, 10):
+            #    ack = await self.js.publish(nats_subject, f"hello world: {i}".encode())
+            queue_name = f"queue_{nats_subject}"
+
+            self.logger.info(queue_name)
+
+            stream_info = await self.js.stream_info("entrypoint")
+            self.logger.info(f"Stream info: {stream_info}")
+
+            sub = await self.js.subscribe(stream="entrypoint", subject="descriptor-v11-GoDescriptor-entrypoint", queue=queue_name)
+            self.logger.info(f"Sub: {sub}")
+            msg = await sub.next_msg(timeout=10)
+            self.logger.info(msg)
+
+            response_data = self._prepare_nats_response(msg.data)
+
+            self.logger.info(f"{response_data}")
+            self.logger.info(f"{type(response_data)}")
 
             self.logger.info(f"creating a response from message reply")
             response_msg = KreNatsMessage()
             response_msg.ParseFromString(response_data)
+
+            if not response_msg:
+                self.logger.info("Hola")
+
+            self.logger.info(f"response message: {response_msg}")
 
             if response_msg.error != "":
                 self.logger.error(
@@ -67,6 +99,8 @@ class EntrypointKRE:
                 raise GRPCError(Status.INTERNAL, response_msg.error)
 
             response = self.make_response_object(subject, response_msg)
+
+            self.logger.info(response)
 
             await stream.send_message(response)
 

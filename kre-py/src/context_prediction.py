@@ -1,7 +1,7 @@
 import json
 from datetime import datetime
 
-from nats.aio.client import ErrTimeout
+from nats.errors import TimeoutError
 
 
 class ContextPrediction:
@@ -48,7 +48,7 @@ class ContextPrediction:
             res_json = json.loads(response.data.decode())
             if not res_json['success']:
                 self.__logger__.error("Unexpected error saving metric")
-        except ErrTimeout:
+        except TimeoutError:
             self.__logger__.error("Error saving metric: request timed out")
 
 

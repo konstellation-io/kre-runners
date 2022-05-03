@@ -22,6 +22,7 @@ class Runner:
         self.logger = logging.getLogger(runner_name)
         self.loop = asyncio.get_event_loop()
         self.nc = NATS()
+        self.js = self.nc.jetstream()
         self.config = config
         self.subscription_sid = None
         self.runner_name = runner_name
@@ -41,18 +42,23 @@ class Runner:
     async def connect(self):
         self.logger.info(f"Connecting to NATS {self.config.nats_server}...")
         await self.nc.connect(
-            self.config.nats_server, loop=self.loop, name=self.runner_name
+            self.config.nats_server, name=self.runner_name
         )
 
-    async def stop(self):
-        if self.subscription_sid is not None:
-            self.logger.info(f"unsubscribe from sid '{self.subscription_sid}'")
-            await self.nc.unsubscribe(self.subscription_sid)
+        stream = await self.js.find_stream_name_by_subject(self.config.nats_input)
+        self.logger.info(f"Found stream {stream}")
 
+        #if not stream:
+            #await self.js.add_stream(name=self.runner_name, subjects=[self.config.nats_input])
+
+        # await self.js.add_stream(name=self.runner_name, subjects=[self.config.nats_input])
+
+    async def stop(self):
         if not self.nc.is_closed:
             self.logger.info("closing NATS connection")
             await self.nc.close()
 
+        await self.js.delete_stream(name=self.runner_name)
         self.logger.info("stop loop")
         self.loop.stop()
 

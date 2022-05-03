@@ -15,6 +15,8 @@ from context import HandlerContext
 from kre_nats_msg_pb2 import KreNatsMessage
 from kre_runner import Runner
 
+from nats.errors import ConnectionClosedError, TimeoutError
+
 
 class NodeRunner(Runner):
     def __init__(self):
@@ -83,10 +85,14 @@ class NodeRunner(Runner):
             self.config.mongo_uri, socketTimeoutMS=10000, connectTimeoutMS=10000
         )
 
+        self.logger.info(f"Subject: {self.config.nats_input}")
+        self.logger.info(f"Output: {self.config.nats_output}")
+
         queue_name = f"queue_{self.config.nats_input}"
-        self.subscription_sid = await self.nc.subscribe(
-            self.config.nats_input, cb=self.create_message_cb(), queue=queue_name
+        self.subscription_sid = await self.js.subscribe(
+            self.config.nats_input, queue=queue_name, cb=self.create_message_cb(), ordered_consumer=True
         )
+
         self.logger.info(
             f"listening to '{self.config.nats_input}' subject with queue '{queue_name}'"
         )
@@ -192,10 +198,26 @@ class NodeRunner(Runner):
         serialized_response_msg = compress_if_needed(
             response_msg.SerializeToString(), logger=self.logger
         )
-        await self.nc.publish(subject, serialized_response_msg)
+        try:
+            self.logger.info(subject)
+            self.logger.info(serialized_response_msg)
 
-        self.logger.info(f"published response to NATS subject '{subject}'")
-        await self.nc.flush(timeout=self.config.nats_flush_timeout)
+            await self.js.publish(self.config.nats_input, serialized_response_msg)
+            self.logger.info(f"published response to NATS subject '{self.config.nats_input}'")
+
+            # import time
+            # time.sleep(370)
+            self.logger.info("Flushing")
+            # await self.nc.flush(timeout=self.config.nats_flush_timeout)
+            await self.nc.flush(timeout=10)
+            self.logger.info("Flushed")
+            # await self.nc.flush(timeout=0.000000001)
+        except ConnectionClosedError as err:
+            self.logger.error(f"Connection closed when publishing response: {err}")
+        except TimeoutError as err:
+            self.logger.error(f"Timeout when publishing response: {err}")
+        except Exception as err:
+            self.logger.error(f"Error publishing response: {err}")
 
     async def early_reply(self, nats_reply_subject: str, response: any):
         res = KreNatsMessage()

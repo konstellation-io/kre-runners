@@ -1,6 +1,6 @@
 import json
 
-from nats.aio.client import ErrTimeout
+from nats.errors import TimeoutError
 
 from compression import compress_if_needed
 
@@ -26,7 +26,7 @@ class ContextData:
             res_json = json.loads(response.data.decode())
             if not res_json["success"]:
                 self.__logger__.error("Unexpected error saving data")
-        except ErrTimeout:
+        except TimeoutError:
             self.__logger__.error("Error saving data: request timed out")
 
     async def find(self, coll, query):
