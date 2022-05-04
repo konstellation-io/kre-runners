@@ -59,7 +59,7 @@ class Runner:
         #self.logger.info(f"Found stream {stream}")
 
         #if not stream:
-        await self.js.add_stream(name=self.runner_name, subjects=[self.subjects["GoDescriptor"]])
+        # await self.js.add_stream(name=self.runner_name, subjects=[self.subjects["GoDescriptor"], "test_a", "test_b"])
 
     async def stop(self):
         if not self.nc.is_closed:

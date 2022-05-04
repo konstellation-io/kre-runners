@@ -45,8 +45,9 @@ class Runner:
             self.config.nats_server, name=self.runner_name
         )
 
-        stream = await self.js.find_stream_name_by_subject(self.config.nats_input)
-        self.logger.info(f"Found stream {stream}")
+        #stream = await self.js.find_stream_name_by_subject(self.config.nats_input)
+        #self.logger.info(f"Found stream {stream}")
+        # await self.js.add_stream(name="entrypoint", subjects=["test_a", "test_b"])
 
         #if not stream:
             #await self.js.add_stream(name=self.runner_name, subjects=[self.config.nats_input])

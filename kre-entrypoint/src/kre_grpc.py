@@ -54,29 +54,24 @@ class EntrypointKRE:
             nats_message = self._prepare_nats_request(
                 request_msg.SerializeToString())
 
-            self.logger.info(self.js)
-
-            # psub = await self.js.pull_subscribe(nats_subject, durable=True)
-            #print(psub)
-            # msg = await psub.fetch(timeout=100)
-            # for msg in msgs:
-            #    self.logger.info(msg)
-
-            # msg = await self.nc.request(nats_subject, nats_message, timeout=self.config.request_timeout)
-
-            #for i in range(0, 10):
-            #    ack = await self.js.publish(nats_subject, f"hello world: {i}".encode())
             queue_name = f"queue_{nats_subject}"
-
             self.logger.info(queue_name)
+
+            ack = await self.js.publish(stream="entrypoint", subject="test_a", payload=nats_message)
+            self.logger.info(ack)
 
             stream_info = await self.js.stream_info("entrypoint")
             self.logger.info(f"Stream info: {stream_info}")
 
-            sub = await self.js.subscribe(stream="entrypoint", subject="descriptor-v11-GoDescriptor-entrypoint", queue=queue_name)
+            sub = await self.js.subscribe(
+                stream="entrypoint",
+                subject="test_b",
+                # queue=queue_name,
+                ordered_consumer=True
+            )
             self.logger.info(f"Sub: {sub}")
-            msg = await sub.next_msg(timeout=10)
-            self.logger.info(msg)
+
+            msg = await sub.next_msg(timeout=1000)
 
             response_data = self._prepare_nats_response(msg.data)
 
@@ -86,9 +81,6 @@ class EntrypointKRE:
             self.logger.info(f"creating a response from message reply")
             response_msg = KreNatsMessage()
             response_msg.ParseFromString(response_data)
-
-            if not response_msg:
-                self.logger.info("Hola")
 
             self.logger.info(f"response message: {response_msg}")
 
@@ -106,6 +98,7 @@ class EntrypointKRE:
 
             self.logger.info(f'gRPC successfully response')
 
+            # msg = await sub.next_msg(timeout=10)
         except Exception as err:
             err_msg = f'Exception on gRPC call : {err}'
             self.logger.error(err_msg)

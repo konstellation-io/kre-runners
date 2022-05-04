@@ -90,7 +90,10 @@ class NodeRunner(Runner):
 
         queue_name = f"queue_{self.config.nats_input}"
         self.subscription_sid = await self.js.subscribe(
-            self.config.nats_input, queue=queue_name, cb=self.create_message_cb(), ordered_consumer=True
+            stream="entrypoint",
+            subject="test_a",
+            cb=self.create_message_cb(),
+            ordered_consumer=True
         )
 
         self.logger.info(
@@ -158,9 +161,11 @@ class NodeRunner(Runner):
                 response_err.error = (
                     f"error in '{self.config.krt_node_name}': {str(err)}"
                 )
-                await self.nc.publish(
-                    request_msg.reply, response_err.SerializeToString()
-                )
+                #await self.nc.publish(
+                #    request_msg.reply, response_err.SerializeToString()
+                #)
+
+                await self.js.publish(stream="entrypoint", subject="test_b", payload=response_err.SerializeToString())
 
         return message_cb
 
@@ -202,7 +207,8 @@ class NodeRunner(Runner):
             self.logger.info(subject)
             self.logger.info(serialized_response_msg)
 
-            await self.js.publish(self.config.nats_input, serialized_response_msg)
+            # await self.js.publish(self.config.nats_input, serialized_response_msg)
+            await self.js.publish(stream="entrypoint", subject="test_b", payload=serialized_response_msg)
             self.logger.info(f"published response to NATS subject '{self.config.nats_input}'")
 
             # import time
