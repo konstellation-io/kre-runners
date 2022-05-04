@@ -2,27 +2,28 @@ package kre
 
 import (
 	"fmt"
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes"
-	"github.com/golang/protobuf/ptypes/any"
-	"github.com/konstellation-io/kre/libs/simplelogger"
 	"log"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/any"
+	"github.com/konstellation-io/kre/libs/simplelogger"
 
 	"github.com/nats-io/nats.go"
 
 	"github.com/konstellation-io/kre-runners/kre-go/config"
 )
 
-func handler(ctx *HandlerContext, data *any.Any) (proto.Message, error) {
+func handler(ctx *HandlerContext, data *any.Any) error {
 	ctx.Logger.Info("[worker handler]")
 
 	input := &TestInput{}
 	err := ptypes.UnmarshalAny(data, input)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	greetingText := fmt.Sprintf("%s %s!", ctx.Get("greeting"), input.Name)
@@ -30,7 +31,8 @@ func handler(ctx *HandlerContext, data *any.Any) (proto.Message, error) {
 
 	out := &TestOutput{}
 	out.Greeting = greetingText
-	return out, nil
+	ctx.SendOutput(out)
+	return nil
 }
 
 func setEnvVars(t *testing.T, envVars map[string]string) {
@@ -45,6 +47,7 @@ func setEnvVars(t *testing.T, envVars map[string]string) {
 func TestStart(t *testing.T) {
 	const inputSubject = "test-subject-input"
 	setEnvVars(t, map[string]string{
+		"KRT_WORKFLOW_NAME":     "workflowTest",
 		"KRT_VERSION":           "testVersion1",
 		"KRT_VERSION_ID":        "version.12345",
 		"KRT_NODE_NAME":         "nodeA",

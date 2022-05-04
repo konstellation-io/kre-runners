@@ -1,24 +1,24 @@
 package kre
 
 import (
-	"github.com/golang/protobuf/proto"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/konstellation-io/kre-runners/kre-go/config"
 	"github.com/konstellation-io/kre-runners/kre-go/mongodb"
 	"github.com/konstellation-io/kre/libs/simplelogger"
 	"github.com/nats-io/nats.go"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
 // HandlerInit is executed once. It is useful to initialize variables that will be constants
 // between handler calls.
 type HandlerInit func(ctx *HandlerContext)
 
-// Handler is the function executed each time a message from NATS arrives. This function must return
-// the protobuf for the next node or the final response if it is the last one.
-type Handler func(ctx *HandlerContext, data *any.Any) (proto.Message, error)
+// Handler is the function executed each time a message from NATS arrives.
+// One or more messages may be sent from within the handler.
+type Handler func(ctx *HandlerContext, data *any.Any) error
 
 // Start receives the handler init function and the handler function
 // connects to NATS and MongoDB and processes all incoming messages.

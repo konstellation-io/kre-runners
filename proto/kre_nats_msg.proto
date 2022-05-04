@@ -17,5 +17,4 @@ message KreNatsMessage {
   google.protobuf.Any payload = 4;
   string error = 5;
   bool replied = 6;
-  bool isIntermediateMessage = 7;
 }

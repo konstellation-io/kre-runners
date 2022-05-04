@@ -21,7 +21,7 @@ var (
 )
 
 type ReplyFunc = func(subject string, response proto.Message) error
-type SendOutputFunc = func(subject string, entrypointSubject string, response proto.Message) error
+type SendOutputFunc = func(subject string, entrypointSubject string, response proto.Message)
 
 type HandlerContext struct {
 	cfg         config.Config
@@ -112,6 +112,7 @@ func (c *HandlerContext) Reply(response proto.Message) error {
 }
 
 // SendOutput ...
-func (c *HandlerContext) SendOutput(response proto.Message) error {
-	return c.sendOutput(c.cfg.NATS.OutputSubject, c.reqMsg.Reply, response)
+func (c *HandlerContext) SendOutput(response proto.Message) {
+	c.sendOutput(c.cfg.NATS.OutputSubject, c.reqMsg.Reply, response)
+	return
 }

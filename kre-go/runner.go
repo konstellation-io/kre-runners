@@ -21,6 +21,8 @@ const (
 )
 
 var ErrMessageToBig = errors.New("compressed message exceeds maximum size allowed of 1 MB")
+var lastRequestMsg *KreNatsMessage
+var startedExecutionTime time.Time
 
 type Runner struct {
 	logger         *simplelogger.SimpleLogger
@@ -51,17 +53,18 @@ func NewRunner(logger *simplelogger.SimpleLogger, cfg config.Config, nc *nats.Co
 // ProcessMessage parses the incoming NATS message, executes the handler function and publishes
 // the handler result to the output subject.
 func (r *Runner) ProcessMessage(msg *nats.Msg) {
-	start := time.Now().UTC()
+	startedExecutionTime = time.Now().UTC()
 
 	// Parse incoming message
-	requestMsg, err := r.newRequestMessage(msg.Data)
+	var err error
+	lastRequestMsg, err = r.newRequestMessage(msg.Data)
 	if err != nil {
 		r.logger.Errorf("Error parsing msg.data because is not a valid protobuf: %s", err)
 		return
 	}
 
 	// Validations
-	if requestMsg.Reply == "" && msg.Reply == "" {
+	if lastRequestMsg.Reply == "" && msg.Reply == "" {
 		r.logger.Error("the reply subject was not found")
 		return
 	}
@@ -71,19 +74,21 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 	// In this case we set this value into the "requestMsg.Reply" field in order
 	// to be propagated for the rest of workflow nodes.
 	if msg.Reply != "" {
-		requestMsg.Reply = msg.Reply
+		lastRequestMsg.Reply = msg.Reply
 	}
 
-	r.logger.Infof("Received a message on '%s' with final reply '%s'", msg.Subject, requestMsg.Reply)
+	r.logger.Infof("Received a message on '%s' with final reply '%s'", msg.Subject, lastRequestMsg.Reply)
 
 	// Make a shallow copy of the ctx object to set inside the request msg.
 	hCtx := r.handlerContext
-	hCtx.reqMsg = requestMsg
+	// es posible que pueda meter aqui una nueva funcion sendOutput formada con el ultimo requestMsg
+	// lo malo es que le estaria pasando el mensaje por duplicado y tendria que cortar por algun lado
+	hCtx.reqMsg = lastRequestMsg
 
 	// Execute the handler function sending context and the payload.
-	handlerResult, err := r.handler(hCtx, requestMsg.Payload)
+	err = r.handler(hCtx, lastRequestMsg.Payload)
 	if err != nil {
-		r.stopWorkflowReturningErr(err, requestMsg.Reply)
+		r.stopWorkflowReturningErr(err, lastRequestMsg.Reply)
 		return
 	}
 
@@ -92,29 +97,7 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 	// Save the elapsed time for this node and for the workflow if it is the last node.
 	isLastNode := r.cfg.NATS.OutputSubject == ""
 
-	if !requestMsg.IsIntermediateMessage {
-		r.saveElapsedTime(requestMsg, start, end, isLastNode)
-	}
-
-	// Ignore send reply if the msg was replied previously.
-	if isLastNode && requestMsg.Replied {
-		if handlerResult != nil {
-			r.logger.Info("ignoring the last node response because the message was replied previously")
-		}
-
-		return
-	}
-
-	// Generate a KreNatsMessage response.
-	responseMsg, err := r.newResponseMsg(handlerResult, requestMsg, start, end, requestMsg.Reply)
-	if err != nil {
-		r.stopWorkflowReturningErr(err, requestMsg.Reply)
-		return
-	}
-
-	// Publish the response message to the output subject.
-	outputSubject := r.getOutputSubject(requestMsg.Reply, isLastNode)
-	r.publishResponse(outputSubject, responseMsg)
+	r.saveElapsedTime(lastRequestMsg, startedExecutionTime, end, isLastNode)
 }
 
 // stopWorkflowReturningErr publishes a error message to the final reply subject
@@ -158,7 +141,7 @@ func (r *Runner) newRequestMessage(data []byte) (*KreNatsMessage, error) {
 
 // newResponseMsg creates a KreNatsMessage maintaining the tracking ID and adding the
 // handler result and the tracking information for this node.
-func (r *Runner) newResponseMsg(handlerResult proto.Message, requestMsg *KreNatsMessage, start time.Time, end time.Time, replySubject string) (*KreNatsMessage, error) {
+func (r *Runner) newResponseMsg(handlerResult proto.Message, requestMsg *KreNatsMessage, replySubject string) (*KreNatsMessage, error) {
 	payload, err := ptypes.MarshalAny(handlerResult)
 	if err != nil {
 		return nil, fmt.Errorf("the handler result is not a valid protobuf: %w", err)
@@ -166,17 +149,15 @@ func (r *Runner) newResponseMsg(handlerResult proto.Message, requestMsg *KreNats
 
 	tracking := append(requestMsg.Tracking, &KreNatsMessage_Tracking{
 		NodeName: r.cfg.NodeName,
-		Start:    start.Format(ISO8601),
-		End:      end.Format(ISO8601),
+		Start:    startedExecutionTime.Format(ISO8601),
 	})
 
 	responseMsg := &KreNatsMessage{
-		Replied:               requestMsg.Replied,
-		Reply:                 replySubject,
-		TrackingId:            requestMsg.TrackingId,
-		Tracking:              tracking,
-		Payload:               payload,
-		IsIntermediateMessage: false,
+		Replied:    requestMsg.Replied,
+		Reply:      replySubject,
+		TrackingId: requestMsg.TrackingId,
+		Tracking:   tracking,
+		Payload:    payload,
 	}
 
 	return responseMsg, nil
@@ -253,34 +234,37 @@ func (r Runner) earlyReply(subject string, response proto.Message) error {
 	return nil
 }
 
-func (r Runner) sendOutput(subject string, entrypointSubject string, response proto.Message) error {
-	payload, err := ptypes.MarshalAny(response)
+func (r Runner) sendOutput(subject string, entrypointSubject string, response proto.Message) {
+	isLastNode := r.cfg.NATS.OutputSubject == ""
+
+	// Ignore send reply if the msg was replied previously.
+	if isLastNode && lastRequestMsg.Replied {
+		if response != nil {
+			r.logger.Info("Ignoring the last node response because the message was replied previously")
+		}
+		return
+	}
+
+	// Generate a KreNatsMessage response.
+	responseMsg, err := r.newResponseMsg(response, lastRequestMsg, lastRequestMsg.Reply)
 	if err != nil {
-		return fmt.Errorf("the handler result is not a valid protobuf: %w", err)
+		r.stopWorkflowReturningErr(err, lastRequestMsg.Reply)
+		return
 	}
 
-	res := &KreNatsMessage{
-		Payload:               payload,
-		Reply:                 entrypointSubject,
-		IsIntermediateMessage: true,
-	}
+	// Publish the response message to the output subject.
+	outputSubject := r.getOutputSubject(lastRequestMsg.Reply, isLastNode)
+	r.publishResponse(outputSubject, responseMsg)
 
-	r.publishResponse(subject, res)
-
-	return nil
+	return
 }
 
 // saveElapsedTime stores in InfluxDB the elapsed time for the current node and the total elapsed time of the
 // complete workflow if it is the last node.
 func (r *Runner) saveElapsedTime(reqMsg *KreNatsMessage, start time.Time, end time.Time, isLastNode bool) {
 	prev := reqMsg.Tracking[len(reqMsg.Tracking)-1]
-	prevEnd, err := time.Parse(ISO8601, prev.End)
-	if err != nil {
-		r.logger.Errorf("Error parsing previous node end time = \"%s\"", prev.End)
-	}
 
 	elapsed := end.Sub(start)
-	waiting := start.Sub(prevEnd)
 
 	tags := map[string]string{
 		"workflow": r.cfg.WorkflowName,
@@ -292,7 +276,6 @@ func (r *Runner) saveElapsedTime(reqMsg *KreNatsMessage, start time.Time, end ti
 		"tracking_id": reqMsg.TrackingId,
 		"node_from":   prev.NodeName,
 		"elapsed_ms":  elapsed.Seconds() * 1000,
-		"waiting_ms":  waiting.Seconds() * 1000,
 	}
 
 	r.handlerContext.Measurement.Save("node_elapsed_time", fields, tags)
