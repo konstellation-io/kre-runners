@@ -80,7 +80,7 @@ jobs:
 
       - name: Set up Docker Buildx
         if: env.RELEASE_VERSION != ''
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
 
       - name: Login to DockerHub Registry
         if: env.RELEASE_VERSION != ''
