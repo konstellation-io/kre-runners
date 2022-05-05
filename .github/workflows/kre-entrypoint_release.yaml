@@ -91,7 +91,7 @@ jobs:
 
       - name: Push to Docker Hub
         if: env.RELEASE_VERSION != ''
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           context: ./kre-entrypoint
           file: ./kre-entrypoint/Dockerfile
