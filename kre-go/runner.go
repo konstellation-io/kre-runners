@@ -20,9 +20,12 @@ const (
 	MessageThreshold = 1024 * 1024
 )
 
-var ErrMessageToBig = errors.New("compressed message exceeds maximum size allowed of 1 MB")
-var lastRequestMsg *KreNatsMessage
-var startedExecutionTime time.Time
+var (
+	ErrMessageToBig      = errors.New("compressed message exceeds maximum size allowed of 1 MB")
+	lastRequestMsg       *KreNatsMessage
+	startedExecutionTime time.Time
+	hasLastNodeReplied   bool
+)
 
 type Runner struct {
 	logger         *simplelogger.SimpleLogger
@@ -96,6 +99,10 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 
 	// Save the elapsed time for this node and for the workflow if it is the last node.
 	isLastNode := r.cfg.NATS.OutputSubject == ""
+
+	if isLastNode {
+		hasLastNodeReplied = false
+	}
 
 	r.saveElapsedTime(lastRequestMsg, startedExecutionTime, end, isLastNode)
 }
@@ -237,12 +244,16 @@ func (r Runner) earlyReply(subject string, response proto.Message) error {
 func (r Runner) sendOutput(subject string, entrypointSubject string, response proto.Message) {
 	isLastNode := r.cfg.NATS.OutputSubject == ""
 
-	// Ignore send reply if the msg was replied previously.
-	if isLastNode && lastRequestMsg.Replied {
+	// Ignore send reply if the msg was replied previously in early reply or lastNode's answer.
+	if isLastNode && (lastRequestMsg.Replied || hasLastNodeReplied) {
 		if response != nil {
 			r.logger.Info("Ignoring the last node response because the message was replied previously")
 		}
 		return
+	}
+
+	if isLastNode {
+		hasLastNodeReplied = true
 	}
 
 	// Generate a KreNatsMessage response.

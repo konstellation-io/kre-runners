@@ -114,5 +114,4 @@ func (c *HandlerContext) Reply(response proto.Message) error {
 // SendOutput ...
 func (c *HandlerContext) SendOutput(response proto.Message) {
 	c.sendOutput(c.cfg.NATS.OutputSubject, c.reqMsg.Reply, response)
-	return
 }
