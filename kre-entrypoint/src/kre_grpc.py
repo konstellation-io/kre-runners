@@ -66,12 +66,10 @@ class EntrypointKRE:
             sub = await self.js.subscribe(
                 stream="entrypoint",
                 subject="test_b",
-                # queue=queue_name,
-                ordered_consumer=True
             )
             self.logger.info(f"Sub: {sub}")
 
-            msg = await sub.next_msg(timeout=1000)
+            msg = await sub.next_msg(timeout=1)
 
             response_data = self._prepare_nats_response(msg.data)
 

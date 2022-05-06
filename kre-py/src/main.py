@@ -92,8 +92,9 @@ class NodeRunner(Runner):
         self.subscription_sid = await self.js.subscribe(
             stream="entrypoint",
             subject="test_a",
+            queue="test",
             cb=self.create_message_cb(),
-            ordered_consumer=True
+            # ordered_consumer=True
         )
 
         self.logger.info(
@@ -208,16 +209,15 @@ class NodeRunner(Runner):
             self.logger.info(serialized_response_msg)
 
             # await self.js.publish(self.config.nats_input, serialized_response_msg)
+            await asyncio.sleep(100)
             await self.js.publish(stream="entrypoint", subject="test_b", payload=serialized_response_msg)
             self.logger.info(f"published response to NATS subject '{self.config.nats_input}'")
 
-            # import time
-            # time.sleep(370)
+            # await asyncio.sleep(100)
             self.logger.info("Flushing")
             # await self.nc.flush(timeout=self.config.nats_flush_timeout)
             await self.nc.flush(timeout=10)
             self.logger.info("Flushed")
-            # await self.nc.flush(timeout=0.000000001)
         except ConnectionClosedError as err:
             self.logger.error(f"Connection closed when publishing response: {err}")
         except TimeoutError as err:
