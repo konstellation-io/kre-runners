@@ -75,11 +75,9 @@ func TestStart(t *testing.T) {
 	}
 
 	kreNatsMsg := &KreNatsMessage{
-		TrackingId: "msg.12345",
-		Payload:    inputData,
-		Tracking: []*KreNatsMessage_Tracking{
-			{NodeName: "nodeTest", Start: time.Now().Format(ISO8601), End: time.Now().Format(ISO8601)},
-		},
+		TrackingId:      "msg.12345",
+		Payload:         inputData,
+		EntrypointStart: time.Now().Format(ISO8601),
 	}
 	msg, err := proto.Marshal(kreNatsMsg)
 	if err != nil {

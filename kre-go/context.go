@@ -21,7 +21,7 @@ var (
 )
 
 type ReplyFunc = func(subject string, response proto.Message) error
-type SendOutputFunc = func(subject string, entrypointSubject string, response proto.Message)
+type SendOutputFunc = func(subject string, reqMsg *KreNatsMessage, response proto.Message)
 
 type HandlerContext struct {
 	cfg         config.Config
@@ -103,15 +103,15 @@ func (c *HandlerContext) GetFloat(key string) float64 {
 // Reply sends a reply to the entrypoint. The workflow execution continues.
 // Use this function when you need to reply faster than the workflow execution duration.
 func (c *HandlerContext) Reply(response proto.Message) error {
-	if c.reqMsg.Replied {
+	if c.reqMsg.EntrypointHasBeenReplied {
 		return errors.New("error the message was replied previously")
 	}
 
-	c.reqMsg.Replied = true
+	c.reqMsg.EntrypointHasBeenReplied = true
 	return c.reply(c.reqMsg.Reply, response)
 }
 
 // SendOutput ...
 func (c *HandlerContext) SendOutput(response proto.Message) {
-	c.sendOutput(c.cfg.NATS.OutputSubject, c.reqMsg.Reply, response)
+	c.sendOutput(c.cfg.NATS.OutputSubject, c.reqMsg, response)
 }

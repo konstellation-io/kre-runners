@@ -39,10 +39,7 @@ class EntrypointKRE:
             request_msg = KreNatsMessage()
             request_msg.tracking_id = tracking_id
             request_msg.payload.Pack(raw_msg)
-            t = request_msg.tracking.add()
-            t.node_name = "entrypoint"
-            t.start = start
-            t.end = datetime.utcnow().isoformat()
+            request_msg.entrypointStart = start
 
             nats_subject = self.subjects[subject]
             self.logger.info(
