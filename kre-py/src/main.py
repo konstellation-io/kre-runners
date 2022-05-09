@@ -8,6 +8,7 @@ import traceback
 from datetime import datetime
 
 import pymongo
+from nats.js.api import DeliverPolicy, ConsumerConfig
 
 from compression import compress_if_needed, is_compressed, uncompress
 from config import Config
@@ -90,12 +91,27 @@ class NodeRunner(Runner):
 
         queue_name = f"queue_{self.config.nats_input}"
         self.subscription_sid = await self.js.subscribe(
-            stream="entrypoint",
+            stream="entrypoint_a",
             subject="test_a",
             queue="test",
+            durable="test",
             cb=self.create_message_cb(),
-            # ordered_consumer=True
+            #config={
+            #    "durable_name": "test",
+            #    "deliver_policy": DeliverPolicy.NEW,
+            #    # "deliver_group": "test",
+            #}
+            # manual_ack=True,
+            config=ConsumerConfig(
+                deliver_policy="all",
+                max_deliver=1,
+            ),
         )
+
+        #msg = await self.subscription_sid.next_msg()
+        #await msg.ack()
+
+        #self.create_message_cb(msg)
 
         self.logger.info(
             f"listening to '{self.config.nats_input}' subject with queue '{queue_name}'"
@@ -153,6 +169,8 @@ class NodeRunner(Runner):
                 output_subject = (
                     request_msg.reply if is_last_node else self.config.nats_output
                 )
+                await msg.ack()
+
                 await self.publish_response(output_subject, res)
 
             except Exception as err:
@@ -209,11 +227,10 @@ class NodeRunner(Runner):
             self.logger.info(serialized_response_msg)
 
             # await self.js.publish(self.config.nats_input, serialized_response_msg)
-            await asyncio.sleep(100)
-            await self.js.publish(stream="entrypoint", subject="test_b", payload=serialized_response_msg)
-            self.logger.info(f"published response to NATS subject '{self.config.nats_input}'")
+            ack = await self.js.publish(stream="entrypoint_b", subject="test_b", payload=serialized_response_msg)
+            self.logger.info(f"ack: {ack}")
+            self.logger.info(f"published response to NATS subject test_b")
 
-            # await asyncio.sleep(100)
             self.logger.info("Flushing")
             # await self.nc.flush(timeout=self.config.nats_flush_timeout)
             await self.nc.flush(timeout=10)

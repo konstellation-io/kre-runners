@@ -57,6 +57,7 @@ class Runner:
 
         #stream = await self.js.find_stream_name_by_subject(self.subjects["GoDescriptor"])
         #self.logger.info(f"Found stream {stream}")
+        await self.js.add_stream(name="entrypoint_b", subjects=["test_b"])
 
         #if not stream:
         # await self.js.add_stream(name=self.runner_name, subjects=[self.subjects["GoDescriptor"], "test_a", "test_b"])

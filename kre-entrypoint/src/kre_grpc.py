@@ -6,6 +6,7 @@ import uuid
 
 from grpclib import GRPCError
 from grpclib.const import Status
+from nats.js.api import ConsumerConfig
 
 from kre_nats_msg_pb2 import KreNatsMessage
 from kre_measurements import KreMeasurements
@@ -57,19 +58,26 @@ class EntrypointKRE:
             queue_name = f"queue_{nats_subject}"
             self.logger.info(queue_name)
 
-            ack = await self.js.publish(stream="entrypoint", subject="test_a", payload=nats_message)
+            sub = await self.js.subscribe(
+                stream="entrypoint_b",
+                subject="test_b",
+                durable="test",
+                config=ConsumerConfig(
+                    deliver_policy="all",
+                    max_deliver=1,
+                ),
+            )
+
+            ack = await self.js.publish(stream="entrypoint_a", subject="test_a", payload=nats_message)
             self.logger.info(ack)
 
-            stream_info = await self.js.stream_info("entrypoint")
-            self.logger.info(f"Stream info: {stream_info}")
+            # stream_info = await self.js.stream_info("entrypoint_a")
+            # self.logger.info(f"Stream info: {stream_info}")
 
-            sub = await self.js.subscribe(
-                stream="entrypoint",
-                subject="test_b",
-            )
             self.logger.info(f"Sub: {sub}")
 
-            msg = await sub.next_msg(timeout=1)
+            msg = await sub.next_msg(timeout=1000)
+            await msg.ack()
 
             response_data = self._prepare_nats_response(msg.data)
 
