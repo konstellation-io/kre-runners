@@ -1,0 +1,87 @@
+version: "3"
+services:
+  
+  mongo:
+    image: "mongo:4.2"
+    ports:
+      - "27017:27017"
+
+  influx:
+    image: "influxdb:1.8-alpine"
+    ports:
+      - 8086:8086
+
+  influx_init:
+    image: "influxdb:1.8-alpine"
+    environment:
+      INFLUX_DATABASE: "kre"
+    volumes: 
+      - "./influx:/docker-entrypoint-initdb.d"
+    command: /init-influxdb.sh
+  
+  nats:
+    image: "nats:2.8.1"
+    command:
+      - "-js"
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+
+  nats-init:
+    image: python:3.9
+    entrypoint:
+      - "./src/create_streams.sh"
+    volumes:
+      - "./nats-vol:/src"
+    environment:
+      "NATS_STREAMS_CONFIG": "/src/streams.json"
+    depends_on:
+      - nats
+
+  node-py:
+    build:
+      context: "../../kre-py"
+      dockerfile: "./Dockerfile"
+    volumes:
+      - "./node-vol:/tmp"
+    environment:
+      "KRT_WORKFLOW_NAME": ${KRT_WORKFLOW_NAME}
+      "KRT_VERSION_ID": ${KRT_VERSION_ID}
+      "KRT_VERSION": ${KRT_VERSION}
+      "KRT_NATS_SERVER": ${KRT_NATS_SERVER}
+      "KRT_NATS_STREAM": ${KRT_NATS_STREAM}
+      "KRT_NATS_ENTRYPOINT_SUBJECT": ${KRT_NATS_ENTRYPOINT_SUBJECT}
+      "KRT_NATS_MONGO_WRITER": ${KRT_NATS_MONGO_WRITER}
+      "KRT_BASE_PATH": ${KRT_BASE_PATH}
+      "KRT_MONGO_URI": ${KRT_MONGO_URI}
+      "KRT_INFLUX_URI": ${KRT_INFLUX_URI}
+      "KRT_NODE_NAME": ${NODEA_KRT_NODE_NAME}
+      "KRT_NATS_INPUT": ${NODEA_KRT_NATS_INPUT}
+      "KRT_NATS_OUTPUT": ${NODEA_KRT_NATS_OUTPUT}
+      "KRT_HANDLER_PATH": ${NODEA_KRT_HANDLER_PATH}
+    depends_on:
+      - nats-init
+
+  node-entrypoint:
+    build:
+      context: "../../kre-entrypoint"
+      dockerfile: "./Dockerfile"
+    volumes:
+      - "./entrypoint-vol/src:/src"
+      - "./entrypoint-vol/krt-files:/krt-files"
+    ports:
+      - "9000:9000"
+    environment:
+      #"KRT_WORKFLOW_NAME": ${KRT_WORKFLOW_NAME}
+      "KRT_VERSION_ID": ${KRT_VERSION_ID}
+      "KRT_VERSION": ${KRT_VERSION}
+      "KRT_NODE_NAME": ${KRT_NODE_NAME}
+      "KRT_NODE_ID": ${ENTRYPOINT_KRT_NODE_ID}
+      "KRT_NATS_STREAM": ${KRT_NATS_STREAM}
+      "KRT_NATS_SERVER": ${KRT_NATS_SERVER}
+      "KRT_NATS_SUBJECTS_FILE": ${ENTRYPOINT_KRT_NATS_SUBJECTS_FILE}
+      "KRT_INFLUX_URI": ${KRT_INFLUX_URI}
+      "KRT_NATS_INPUT": ${ENTRYPOINT_KRT_NATS_INPUT}
+      "KRT_NATS_OUTPUT": ${ENTRYPOINT_KRT_NATS_OUTPUT}
+    depends_on:
+      - nats-init

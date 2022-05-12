@@ -6,7 +6,7 @@ import uuid
 
 from grpclib import GRPCError
 from grpclib.const import Status
-from nats.js.api import ConsumerConfig
+from nats.js.api import ConsumerConfig, DeliverPolicy
 
 from kre_nats_msg_pb2 import KreNatsMessage
 from kre_measurements import KreMeasurements
@@ -18,12 +18,13 @@ GZIP_HEADER = b'\x1f\x8b'
 
 # NOTE: EntrypointKRE will be extended by Entrypoint class auto-generated
 class EntrypointKRE:
-    def __init__(self, logger, nc, subjects, config):
+    def __init__(self, logger, nc, runner_name, subjects, config):
         self.logger = logger
         self.subjects = subjects
         self.nc = nc
         self.js = self.nc.jetstream()
         self.config = config
+        self.runner_name = runner_name
 
     @abc.abstractmethod
     async def make_response_object(self, subject, response):
@@ -43,41 +44,19 @@ class EntrypointKRE:
             request_msg.tracking_id = tracking_id
             request_msg.payload.Pack(raw_msg)
             t = request_msg.tracking.add()
-            t.node_name = "entrypoint"
+            t.node_name = self.runner_name
             t.start = start
             t.end = datetime.utcnow().isoformat()
 
             nats_subject = self.subjects[subject]
+            nats_message = self._prepare_nats_request(request_msg.SerializeToString())         
 
-            self.logger.info(
-                f"Starting request/reply on NATS subject: '{nats_subject}'")
-
-            nats_message = self._prepare_nats_request(
-                request_msg.SerializeToString())
-
-            queue_name = f"queue_{nats_subject}"
-            self.logger.info(queue_name)
-
-            sub = await self.js.subscribe(
-                stream="entrypoint_b",
-                subject="test_b",
-                durable="test",
-                config=ConsumerConfig(
-                    deliver_policy="all",
-                    max_deliver=1,
-                ),
-            )
-
-            ack = await self.js.publish(stream="entrypoint_a", subject="test_a", payload=nats_message)
-            self.logger.info(ack)
-
-            # stream_info = await self.js.stream_info("entrypoint_a")
-            # self.logger.info(f"Stream info: {stream_info}")
-
-            self.logger.info(f"Sub: {sub}")
-
-            msg = await sub.next_msg(timeout=1000)
-            await msg.ack()
+            self.logger.info(f"Publish to NATS subject: '{nats_subject}'")
+            ack = await self.js.publish(stream=self.config.nats_stream, subject=nats_subject, payload=nats_message)
+            
+            self.logger.info(f"Waiting for reply message...")
+            msg = await self.nats_sub.next_msg(timeout=1000)
+            # await msg.ack()
 
             response_data = self._prepare_nats_response(msg.data)
 
@@ -88,8 +67,6 @@ class EntrypointKRE:
             response_msg = KreNatsMessage()
             response_msg.ParseFromString(response_data)
 
-            self.logger.info(f"response message: {response_msg}")
-
             if response_msg.error != "":
                 self.logger.error(
                     f"received error message: {response_msg.error}")
@@ -98,13 +75,10 @@ class EntrypointKRE:
 
             response = self.make_response_object(subject, response_msg)
 
-            self.logger.info(response)
-
+            self.logger.info(f"gRPC response: {response}")
             await stream.send_message(response)
-
             self.logger.info(f'gRPC successfully response')
 
-            # msg = await sub.next_msg(timeout=10)
         except Exception as err:
             err_msg = f'Exception on gRPC call : {err}'
             self.logger.error(err_msg)

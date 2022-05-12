@@ -27,6 +27,9 @@ class Runner:
         self.subscription_sid = None
         self.runner_name = runner_name
 
+    def _get_stream_name(self, version_id: str, workflow_name: str):
+        return f"{version_id.replace('.', '-')}-{workflow_name}"
+
     def start(self):
         try:
             asyncio.ensure_future(self.connect())
@@ -44,22 +47,21 @@ class Runner:
         await self.nc.connect(
             self.config.nats_server, name=self.runner_name
         )
+        
+        #subjects = [self.config.nats_input]
 
-        #stream = await self.js.find_stream_name_by_subject(self.config.nats_input)
-        #self.logger.info(f"Found stream {stream}")
-        await self.js.add_stream(name="entrypoint_a", subjects=["test_a"])
+        #if self.config.nats_output != "":
+        #    subjects.append(self.config.nats_output)
 
-        #if not stream:
-            #await self.js.add_stream(name=self.runner_name, subjects=[self.config.nats_input])
-
-        # await self.js.add_stream(name=self.runner_name, subjects=[self.config.nats_input])
+        #self.logger.info(f"Add stream {self.config.nats_stream} subjects: {subjects}")
+        #await self.js.add_stream(name=self.config.nats_stream, subjects=subjects)
 
     async def stop(self):
         if not self.nc.is_closed:
             self.logger.info("closing NATS connection")
             await self.nc.close()
 
-        await self.js.delete_stream(name=self.runner_name)
+        # await self.js.delete_stream(name=self.runner_name)
         self.logger.info("stop loop")
         self.loop.stop()
 

@@ -81,30 +81,25 @@ class NodeRunner(Runner):
             self.handler_init_fn(self.handler_ctx)
 
     async def process_messages(self):
-        self.logger.info(f"connecting to MongoDB...")
+        self.logger.info(f"connecting to MongoDB {self.config.mongo_uri}...")
         self.mongo_conn = pymongo.MongoClient(
             self.config.mongo_uri, socketTimeoutMS=10000, connectTimeoutMS=10000
         )
 
+        self.logger.info(f"Stream: {self.config.nats_stream}")
         self.logger.info(f"Subject: {self.config.nats_input}")
         self.logger.info(f"Output: {self.config.nats_output}")
 
         queue_name = f"queue_{self.config.nats_input}"
+
         self.subscription_sid = await self.js.subscribe(
-            stream="entrypoint_a",
-            subject="test_a",
-            queue="test",
-            durable="test",
+            stream=self.config.nats_stream,
+            subject=self.config.nats_input,
+            queue=self.runner_name,
+            durable=self.runner_name,
             cb=self.create_message_cb(),
-            #config={
-            #    "durable_name": "test",
-            #    "deliver_policy": DeliverPolicy.NEW,
-            #    # "deliver_group": "test",
-            #}
-            # manual_ack=True,
             config=ConsumerConfig(
-                deliver_policy="all",
-                max_deliver=1,
+                deliver_policy=DeliverPolicy.ALL,
             ),
         )
 
@@ -127,16 +122,11 @@ class NodeRunner(Runner):
             request_msg = self.new_request_msg(msg.data)
 
             try:
-                # Validations
-                if msg.reply == "" and request_msg.reply == "":
-                    raise Exception("the reply subject was not found")
-
-                # If the "msg.reply" has a value, it means that is the first message of the workflow.
-                # In other words, it comes from the initial entrypoint request.
-                # In this case we set this value into the "request_msg.reply" field in order
-                # to be propagated for the rest of workflow nodes.
-                if msg.reply != "":
-                    request_msg.reply = msg.reply
+                # if the "request_msg.reply" has no value, it means that is the last message of the workflow.
+                # In this case we set this value into the "self.config.nats_entrypoint_subject" field in order
+                # respond to the entrypoint.
+                if request_msg.reply == "":
+                    request_msg.reply = self.config.nats_entrypoint_subject
 
                 self.logger.info(
                     f"received message on '{msg.subject}' with final reply '{request_msg.reply}'"
@@ -171,6 +161,7 @@ class NodeRunner(Runner):
                 )
                 await msg.ack()
 
+                self.logger.info(f"Publish response to '{output_subject}'")
                 await self.publish_response(output_subject, res)
 
             except Exception as err:
@@ -227,14 +218,10 @@ class NodeRunner(Runner):
             self.logger.info(serialized_response_msg)
 
             # await self.js.publish(self.config.nats_input, serialized_response_msg)
-            ack = await self.js.publish(stream="entrypoint_b", subject="test_b", payload=serialized_response_msg)
+            ack = await self.js.publish(stream=self.config.nats_stream, subject=subject, payload=serialized_response_msg)
             self.logger.info(f"ack: {ack}")
             self.logger.info(f"published response to NATS subject test_b")
 
-            self.logger.info("Flushing")
-            # await self.nc.flush(timeout=self.config.nats_flush_timeout)
-            await self.nc.flush(timeout=10)
-            self.logger.info("Flushed")
         except ConnectionClosedError as err:
             self.logger.error(f"Connection closed when publishing response: {err}")
         except TimeoutError as err:

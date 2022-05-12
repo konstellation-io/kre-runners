@@ -1,0 +1,7 @@
+{
+    "stream": "runtime-1-version-1-workflow-a",
+    "subjects": [
+        "runtime-1-version-1-workflow-a.entrypoint", 
+        "runtime-1-version-1-workflow-a.node-a"
+    ]
+}

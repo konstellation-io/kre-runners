@@ -14,6 +14,8 @@ class Config:
             self.nats_server = os.environ['KRT_NATS_SERVER']
             self.nats_input = os.environ['KRT_NATS_INPUT']
             self.nats_output = os.environ['KRT_NATS_OUTPUT']
+            self.nats_stream = os.environ['KRT_NATS_STREAM']
+            self.nats_entrypoint_subject = os.environ['KRT_NATS_ENTRYPOINT_SUBJECT']
             self.nats_mongo_writer = os.environ['KRT_NATS_MONGO_WRITER']
             self.base_path = os.environ['KRT_BASE_PATH']
             self.handler_path = os.environ['KRT_HANDLER_PATH']

@@ -12,7 +12,8 @@ from config import Config
 
 class EntrypointRunner(Runner):
     def __init__(self, host: str = '0.0.0.0', port: int = 9000):
-        Runner.__init__(self, "entrypoint", Config())
+        self.runner_name = "entrypoint"
+        Runner.__init__(self, self.runner_name, Config())
         self.host = host
         self.port = port
 
@@ -22,7 +23,7 @@ class EntrypointRunner(Runner):
             self.logger.info(f"Loaded NATS subject file: {subjects}")
 
         self.logger.info(f"Creating entrypoint service")
-        entrypoint = Entrypoint(self.logger, self.nc, subjects, self.config)
+        entrypoint = Entrypoint(self.logger, self.js, self.runner_name, subjects, self.config)
 
         services = ServerReflection.extend([entrypoint])
 

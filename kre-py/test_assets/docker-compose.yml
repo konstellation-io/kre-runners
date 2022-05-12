@@ -1,7 +1,9 @@
 version: "3"
 services:
   nats:
-    image: "nats:2.1.6"
+    image: "nats:2.8.1"
+    command:
+      - "-js"
     ports:
       - "4222:4222"
       - "8222:8222"
@@ -10,6 +12,14 @@ services:
     ports:
       - "27017:27017"
   influx:
-    image: "influxdb:1.7-alpine"
+    image: "influxdb:1.8-alpine"
     ports:
-      - "8088:8088"
+      - 8086:8086
+  influx_init:
+    image: "influxdb:1.8-alpine"
+    environment:
+      INFLUX_DATABASE: "kre"
+    volumes: 
+      - "./influx:/docker-entrypoint-initdb.d"
+    command: /init-influxdb.sh
+

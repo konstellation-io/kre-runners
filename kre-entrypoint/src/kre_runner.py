@@ -25,6 +25,7 @@ class Runner:
         self.nc = NATS()
         self.js = self.nc.jetstream()
         self.subjects = None
+        self.nats_sub = None
         self.config = config
         self.subscription_sid = None
         self.runner_name = runner_name
@@ -43,24 +44,21 @@ class Runner:
             self.loop.close()
 
     async def connect(self):
-        self.logger.info(f"Connecting to NATS {self.config.nats_server}...")
+        self.logger.info(f"Connecting to NATS {self.config.nats_server} with runner name {self.runner_name}...")
         await self.nc.connect(self.config.nats_server, name=self.runner_name)
 
-        with open(self.config.nats_subjects_file) as json_file:
-            self.subjects = json.load(json_file)
+        self.logger.info(f"NATS subcribe to stream {self.config.nats_stream}"
+                             f" and subject: '{self.config.nats_input}'"
+                             f" and durable name: '{self.runner_name}'")
 
-        self.logger.info(f"Subjects: {self.subjects}")
-        self.logger.info(f"Connecting to JetStream {self.runner_name}...")
-
-        self.logger.info(type(self.subjects))
-        self.logger.info(type(self.subjects["GoDescriptor"]))
-
-        #stream = await self.js.find_stream_name_by_subject(self.subjects["GoDescriptor"])
-        #self.logger.info(f"Found stream {stream}")
-        await self.js.add_stream(name="entrypoint_b", subjects=["test_b"])
-
-        #if not stream:
-        # await self.js.add_stream(name=self.runner_name, subjects=[self.subjects["GoDescriptor"], "test_a", "test_b"])
+        self.nats_sub = await self.js.subscribe(
+            stream=self.config.nats_stream,
+            subject=self.config.nats_input,
+            durable=self.runner_name,
+            config=ConsumerConfig(
+                deliver_policy=DeliverPolicy.ALL,
+            ),
+        )
 
     async def stop(self):
         if not self.nc.is_closed:

@@ -7,9 +7,9 @@ import public_input_pb2
 
 
 class Entrypoint(EntrypointBase, EntrypointKRE):
-    def __init__(self, logger, nc, subjects, config):
+    def __init__(self, logger, nc, runner_name, subjects, config):
         logger.info(f"Entrypoint for '{config.krt_version}' initialized")
-        EntrypointKRE.__init__(self, logger, nc, subjects, config)
+        EntrypointKRE.__init__(self, logger, nc, runner_name, subjects, config)
 
     {{range .Methods}}
 
