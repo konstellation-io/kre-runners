@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "kre";
+option go_package = "./kre";
 
 message TestInput {
   string name = 1;
