@@ -1,7 +1,7 @@
 
 
 ```sh
-docker-compose --env-file .env -f test_assets/docker-compose.yml up --build
+docker-compose --env-file .env.e2e -f test_assets/docker-compose.yml up --build
 
 python -m grpc_tools.protoc \
        -I=test_assets/entrypoint-vol/krt-files/ \
