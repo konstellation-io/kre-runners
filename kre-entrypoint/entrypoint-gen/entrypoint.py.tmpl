@@ -21,16 +21,12 @@ class Entrypoint(EntrypointBase, EntrypointKRE):
     def make_response_object(self, workflow, kre_nats_msg):
         {{- range .Methods}}
         if workflow == '{{ .Name }}':
-            try:
-                self.logger.info(type(kre_nats_msg.payload.type_url))
-                self.logger.info(f"Creating a response to {{ .Name }}({{ .RequestType }})"
-                                  f" with type: '{{ .ReturnsType }}'")
+            self.logger.debug(f"Creating a response to {{ .Name }}({{ .RequestType }})"
+                              f" with type: '{{ .ReturnsType }}'")
 
-                res_msg = public_input_pb2.{{.ReturnsType}}()
-                kre_nats_msg.payload.Unpack(res_msg)
-                return res_msg
-            except Exception as e:
-                self.logger.info(f"Exception: {e}")
+            res_msg = public_input_pb2.{{.ReturnsType}}()
+            kre_nats_msg.payload.Unpack(res_msg)
+            return res_msg
         {{end}}
         raise Exception(
             f"unable to create a response from unknown subject '{subject}'")
