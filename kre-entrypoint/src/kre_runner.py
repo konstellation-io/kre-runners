@@ -22,19 +22,11 @@ class Runner:
 
         self.logger = logging.getLogger(runner_name)
         self.loop = asyncio.get_event_loop()
-        self.nc = NATS()
-        self.js = self.nc.jetstream()
-        self.subjects = None
-        self.nats_sub = None
         self.config = config
-        self.subscription_sid = None
-        self.runner_name = runner_name
-        self.nats_flush_timeout = NATS_FLUSH_TIMEOUT
 
-    def start(self):
+    def run(self):
         try:
-            asyncio.ensure_future(self.connect())
-            asyncio.ensure_future(self.process_messages())
+            asyncio.ensure_future(self.start())
             self.loop.run_forever()
         except KeyboardInterrupt:
             self.logger.info("process interrupted")
@@ -42,32 +34,11 @@ class Runner:
             self.loop.run_until_complete(self.stop())
             self.logger.info("closing loop")
             self.loop.close()
-
-    async def connect(self):
-        self.logger.info(f"Connecting to NATS {self.config.nats_server} with runner name {self.runner_name}...")
-        await self.nc.connect(self.config.nats_server, name=self.runner_name)
-
-        self.logger.info(f"NATS subcribe to stream {self.config.nats_stream}"
-                             f" and subject: '{self.config.nats_input}'"
-                             f" and durable name: '{self.runner_name}'")
-
-        self.nats_sub = await self.js.subscribe(
-            stream=self.config.nats_stream,
-            subject=self.config.nats_input,
-            durable=self.runner_name,
-            config=ConsumerConfig(
-                deliver_policy=DeliverPolicy.ALL,
-            ),
-        )
-
+     
+    @abc.abstractmethod
     async def stop(self):
-        if not self.nc.is_closed:
-            self.logger.info("closing NATS connection")
-            await self.nc.close()
-
-        self.logger.info("stop loop")
-        self.loop.stop()
+        raise Exception(f"stop should be implemented.")
 
     @abc.abstractmethod
-    async def process_messages(self):
-        raise Exception(f"process_messages should be implemented.")
+    async def start(self):
+        raise Exception(f"start should be implemented.")

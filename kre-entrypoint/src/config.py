@@ -4,7 +4,8 @@ import os
 class Config:
     def __init__(self):
         self.request_timeout = int(os.getenv('KRT_REQUEST_TIMEOUT', 30))
-
+        self.runner_name = "entrypoint"
+        
         # Mandatory variables
         try:
             self.krt_version_id = os.environ['KRT_VERSION_ID']

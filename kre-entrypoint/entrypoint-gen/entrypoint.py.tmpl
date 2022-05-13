@@ -7,14 +7,15 @@ import public_input_pb2
 
 
 class Entrypoint(EntrypointBase, EntrypointKRE):
-    def __init__(self, logger, nc, runner_name, subjects, config):
+    def __init__(self, logger, js, subjects, config):
         logger.info(f"Entrypoint for '{config.krt_version}' initialized")
-        EntrypointKRE.__init__(self, logger, nc, runner_name, subjects, config)
+        EntrypointKRE.__init__(self, logger, js, subjects, config)
 
     {{range .Methods}}
 
     async def {{.Name}}(self, stream: Stream[public_input_pb2.{{.RequestType}}, public_input_pb2.{{.ReturnsType}}]) -> None:
-        return await self.process_message(stream, "{{ .Name }}")
+        return await self.process_grpc_message(stream, "{{ .Name }}")
+
     {{end}}
 
     def make_response_object(self, subject, kre_nats_msg):

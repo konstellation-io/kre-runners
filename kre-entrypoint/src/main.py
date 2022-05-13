@@ -12,19 +12,35 @@ from config import Config
 
 class EntrypointRunner(Runner):
     def __init__(self, host: str = '0.0.0.0', port: int = 9000):
-        self.runner_name = "entrypoint"
         Runner.__init__(self, self.runner_name, Config())
         self.host = host
         self.port = port
+        self.entrypoint = None
 
-    async def process_messages(self):
+    async def start(self):
+        """
+        Entrypoint runner main loop. It will start the gRPC server and NATS subscription.
+        """
         with open(self.config.nats_subjects_file) as json_file:
             subjects = json.load(json_file)
             self.logger.info(f"Loaded NATS subject file: {subjects}")
 
         self.logger.info(f"Creating entrypoint service")
-        entrypoint = Entrypoint(self.logger, self.js, self.runner_name, subjects, self.config)
+        self.entrypoint = Entrypoint(self.logger, subjects, self.config)
 
+        # starts the grpc server
+        await self.run_grpc_server(self.entrypoint)
+
+        # starts the entrypoint service
+        await self.entrypoint.start()
+
+    async def stop(self):
+        self.entrypoint.stop()
+        
+        self.logger.info("stop loop")
+        self.loop.stop()
+
+    async def run_grpc_server(self, entrypoint):
         services = ServerReflection.extend([entrypoint])
 
         server = Server(services)
@@ -36,4 +52,4 @@ class EntrypointRunner(Runner):
 
 if __name__ == '__main__':
     runner = EntrypointRunner()
-    runner.start()
+    runner.run()
