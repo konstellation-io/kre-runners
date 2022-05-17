@@ -1,4 +1,4 @@
-package unitary_testing
+package kre
 
 import (
 	"testing"
@@ -8,24 +8,25 @@ import (
 
 	"bou.ke/monkey"
 	"github.com/golang/mock/gomock"
-	_ "github.com/konstellation-io/kre-runners/kre-go/mocks"
+	"github.com/konstellation-io/kre-runners/kre-go/config"
+	"github.com/konstellation-io/kre-runners/kre-go/mocks"
 	"github.com/konstellation-io/kre/libs/simplelogger"
 
 	"github.com/stretchr/testify/suite"
 )
 
-type ContextPredictionTestSuite struct {
+type ContextMeasurementTestSuite struct {
 	suite.Suite
 	logger         *simplelogger.SimpleLogger
 	mockController *gomock.Controller
-	mockWriteAPI   *MockWriteAPI
+	mockWriteAPI   *mocks.MockWriteAPI
 	ctxMeasurement *contextMeasurement
 }
 
-func (suite *ContextPredictionTestSuite) SetupSuite() {
+func (suite *ContextMeasurementTestSuite) SetupSuite() {
 	suite.logger = simplelogger.New(simplelogger.LevelInfo)
 	suite.mockController = gomock.NewController(suite.T())
-	suite.mockWriteAPI = NewMockWriteAPI(suite.mockController)
+	suite.mockWriteAPI = mocks.NewMockWriteAPI(suite.mockController)
 
 	suite.ctxMeasurement = &contextMeasurement{
 		config.Config{
@@ -36,11 +37,11 @@ func (suite *ContextPredictionTestSuite) SetupSuite() {
 	}
 }
 
-func TestContextPredictionTestSuite(t *testing.T) {
-	suite.Run(t, new(ContextPredictionTestSuite))
+func TestContextMeasurementTestSuite(t *testing.T) {
+	suite.Run(t, new(ContextMeasurementTestSuite))
 }
 
-func (suite *ContextPredictionTestSuite) TestSave() {
+func (suite *ContextMeasurementTestSuite) TestSave() {
 	measurement := "test_measurement"
 	fields := map[string]interface{}{"field": "test"}
 	tags := map[string]string{"tag": "test"}
