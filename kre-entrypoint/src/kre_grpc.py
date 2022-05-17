@@ -28,6 +28,7 @@ class EntrypointKRE:
         self.js = None
         self.subscriptions = {}
         self.streams = {}
+        self.subjects = subjects
         self.config = config
 
     @abc.abstractmethod
@@ -48,16 +49,13 @@ class EntrypointKRE:
         Starts the entrypoint service by connecting to the NATS server and subscribing to the
         subjects related to each workflow exposed by the Entrypoint.
         """
-
-        with open(self.config.nats_subjects_file, 'r') as f:
-            subjects = json.load(f)
-
         self.logger.info(f"Connecting to NATS {self.config.nats_server} "
                          f"with runner name {self.config.runner_name}...")
+
         await self.nc.connect(self.config.nats_server, name=self.config.runner_name)
         self.js = self.nc.jetstream()
 
-        for workflow, _ in subjects.items():
+        for workflow, _ in self.subjects.items():
             stream = f"{self.config.runtime_id}-{self.config.krt_version_id}-{workflow}"
             subjects = [f"{stream}.entrypoint", f"{stream}.node-a"]
             input_subject = f"{stream}.{self.config.runner_name}"

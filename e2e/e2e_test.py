@@ -17,5 +17,5 @@ async def test_main() -> None:
         response = stub.Greet(Request(name="John Doe"), timeout=5000)
         logger.info(f"Response: {response}")
 
-    logger.info(response.msg)
-    assert response is not None
+    logger.info(response.greeting)
+    assert response.greeting is not None
