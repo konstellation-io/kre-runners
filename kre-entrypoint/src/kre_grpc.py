@@ -57,7 +57,7 @@ class EntrypointKRE:
 
         for workflow, _ in self.subjects.items():
             stream = f"{self.config.runtime_id}-{self.config.krt_version_id}-{workflow}"
-            subjects = [f"{stream}.entrypoint", f"{stream}.node-a"]
+            subjects = [f"{stream}.*"]
             input_subject = f"{stream}.{self.config.runner_name}"
 
             await self.js.add_stream(name=stream, subjects=subjects)

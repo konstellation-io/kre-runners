@@ -27,17 +27,6 @@ services:
       - "4222:4222"
       - "8222:8222"
 
-  nats-init:
-    image: python:3.9
-    entrypoint:
-      - "./src/create_streams.sh"
-    volumes:
-      - "./nats-vol:/src"
-    environment:
-      "NATS_STREAMS_CONFIG": "/src/streams.json"
-    depends_on:
-      - nats
-
   node-py:
     build:
       context: "../../kre-py"
@@ -59,8 +48,6 @@ services:
       "KRT_NATS_INPUT": ${NODEA_KRT_NATS_INPUT}
       "KRT_NATS_OUTPUT": ${NODEA_KRT_NATS_OUTPUT}
       "KRT_HANDLER_PATH": ${NODEA_KRT_HANDLER_PATH}
-    depends_on:
-      - nats-init
 
   node-entrypoint:
     build:
@@ -84,5 +71,3 @@ services:
       "KRT_NATS_INPUT": ${ENTRYPOINT_KRT_NATS_INPUT}
       "KRT_NATS_OUTPUT": ${ENTRYPOINT_KRT_NATS_OUTPUT}
       "KRT_RUNTIME_ID": ${KRT_RUNTIME_ID}
-    depends_on:
-      - nats-init

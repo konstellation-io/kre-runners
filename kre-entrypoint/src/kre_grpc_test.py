@@ -58,11 +58,11 @@ async def test_streams_should_be_created_with_proper_names(entrypoint: Entrypoin
     entrypoint.config.krt_version_id = "version1"
 
     expected_stream_name = "runtime1-version1-workflow-a"
-    expected_subjects = expected_stream_name + ".*"
+    expected_subjects = [expected_stream_name + ".*"]
 
     await entrypoint.start()
 
-    entrypoint.js.add_stream.assert_called_with(expected_stream_name, expected_subjects)
+    entrypoint.js.add_stream.assert_called_with(name=expected_stream_name, subjects=expected_subjects)
 
 
 @pytest.mark.asyncio
