@@ -1,4 +1,4 @@
-package unitary_testing
+package kre
 
 import (
 	"testing"
@@ -8,7 +8,8 @@ import (
 
 	"bou.ke/monkey"
 	"github.com/golang/mock/gomock"
-	_ "github.com/konstellation-io/kre-runners/kre-go/mocks"
+	"github.com/konstellation-io/kre-runners/kre-go/config"
+	"github.com/konstellation-io/kre-runners/kre-go/mocks"
 	"github.com/konstellation-io/kre/libs/simplelogger"
 
 	"github.com/stretchr/testify/suite"
@@ -18,14 +19,14 @@ type ContextPredictionTestSuite struct {
 	suite.Suite
 	logger         *simplelogger.SimpleLogger
 	mockController *gomock.Controller
-	mockWriteAPI   *MockWriteAPI
+	mockWriteAPI   *mocks.MockWriteAPI
 	ctxMeasurement *contextMeasurement
 }
 
 func (suite *ContextPredictionTestSuite) SetupSuite() {
 	suite.logger = simplelogger.New(simplelogger.LevelInfo)
 	suite.mockController = gomock.NewController(suite.T())
-	suite.mockWriteAPI = NewMockWriteAPI(suite.mockController)
+	suite.mockWriteAPI = mocks.NewMockWriteAPI(suite.mockController)
 
 	suite.ctxMeasurement = &contextMeasurement{
 		config.Config{
