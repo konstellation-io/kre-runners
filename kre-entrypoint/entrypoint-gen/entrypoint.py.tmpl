@@ -7,9 +7,9 @@ import public_input_pb2
 
 
 class Entrypoint(EntrypointBase, EntrypointKRE):
-    def __init__(self, logger, js, subjects, config):
+    def __init__(self, logger, subjects, config):
         logger.info(f"Entrypoint for '{config.krt_version}' initialized")
-        EntrypointKRE.__init__(self, logger, js, subjects, config)
+        EntrypointKRE.__init__(self, logger, subjects, config)
 
     {{range .Methods}}
 
@@ -18,9 +18,9 @@ class Entrypoint(EntrypointBase, EntrypointKRE):
 
     {{end}}
 
-    def make_response_object(self, subject, kre_nats_msg):
+    def make_response_object(self, workflow, kre_nats_msg):
         {{- range .Methods}}
-        if subject == '{{ .Name }}':
+        if workflow == '{{ .Name }}':
             self.logger.debug(f"Creating a response to {{ .Name }}({{ .RequestType }})"
                               f" with type: '{{ .ReturnsType }}'")
 

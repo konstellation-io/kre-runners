@@ -14,7 +14,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12public_input.proto\x12\x04main\"\x17\n\x07Request\x12\x0c\n\x04name\x18\x01 \x01(\t\"\x1c\n\x08Response\x12\x10\n\x08greeting\x18\x01 \x01(\t26\n\nEntrypoint\x12(\n\x05Greet\x12\r.main.Request\x1a\x0e.main.Response\"\x00\x42\x08Z\x06./mainb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12public_input.proto\x12\x04main\"\x17\n\x07Request\x12\x0c\n\x04name\x18\x01 \x01(\t\"+\n\x08Response\x12\x10\n\x08type_url\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x0c\x32\x36\n\nEntrypoint\x12(\n\x05Greet\x12\r.main.Request\x1a\x0e.main.Response\"\x00\x42\x08Z\x06./mainb\x06proto3')
 
 
 
@@ -42,7 +42,7 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _REQUEST._serialized_start=28
   _REQUEST._serialized_end=51
   _RESPONSE._serialized_start=53
-  _RESPONSE._serialized_end=81
-  _ENTRYPOINT._serialized_start=83
-  _ENTRYPOINT._serialized_end=137
+  _RESPONSE._serialized_end=96
+  _ENTRYPOINT._serialized_start=98
+  _ENTRYPOINT._serialized_end=152
 # @@protoc_insertion_point(module_scope)

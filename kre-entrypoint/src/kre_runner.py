@@ -1,9 +1,6 @@
 import asyncio
-import json
 import logging
 import abc
-
-from nats.aio.client import Client as NATS
 
 NATS_FLUSH_TIMEOUT = 10
 
@@ -34,7 +31,7 @@ class Runner:
             self.loop.run_until_complete(self.stop())
             self.logger.info("closing loop")
             self.loop.close()
-     
+
     @abc.abstractmethod
     async def stop(self):
         raise Exception(f"stop should be implemented.")

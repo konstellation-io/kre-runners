@@ -83,5 +83,6 @@ services:
       "KRT_INFLUX_URI": ${KRT_INFLUX_URI}
       "KRT_NATS_INPUT": ${ENTRYPOINT_KRT_NATS_INPUT}
       "KRT_NATS_OUTPUT": ${ENTRYPOINT_KRT_NATS_OUTPUT}
+      "KRT_RUNTIME_ID": ${KRT_RUNTIME_ID}
     depends_on:
       - nats-init

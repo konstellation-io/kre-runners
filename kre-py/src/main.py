@@ -92,6 +92,7 @@ class NodeRunner(Runner):
 
         queue_name = f"queue_{self.config.nats_input}"
 
+        """
         self.subscription_sid = await self.js.subscribe(
             stream=self.config.nats_stream,
             subject=self.config.nats_input,
@@ -102,11 +103,17 @@ class NodeRunner(Runner):
                 deliver_policy=DeliverPolicy.ALL,
             ),
         )
-
-        #msg = await self.subscription_sid.next_msg()
-        #await msg.ack()
-
-        #self.create_message_cb(msg)
+        """
+        self.subscription_sid = await self.js.subscribe(
+            stream="runtime-1-version-1-Greet",
+            subject="runtime-1-version-1-Greet.node-a",
+            queue=self.runner_name,
+            durable=self.runner_name,
+            cb=self.create_message_cb(),
+            config=ConsumerConfig(
+                deliver_policy=DeliverPolicy.ALL,
+            ),
+        )
 
         self.logger.info(
             f"listening to '{self.config.nats_input}' subject with queue '{queue_name}'"
@@ -214,13 +221,17 @@ class NodeRunner(Runner):
             response_msg.SerializeToString(), logger=self.logger
         )
         try:
-            self.logger.info(subject)
-            self.logger.info(serialized_response_msg)
+            self.logger.info(f"Publishing response to '{subject}'")
+            self.logger.info(type(serialized_response_msg))
+
+            stream = "runtime-1-version-1-Greet"
+            subject_test = "runtime-1-version-1-Greet.entrypoint"
 
             # await self.js.publish(self.config.nats_input, serialized_response_msg)
-            ack = await self.js.publish(stream=self.config.nats_stream, subject=subject, payload=serialized_response_msg)
+            # ack = await self.js.publish(stream=self.config.nats_stream, subject=subject, payload=serialized_response_msg)
+            ack = await self.js.publish(stream=stream, subject=subject_test, payload=serialized_response_msg)
             self.logger.info(f"ack: {ack}")
-            self.logger.info(f"published response to NATS subject test_b")
+            self.logger.info(f"published response to NATS subject {subject_test}")
 
         except ConnectionClosedError as err:
             self.logger.error(f"Connection closed when publishing response: {err}")
