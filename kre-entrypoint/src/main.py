@@ -12,10 +12,11 @@ from config import Config
 
 class EntrypointRunner(Runner):
     def __init__(self, host: str = '0.0.0.0', port: int = 9000):
-        Runner.__init__(self, self.runner_name, Config())
+        self.runner_name = Config().runner_name
         self.host = host
         self.port = port
         self.entrypoint = None
+        Runner.__init__(self, self.runner_name, Config())
 
     async def start(self):
         """
@@ -31,12 +32,9 @@ class EntrypointRunner(Runner):
         # starts the grpc server
         await self.run_grpc_server(self.entrypoint)
 
-        # starts the entrypoint service
-        await self.entrypoint.start()
-
     async def stop(self):
         self.entrypoint.stop()
-        
+
         self.logger.info("stop loop")
         self.loop.stop()
 
@@ -47,6 +45,10 @@ class EntrypointRunner(Runner):
         with graceful_exit([server]):
             await server.start(self.host, self.port)
             self.logger.info(f'Serving gPRC server on {self.host}:{self.port}')
+
+            # starts the entrypoint service
+            await self.entrypoint.start()
+
             await server.wait_closed()
 
 

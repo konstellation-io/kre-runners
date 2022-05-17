@@ -7,4 +7,5 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/stretchr/testify v1.6.1
 	go.mongodb.org/mongo-driver v1.4.4
+	golang.org/x/crypto v0.0.0-20200323165209-0ec3e9974c59 // indirect
 )

@@ -15,6 +15,7 @@ async def test_main() -> None:
         stub = public_input_pb2_grpc.EntrypointStub(channel)
         logger.info("------ Sending request to the entrypoint ------")
         response = stub.Greet(Request(name="John Doe"), timeout=5000)
+        logger.info(f"Response: {response}")
 
-    logger.info(response.message)
+    logger.info(response.msg)
     assert response is not None

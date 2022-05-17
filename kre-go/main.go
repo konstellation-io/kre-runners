@@ -1,15 +1,16 @@
 package kre
 
 import (
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/konstellation-io/kre-runners/kre-go/config"
 	"github.com/konstellation-io/kre-runners/kre-go/mongodb"
 	"github.com/konstellation-io/kre/libs/simplelogger"
 	"github.com/nats-io/nats.go"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
 // HandlerInit is executed once. It is useful to initialize variables that will be constants
@@ -45,6 +46,7 @@ func Start(handlerInit HandlerInit, handler Handler) {
 	// Handle incoming messages from NATS
 	runner := NewRunner(logger, cfg, nc, handler, handlerInit, mongoM)
 	logger.Infof("Listening to '%s' subject...", cfg.NATS.InputSubject)
+	// nc.QueueSubscribe(cfg.NATS.InputSubject, "", runner.ProcessMessage)
 	s, err := nc.Subscribe(cfg.NATS.InputSubject, runner.ProcessMessage)
 	if err != nil {
 		logger.Errorf("Error subscribing to the NATS subject: %s", err)

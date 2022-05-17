@@ -1,0 +1,7 @@
+go 1.18
+
+use (
+	./kre-entrypoint/entrypoint-gen
+	./kre-go
+	./krt-files-downloader
+)
