@@ -60,7 +60,6 @@ def prepare_nats_message():
 
     return req_nats_msg.SerializeToString()
 
-@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_main() -> None:
     input_subject = TEST_ENV_VARS["KRT_NATS_INPUT"]

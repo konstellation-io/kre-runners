@@ -8,6 +8,7 @@ from grpclib.server import Stream
 from grpclib import GRPCError
 from grpclib.const import Status
 from nats.js.api import ConsumerConfig, DeliverPolicy
+from nats.aio.client import Client
 
 from kre_nats_msg_pb2 import KreNatsMessage
 from kre_measurements import KreMeasurements
@@ -19,9 +20,9 @@ GZIP_HEADER = b'\x1f\x8b'
 
 # NOTE: EntrypointKRE will be extended by Entrypoint class auto-generated
 class EntrypointKRE:
-    def __init__(self, logger, js, subjects, config):
+    def __init__(self, logger, subjects, config):
         self.logger = logger
-        self.nc = NATS()
+        self.nc = Client()
         self.js = None
         self.subscriptions = {}
         self.streams = {}
@@ -49,14 +50,14 @@ class EntrypointKRE:
         self.logger.info(f"Connecting to NATS {self.config.nats_server} "
                          f"with runner name {self.config.runner_name}...")
         await self.nc.connect(self.config.nats_server, name=self.config.runner_name)
-        self.nc.jetstream()
+        self.js = self.nc.jetstream()
 
-        for workflow in subjects:
-            stream = f"{self.config.runtime_id}-{self.config.krt_version_id}-{workflow}"
+        for workflow in self.subjects:
+            stream = f"{self.config.krt_runtime_id}-{self.config.krt_version_id}-{workflow}"
             subjects = f"{stream}.*"
             input_subject = f"{stream}.{self.config.runner_name}"
 
-            js.add_stream(stream, subjects)
+            self.js.add_stream(stream, subjects)
 
             self.logger.info(f"NATS subcribe to stream {stream}"
                              f" and subject: {self.config.nats_input}")

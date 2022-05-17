@@ -8,6 +8,7 @@ class Config:
         
         # Mandatory variables
         try:
+            self.krt_runtime_id = os.environ['KRT_RUNTIME_ID']
             self.krt_version_id = os.environ['KRT_VERSION_ID']
             self.krt_version = os.environ['KRT_VERSION']
             self.krt_node_name = os.environ['KRT_NODE_NAME']
