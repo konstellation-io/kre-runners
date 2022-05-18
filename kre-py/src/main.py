@@ -30,7 +30,7 @@ class NodeRunner(Runner):
         self.mongo_conn = None
         self.load_handler()
 
-    def load_handler(self):
+    def load_handler(self) -> None:
         self.logger.info(f"Loading handler script {self.config.handler_path}...")
 
         handler_full_path = os.path.join(self.config.base_path, self.config.handler_path)
@@ -55,7 +55,7 @@ class NodeRunner(Runner):
         self.handler_fn = handler_module.handler
         self.logger.info(f"Handler script was loaded from '{handler_full_path}'")
 
-    async def execute_handler_init(self):
+    async def execute_handler_init(self) -> None:
         self.logger.info(f"Creating handler context...")
         self.handler_ctx = HandlerContext(
             self.config,
@@ -75,7 +75,7 @@ class NodeRunner(Runner):
         else:
             self.handler_init_fn(self.handler_ctx)
 
-    async def process_messages(self):
+    async def process_messages(self) -> None:
         self.logger.info(f"Connecting to MongoDB {self.config.mongo_uri}...")
         self.mongo_conn = pymongo.MongoClient(self.config.mongo_uri, socketTimeoutMS=10000, connectTimeoutMS=10000)
 
@@ -96,8 +96,15 @@ class NodeRunner(Runner):
 
         await self.execute_handler_init()
 
-    def create_message_cb(self):
-        async def message_cb(msg):
+    def create_message_cb(self) -> callable:
+        async def message_cb(msg) -> None:
+
+            """
+            Callback for processing a message.
+
+            :param msg: The message to process.
+            """
+
             start = datetime.utcnow()
 
             # Parse incoming message
