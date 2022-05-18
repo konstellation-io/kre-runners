@@ -185,7 +185,7 @@ class NodeRunner(Runner):
         return request_msg
 
     # new_response_msg creates a KreNatsMessage maintaining the tracking ID and adding the
-    # handler result and the tracking information for this node.
+    # handler result and the tracking information for this nodeA.
     def new_response_msg(
         self, request_msg: KreNatsMessage, payload: any, start, end
     ) -> KreNatsMessage:
@@ -210,16 +210,16 @@ class NodeRunner(Runner):
         )
         try:
             self.logger.info(f"Publishing response to '{subject}'")
-            self.logger.info(type(serialized_response_msg))
+            self.logger.info(f"response: {response_msg}")
 
             stream = "runtime-1-version-1-Greet"
-            subject_test = "runtime-1-version-1-Greet.entrypoint"
+            # subject_test = "runtime-1-version-1-Greet.entrypoint"
 
             # await self.js.publish(self.config.nats_input, serialized_response_msg)
             # ack = await self.js.publish(stream=self.config.nats_stream, subject=subject, payload=serialized_response_msg)
-            ack = await self.js.publish(stream=stream, subject=subject_test, payload=serialized_response_msg)
+            ack = await self.js.publish(stream=stream, subject=subject, payload=serialized_response_msg)
             self.logger.info(f"ack: {ack}")
-            self.logger.info(f"published response to NATS subject {subject_test}")
+            self.logger.info(f"published response to NATS subject {subject}")
 
         except ConnectionClosedError as err:
             self.logger.error(f"Connection closed when publishing response: {err}")

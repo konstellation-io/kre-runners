@@ -60,11 +60,12 @@ class EntrypointKRE:
             subjects = [f"{stream}.*"]
             input_subject = f"{stream}.{self.config.runner_name}"
 
+            self.logger.info(f"Workflow: {workflow}")
+            self.logger.info(f"Input subject: {input_subject}")
+
             await self.js.add_stream(name=stream, subjects=subjects)
 
             self.logger.info(f"Created stream {stream} and subject: {subjects}")
-            self.logger.info(f"Workflow: {workflow}")
-            self.logger.info(f"Input subject: {input_subject}")
 
             self.streams[workflow] = stream
             self.subscriptions[workflow] = await self.js.subscribe(

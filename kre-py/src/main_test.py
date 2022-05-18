@@ -31,6 +31,7 @@ TEST_ENV_VARS = {
 
 logger = logging.getLogger(__name__)
 
+
 @pytest.fixture(autouse=True)
 def runner():
     print("Starting the node runner...")
@@ -42,6 +43,7 @@ def runner():
     p.start()
     yield runner
     p.terminate()
+
 
 def prepare_nats_message():
     # Prepare request message
@@ -60,6 +62,7 @@ def prepare_nats_message():
 
     return req_nats_msg.SerializeToString()
 
+
 @pytest.mark.asyncio
 async def test_main() -> None:
     input_subject = TEST_ENV_VARS["KRT_NATS_INPUT"]
@@ -74,7 +77,7 @@ async def test_main() -> None:
 
     logger.info(f"Adding stream {stream}...")
     await js.add_stream(name=stream, subjects=[input_subject, output_subject])
- 
+
     nats_message = prepare_nats_message()
 
     sub = await js.subscribe(
@@ -105,3 +108,4 @@ async def test_main() -> None:
     assert res.greeting == "Hello John Doe!"
 
     nc.close()
+

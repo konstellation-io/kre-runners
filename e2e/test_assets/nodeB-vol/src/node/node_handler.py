@@ -1,6 +1,6 @@
 from google.protobuf.any_pb2 import Any
 
-from public_input_pb2 import Request, Response
+from public_input_pb2 import NodeBRequest, Response
 
 
 def init(ctx):
@@ -11,10 +11,12 @@ def init(ctx):
 async def handler(ctx, data: Any):
     ctx.logger.info("[worker handler]")
 
-    req = Request()
+    req = NodeBRequest()
     data.Unpack(req)
 
-    result = f"{ctx.get('greeting')} {req.name}!"
+    ctx.logger.info(data)
+
+    result = f"{req.lastname}, how are you?"
     ctx.logger.info(f"result -> {result}")
 
     output = Response()

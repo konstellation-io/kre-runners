@@ -8,6 +8,10 @@ message Request {
   string name = 1;
 }
 
+message NodeBRequest {
+  string lastname = 1;
+}
+
 message Response {
   string greeting = 1;
 }

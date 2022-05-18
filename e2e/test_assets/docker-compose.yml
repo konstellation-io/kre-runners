@@ -32,7 +32,7 @@ services:
       context: "../../kre-py"
       dockerfile: "./Dockerfile"
     volumes:
-      - "./node-vol:/tmp"
+      - "./nodeA-vol:/tmp"
     environment:
       "KRT_WORKFLOW_NAME": ${KRT_WORKFLOW_NAME}
       "KRT_VERSION_ID": ${KRT_VERSION_ID}
@@ -48,6 +48,28 @@ services:
       "KRT_NATS_INPUT": ${NODEA_KRT_NATS_INPUT}
       "KRT_NATS_OUTPUT": ${NODEA_KRT_NATS_OUTPUT}
       "KRT_HANDLER_PATH": ${NODEA_KRT_HANDLER_PATH}
+
+  node-py-2:
+    build:
+      context: "../../kre-py"
+      dockerfile: "./Dockerfile"
+    volumes:
+      - "./nodeB-vol:/tmp"
+    environment:
+      "KRT_WORKFLOW_NAME": ${KRT_WORKFLOW_NAME}
+      "KRT_VERSION_ID": ${KRT_VERSION_ID}
+      "KRT_VERSION": ${KRT_VERSION}
+      "KRT_NATS_SERVER": ${KRT_NATS_SERVER}
+      "KRT_NATS_STREAM": ${KRT_NATS_STREAM}
+      "KRT_NATS_ENTRYPOINT_SUBJECT": ${KRT_NATS_ENTRYPOINT_SUBJECT}
+      "KRT_NATS_MONGO_WRITER": ${KRT_NATS_MONGO_WRITER}
+      "KRT_BASE_PATH": ${KRT_BASE_PATH}
+      "KRT_MONGO_URI": ${KRT_MONGO_URI}
+      "KRT_INFLUX_URI": ${KRT_INFLUX_URI}
+      "KRT_NODE_NAME": ${NODEB_KRT_NODE_NAME}
+      "KRT_NATS_INPUT": ${NODEB_KRT_NATS_INPUT}
+      "KRT_NATS_OUTPUT": ${NODEB_KRT_NATS_OUTPUT}
+      "KRT_HANDLER_PATH": ${NODEB_KRT_HANDLER_PATH}
 
   node-entrypoint:
     build:
