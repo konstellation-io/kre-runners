@@ -12,6 +12,10 @@ message NodeBRequest {
   string lastname = 1;
 }
 
+message NodeCRequest {
+  string greeting = 1;
+}
+
 message Response {
   string greeting = 1;
 }

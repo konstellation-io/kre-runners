@@ -1,6 +1,7 @@
 go 1.18
 
 use (
+	./e2e/test_assets/nodeC-vol/src/node
 	./kre-entrypoint/entrypoint-gen
 	./kre-go
 	./krt-files-downloader
