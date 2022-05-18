@@ -26,16 +26,15 @@ class Runner:
             asyncio.ensure_future(self.start())
             self.loop.run_forever()
         except KeyboardInterrupt:
-            self.logger.info("process interrupted")
+            self.logger.info("Process interrupted")
         finally:
             self.loop.run_until_complete(self.stop())
-            self.logger.info("closing loop")
             self.loop.close()
 
     @abc.abstractmethod
     async def stop(self):
-        raise Exception(f"stop should be implemented.")
+        raise Exception(f"Stop should be implemented.")
 
     @abc.abstractmethod
     async def start(self):
-        raise Exception(f"start should be implemented.")
+        raise Exception(f"Start should be implemented.")

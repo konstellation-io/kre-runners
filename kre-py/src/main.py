@@ -30,12 +30,10 @@ class NodeRunner(Runner):
         self.mongo_conn = None
         self.load_handler()
 
-    def load_handler(self):
-        self.logger.info(f"loading handler script {self.config.handler_path}...")
+    def load_handler(self) -> None:
+        self.logger.info(f"Loading handler script {self.config.handler_path}...")
 
-        handler_full_path = os.path.join(
-            self.config.base_path, self.config.handler_path
-        )
+        handler_full_path = os.path.join(self.config.base_path, self.config.handler_path)
         handler_dirname = os.path.dirname(handler_full_path)
         sys.path.append(handler_dirname)
 
@@ -45,24 +43,20 @@ class NodeRunner(Runner):
             spec.loader.exec_module(handler_module)
         except Exception as err:
             tb = traceback.format_exc()
-            self.logger.error(
-                f"error loading handler script {self.config.handler_path}: {err}\n\n{tb}"
-            )
+            self.logger.error(f"Error loading handler script {self.config.handler_path}: {err}\n\n{tb}")
             sys.exit(1)
 
         if not hasattr(handler_module, "handler"):
-            raise Exception(
-                f"handler module '{handler_full_path}' must implement a function 'handler(ctx, data)'"
-            )
+            raise Exception(f"Handler module '{handler_full_path}' must implement a function 'handler(ctx, data)'")
 
         if hasattr(handler_module, "init"):
             self.handler_init_fn = handler_module.init
 
         self.handler_fn = handler_module.handler
-        self.logger.info(f"handler script was loaded from '{handler_full_path}'")
+        self.logger.info(f"Handler script was loaded from '{handler_full_path}'")
 
-    async def execute_handler_init(self):
-        self.logger.info(f"creating handler context...")
+    async def execute_handler_init(self) -> None:
+        self.logger.info(f"Creating handler context...")
         self.handler_ctx = HandlerContext(
             self.config,
             self.nc,
@@ -74,21 +68,16 @@ class NodeRunner(Runner):
         if not self.handler_init_fn:
             return
 
-        self.logger.info(f"executing handler init...")
+        self.logger.info(f"Executing handler init...")
+
         if inspect.iscoroutinefunction(self.handler_init_fn):
             await asyncio.create_task(self.handler_init_fn(self.handler_ctx))
         else:
             self.handler_init_fn(self.handler_ctx)
 
-    async def process_messages(self):
-        self.logger.info(f"connecting to MongoDB {self.config.mongo_uri}...")
-        self.mongo_conn = pymongo.MongoClient(
-            self.config.mongo_uri, socketTimeoutMS=10000, connectTimeoutMS=10000
-        )
-
-        self.logger.info(f"Stream: {self.config.nats_stream}")
-        self.logger.info(f"Subject: {self.config.nats_input}")
-        self.logger.info(f"Output: {self.config.nats_output}")
+    async def process_messages(self) -> None:
+        self.logger.info(f"Connecting to MongoDB {self.config.mongo_uri}...")
+        self.mongo_conn = pymongo.MongoClient(self.config.mongo_uri, socketTimeoutMS=10000, connectTimeoutMS=10000)
 
         queue_name = f"queue_{self.config.nats_input}"
 
@@ -103,14 +92,19 @@ class NodeRunner(Runner):
             ),
         )
 
-        self.logger.info(
-            f"listening to '{self.config.nats_input}' subject with queue '{queue_name}'"
-        )
+        self.logger.info(f"Listening to '{self.config.nats_input}' subject with queue '{queue_name}'")
 
         await self.execute_handler_init()
 
-    def create_message_cb(self):
-        async def message_cb(msg):
+    def create_message_cb(self) -> callable:
+        async def message_cb(msg) -> None:
+
+            """
+            Callback for processing a message.
+
+            :param msg: The message to process.
+            """
+
             start = datetime.utcnow()
 
             # Parse incoming message
@@ -123,9 +117,7 @@ class NodeRunner(Runner):
                 if request_msg.reply == "":
                     request_msg.reply = self.config.nats_entrypoint_subject
 
-                self.logger.info(
-                    f"received message on '{msg.subject}' with final reply '{request_msg.reply}'"
-                )
+                self.logger.info(f"Received message on '{msg.subject}' with final reply '{request_msg.reply}'")
 
                 # Make a shallow copy of the ctx object to set inside the request msg.
                 ctx = copy.copy(self.handler_ctx)
@@ -142,35 +134,31 @@ class NodeRunner(Runner):
                 # Ignore send reply if the msg was replied previously.
                 if is_last_node and request_msg.replied:
                     if handler_result is not None:
-                        self.logger.info(
-                            "ignoring the last node response because the message was replied previously"
-                        )
+                        self.logger.info("ignoring the last node response because the message was replied previously")
                     return
 
                 # Generate a KreNatsMessage response.
                 res = self.new_response_msg(request_msg, handler_result, start, end)
 
                 # Publish the response message to the output subject.
-                output_subject = (
-                    request_msg.reply if is_last_node else self.config.nats_output
-                )
-                await msg.ack()
+                output_subject = request_msg.reply if is_last_node else self.config.nats_output
 
-                self.logger.info(f"Publish response to '{output_subject}'")
+                self.logger.info(f"Publishing response to '{output_subject}'")
                 await self.publish_response(output_subject, res)
 
             except Exception as err:
                 tb = traceback.format_exc()
                 self.logger.error(f"error executing handler: {err} \n\n{tb}")
                 response_err = KreNatsMessage()
-                response_err.error = (
-                    f"error in '{self.config.krt_node_name}': {str(err)}"
-                )
-                #await self.nc.publish(
-                #    request_msg.reply, response_err.SerializeToString()
-                #)
+                response_err.error = f"error in '{self.config.krt_node_name}': {str(err)}"
+                is_last_node = self.config.nats_output == ""
+                output_subject = request_msg.reply if is_last_node else self.config.nats_output
 
-                await self.js.publish(stream="entrypoint", subject="test_b", payload=response_err.SerializeToString())
+                await self.js.publish(
+                    stream=self.config.nats_stream,
+                    subject=output_subject,
+                    payload=response_err.SerializeToString()
+                )
 
         return message_cb
 
@@ -204,23 +192,25 @@ class NodeRunner(Runner):
 
         return res
 
-    async def publish_response(self, subject, response_msg):
-        serialized_response_msg = compress_if_needed(
-            response_msg.SerializeToString(), logger=self.logger
-        )
+    async def publish_response(self, subject: str, response_msg: KreNatsMessage) -> None:
+
+        """
+        Publish the response message to the output subject.
+
+        Args:
+            subject: The subject to publish the response message.
+            response_msg:  The response message to publish.
+        """
+
+        serialized_response_msg = compress_if_needed(response_msg.SerializeToString(), logger=self.logger)
+
         try:
-            self.logger.info(f"Publishing response to '{subject}'")
-            self.logger.info(f"response: {response_msg}")
-
-            stream = "runtime-1-version-1-Greet"
-            # subject_test = "runtime-1-version-1-Greet.entrypoint"
-
-            # await self.js.publish(self.config.nats_input, serialized_response_msg)
-            # ack = await self.js.publish(stream=self.config.nats_stream, subject=subject, payload=serialized_response_msg)
-            ack = await self.js.publish(stream=stream, subject=subject, payload=serialized_response_msg)
-            self.logger.info(f"ack: {ack}")
-            self.logger.info(f"published response to NATS subject {subject}")
-
+            await self.js.publish(
+                stream=self.config.nats_stream,
+                subject=subject,
+                payload=serialized_response_msg
+            )
+            self.logger.info(f"Published response to NATS subject {subject}")
         except ConnectionClosedError as err:
             self.logger.error(f"Connection closed when publishing response: {err}")
         except TimeoutError as err:

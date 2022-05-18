@@ -1,6 +1,6 @@
 from grpclib.server import Stream
 
-from kre_grpc import EntrypointKRE
+from kre_entrypoint import EntrypointKRE
 
 from public_input_grpc import EntrypointBase
 import public_input_pb2
@@ -18,7 +18,17 @@ class Entrypoint(EntrypointBase, EntrypointKRE):
 
     {{end}}
 
-    def make_response_object(self, workflow, kre_nats_msg):
+    def make_response_object(self, workflow, kre_nats_msg) -> public_input_pb2.{{.ReturnsType}}:
+
+        """
+        Generate response object with the KRE message for a certain workflow
+
+        :param workflow: Workflow object
+        :param kre_nats_msg: KRE message
+
+        :return: Response message
+        """
+
         {{- range .Methods}}
         if workflow == '{{ .Name }}':
             self.logger.debug(f"Creating a response to {{ .Name }}({{ .RequestType }})"
