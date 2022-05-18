@@ -8,7 +8,7 @@ def init(ctx):
     ctx.set("greeting", "Hello")
 
 
-async def handler(ctx, data: Any) -> Response:
+async def handler(ctx, data: Any) -> NodeCRequest:
 
     """
     This is the entrypoint handler for the nodeB workflow.
