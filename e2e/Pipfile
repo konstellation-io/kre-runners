@@ -4,10 +4,13 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-grpcio = "*"
-grpcio-tools = "*"
 
 [dev-packages]
+grpcio = "==1.46.1"
+grpcio-tools = "==1.46.1"
+pytest-asyncio = "==0.15.1"
+protobuf = "==3.20.1"
+pytest = "==6.2.4"
 
 [requires]
 python_version = "3.9"

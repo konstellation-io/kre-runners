@@ -1,6 +1,6 @@
 .idea
 
-.vscode/*
+.vscode/
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
@@ -138,3 +138,6 @@ dist
 
 # Optional stylelint cache
 .stylelintcache
+
+# python
+__pycache__/

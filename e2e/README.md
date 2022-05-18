@@ -8,5 +8,5 @@ python -m grpc_tools.protoc \
        --python_out=. \
        --grpc_python_out=. \
        test_assets/entrypoint-vol/krt-files/public_input.proto
+
 ```
-```sh

@@ -92,21 +92,9 @@ class NodeRunner(Runner):
 
         queue_name = f"queue_{self.config.nats_input}"
 
-        """
         self.subscription_sid = await self.js.subscribe(
             stream=self.config.nats_stream,
             subject=self.config.nats_input,
-            queue=self.runner_name,
-            durable=self.runner_name,
-            cb=self.create_message_cb(),
-            config=ConsumerConfig(
-                deliver_policy=DeliverPolicy.ALL,
-            ),
-        )
-        """
-        self.subscription_sid = await self.js.subscribe(
-            stream="runtime-1-version-1-Greet",
-            subject="runtime-1-version-1-Greet.node-a",
             queue=self.runner_name,
             durable=self.runner_name,
             cb=self.create_message_cb(),

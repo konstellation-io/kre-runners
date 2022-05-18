@@ -1,6 +1,6 @@
 from google.protobuf.any_pb2 import Any
 
-from public_input_for_testing_pb2 import Request, Response
+from public_input_pb2 import Request, Response
 
 
 def init(ctx):

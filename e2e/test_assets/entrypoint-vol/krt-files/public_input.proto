@@ -9,8 +9,7 @@ message Request {
 }
 
 message Response {
-  string type_url = 1;
-  bytes value = 2;
+  string greeting = 1;
 }
 
 service Entrypoint {

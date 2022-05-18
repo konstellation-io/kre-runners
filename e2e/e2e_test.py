@@ -11,11 +11,13 @@ logger = logging.getLogger(__name__)
 @pytest.mark.asyncio
 async def test_main() -> None:
 
+    name = "John Doe"
+
     with grpc.insecure_channel('localhost:9000') as channel:
         stub = public_input_pb2_grpc.EntrypointStub(channel)
         logger.info("------ Sending request to the entrypoint ------")
-        response = stub.Greet(Request(name="John Doe"), timeout=5000)
+        response = stub.Greet(Request(name=name), timeout=5000)
         logger.info(f"Response: {response}")
 
-    logger.info(response.msg)
-    assert response is not None
+    logger.info(response.greeting)
+    assert name in response.greeting
