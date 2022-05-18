@@ -8,7 +8,17 @@ def init(ctx):
     ctx.set("greeting", "Hello")
 
 
-async def handler(ctx, data: Any):
+async def handler(ctx, data: Any) -> NodeBRequest:
+
+    """
+    This is the entrypoint handler for the nodeA workflow.
+
+    :param ctx: The context object for the nodeA workflow.
+    :param data: The message received from the previous node.
+
+    :return: The response message to be sent to the next node.
+    """
+
     ctx.logger.info("[worker handler]")
 
     req = Request()

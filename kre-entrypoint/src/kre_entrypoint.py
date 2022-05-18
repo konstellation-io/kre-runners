@@ -41,7 +41,7 @@ class EntrypointKRE:
             self.logger.info("closing NATS connection")
             await self.nc.close()
 
-    async def start(self):
+    async def start(self) -> None:
         """
         Starts the entrypoint service by connecting to the NATS server and subscribing to the
         subjects related to each workflow exposed by the Entrypoint.
@@ -49,6 +49,7 @@ class EntrypointKRE:
 
         self.logger.info(f"Connecting to NATS {self.config.nats_server} with runner name {self.config.runner_name}...")
 
+        # connect to NATS server and jetstream
         await self.nc.connect(self.config.nats_server, name=self.config.runner_name)
         self.js = self.nc.jetstream()
 
@@ -70,13 +71,23 @@ class EntrypointKRE:
                     deliver_policy=DeliverPolicy.ALL
                 )
             )
+            self.logger.info(
+                f"Workflow {workflow} subscribed to NATS subject: '{input_subject}' from stream: '{stream}'"
+            )
 
     def create_kre_request_message(self, raw_msg: bytes, start: str) -> bytes:
+
         """
         Creates a KreNatsMessage that packages the grpc request (raw_msg) and adds the required
         info needed to send the request to the NATS server.
         It returns the message in bytes, so it can be directly sent to the NATS server.
+
+        :param raw_msg: the raw grpc request message
+        :param start: the start time of the request
+
+        :return: the message in bytes
         """
+
         tracking_id = str(uuid.uuid4())
 
         request_msg = KreNatsMessage()
@@ -86,12 +97,20 @@ class EntrypointKRE:
         t.node_name = self.config.runner_name
         t.start = start
         t.end = datetime.utcnow().isoformat()
+
         return self._prepare_nats_request(request_msg.SerializeToString())
 
     def create_grpc_response(self, workflow: str, message_data: bytes) -> bytes:
+
         """
         Creates a gRPC response from the message data received from the NATS server.
+
+        :param workflow: the workflow name
+        :param message_data: the message data received from the NATS server
+
+        :return: the gRPC response message
         """
+
         response_data = self._prepare_nats_response(message_data)
 
         response_msg = KreNatsMessage()
@@ -105,11 +124,16 @@ class EntrypointKRE:
         return self.make_response_object(workflow, response_msg)
 
     async def process_grpc_message(self, grpc_stream: Stream, workflow: str) -> None:
+
         """
-        This function is called each time a grpc message is received.
+        This function is called each time a gRPC message is received.
 
         It processes the message by sending it by the NATS server and waits for a response.
+
+        :param grpc_stream: the gRPC stream
+        :param workflow: the workflow name
         """
+
         start = datetime.utcnow().isoformat()
 
         try:
@@ -147,9 +171,15 @@ class EntrypointKRE:
                 raise err
 
     def _prepare_nats_request(self, msg: bytes) -> bytes:
+
         """
         Prepares the message to be sent to the NATS server by compressing it if needed.
+
+        :param msg: the message to be sent to the NATS server.
+
+        :return: the message to be sent to the NATS server compressed.
         """
+
         if len(msg) <= MESSAGE_THRESHOLD:
             return msg
 

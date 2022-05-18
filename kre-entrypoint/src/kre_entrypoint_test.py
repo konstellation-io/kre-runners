@@ -10,6 +10,7 @@ from config import Config
 
 logger = logging.getLogger(__name__)
 
+
 @pytest.fixture
 def mocked_nats() -> mock.Mock:
     mocked_nats = mock.Mock()
@@ -22,9 +23,10 @@ def mocked_nats() -> mock.Mock:
     mocked_nats.jetstream.return_value = mock_js
     return mocked_nats
 
+
 @pytest.fixture
 def entrypoint(mocked_nats: mock.Mock, ) -> EntrypointKRE:
-    ENV = {
+    environment_variables = {
         "KRT_VERSION_ID": "v1",
         "KRT_VERSION": "version1",
         "KRT_RUNTIME_ID": "runtime1",
@@ -38,7 +40,7 @@ def entrypoint(mocked_nats: mock.Mock, ) -> EntrypointKRE:
         "KRT_NATS_OUTPUT": "runtime-1-version-1-workflow-a.node-a",
     }
 
-    with mock.patch.dict(os.environ, ENV, clear=True):
+    with mock.patch.dict(os.environ, environment_variables, clear=True):
         config = Config()
         entrypoint = EntrypointKRE(logger, {}, config)
 
