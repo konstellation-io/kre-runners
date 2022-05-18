@@ -33,9 +33,13 @@ class EntrypointRunner(Runner):
         await self.run_grpc_server(self.entrypoint)
 
     async def stop(self):
-        self.entrypoint.stop()
 
-        self.logger.info("stop loop")
+        """
+        Stop the Entrypoint service by closing the NATS connection and the asyncio event loop
+        """
+
+        self.logger.info("Stopping entrypoint service and loop")
+        self.entrypoint.stop()
         self.loop.stop()
 
     async def run_grpc_server(self, entrypoint):

@@ -2,10 +2,10 @@ import asyncio
 import pytest
 import mock
 import logging
-import os 
+import os
 
 from nats.js import JetStreamContext
-from kre_grpc import EntrypointKRE
+from kre_entrypoint import EntrypointKRE
 from config import Config
 
 logger = logging.getLogger(__name__)
@@ -37,7 +37,7 @@ def entrypoint(mocked_nats: mock.Mock, ) -> EntrypointKRE:
         "KRT_NATS_INPUT": "runtime-1-version-1-workflow-a.entrypoint",
         "KRT_NATS_OUTPUT": "runtime-1-version-1-workflow-a.node-a",
     }
-    
+
     with mock.patch.dict(os.environ, ENV, clear=True):
         config = Config()
         entrypoint = EntrypointKRE(logger, {}, config)

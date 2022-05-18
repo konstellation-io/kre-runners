@@ -14,8 +14,6 @@ async def handler(ctx, data: Any):
     req = NodeBRequest()
     data.Unpack(req)
 
-    ctx.logger.info(data)
-
     result = f"{req.lastname}, how are you?"
     ctx.logger.info(f"result -> {result}")
 

@@ -1,10 +1,8 @@
 import abc
-from types import coroutine
 from datetime import datetime
 import gzip
 import traceback
 import uuid
-import json
 
 from grpclib.server import Stream
 from grpclib import GRPCError
@@ -13,7 +11,6 @@ from nats.js.api import ConsumerConfig, DeliverPolicy
 from nats.aio.client import Client as NATS
 
 from kre_nats_msg_pb2 import KreNatsMessage
-from kre_measurements import KreMeasurements
 
 COMPRESS_LEVEL = 9
 MESSAGE_THRESHOLD = 1024 * 1024
@@ -49,8 +46,8 @@ class EntrypointKRE:
         Starts the entrypoint service by connecting to the NATS server and subscribing to the
         subjects related to each workflow exposed by the Entrypoint.
         """
-        self.logger.info(f"Connecting to NATS {self.config.nats_server} "
-                         f"with runner name {self.config.runner_name}...")
+
+        self.logger.info(f"Connecting to NATS {self.config.nats_server} with runner name {self.config.runner_name}...")
 
         await self.nc.connect(self.config.nats_server, name=self.config.runner_name)
         self.js = self.nc.jetstream()
@@ -60,13 +57,11 @@ class EntrypointKRE:
             subjects = [f"{stream}.*"]
             input_subject = f"{stream}.{self.config.runner_name}"
 
-            self.logger.info(f"Workflow: {workflow}")
-            self.logger.info(f"Input subject: {input_subject}")
-
+            # Create NATS stream
             await self.js.add_stream(name=stream, subjects=subjects)
+            self.logger.info(f"Created stream {stream} with subjects: {subjects}")
 
-            self.logger.info(f"Created stream {stream} and subject: {subjects}")
-
+            # Create NATS subscription for the entrypoint
             self.streams[workflow] = stream
             self.subscriptions[workflow] = await self.js.subscribe(
                 stream=stream,
@@ -98,16 +93,12 @@ class EntrypointKRE:
         Creates a gRPC response from the message data received from the NATS server.
         """
         response_data = self._prepare_nats_response(message_data)
-        self.logger.info(f"Received message {type(response_data)} - {response_data}")
 
         response_msg = KreNatsMessage()
         response_msg.ParseFromString(response_data)
 
-        self.logger.info(f"Response message {type(response_msg)} - {response_msg}")
-
         if response_msg.error != "":
-            self.logger.error(
-                f"received error message: {response_msg.error}")
+            self.logger.error(f"Received error message: {response_msg.error}")
 
             raise GRPCError(Status.INTERNAL, response_msg.error)
 
@@ -125,10 +116,6 @@ class EntrypointKRE:
             grpc_raw_msg = await grpc_stream.recv_message()
             self.logger.info(f"gRPC message received {grpc_raw_msg}")
 
-            self.logger.info(self.subjects)
-            self.logger.info(self.subscriptions)
-            self.logger.info(self.streams)
-
             # get the correct subject, subscription and stream depending on the workflow
             subject = self.subjects[workflow]
             subscription = self.subscriptions[workflow]
@@ -138,19 +125,18 @@ class EntrypointKRE:
             request_msg = self.create_kre_request_message(grpc_raw_msg, start)
 
             # publish the msg to the NATS server
-            self.logger.info(f"Publish to NATS subject: '{subject}' from stream: '{stream}'")
             await self.js.publish(stream=stream, subject=subject, payload=request_msg)
+            self.logger.info(f"Message published to NATS subject: '{subject}' from stream: '{stream}'")
 
             # wait for the response
-            self.logger.info(f"Waiting for reply message...")
+            self.logger.info(f"Waiting for response message...")
             msg = await subscription.next_msg(timeout=1000)
 
             # prepare the grpc response message
             response = self.create_grpc_response(workflow, msg.data)
 
-            self.logger.info(f"gRPC response: {response}")
             await grpc_stream.send_message(response)
-            self.logger.info(f'gRPC successfully response')
+            self.logger.info(f"gRPC response successfully sent")
 
         except Exception as err:
             err_msg = f'Exception on gRPC call : {err}'
@@ -170,11 +156,9 @@ class EntrypointKRE:
         out = gzip.compress(msg, compresslevel=COMPRESS_LEVEL)
 
         if len(out) > MESSAGE_THRESHOLD:
-            raise Exception(
-                "compressed message exceeds maximum size allowed of 1 MB.")
+            raise Exception("compressed message exceeds maximum size allowed of 1 MB.")
 
-        self.logger.info(
-            f"Original message size: {size_in_kb(msg)}. Compressed: {size_in_kb(out)}")
+        self.logger.info(f"Original message size: {size_in_kb(msg)}. Compressed: {size_in_kb(out)}")
 
         return out
 

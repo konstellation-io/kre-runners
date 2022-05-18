@@ -5,4 +5,4 @@
 
 class Entrypoint:
     def __init__(self, logger, nc, subjects):
-        raise Exception(f"error creating Entrypoint.")
+        raise Exception(f"Error creating Entrypoint.")
