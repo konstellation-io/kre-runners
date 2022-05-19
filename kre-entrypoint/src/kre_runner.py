@@ -21,7 +21,12 @@ class Runner:
         self.loop = asyncio.get_event_loop()
         self.config = config
 
-    def run(self):
+    def run(self) -> None:
+
+        """
+        Run the entrypoint service in an asyncio loop.
+        """
+
         try:
             asyncio.ensure_future(self.start())
             self.loop.run_forever()

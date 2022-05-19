@@ -6,7 +6,7 @@ class Config:
         self.request_timeout = int(os.getenv('KRT_REQUEST_TIMEOUT', 30))
         self.runner_name = "entrypoint"
 
-        # Mandatory variables
+        # Mandatory environment variables
         try:
             self.krt_runtime_id = os.environ['KRT_RUNTIME_ID']
             self.krt_version_id = os.environ['KRT_VERSION_ID']

@@ -18,10 +18,12 @@ class EntrypointRunner(Runner):
         self.entrypoint = None
         Runner.__init__(self, self.runner_name, Config())
 
-    async def start(self):
+    async def start(self) -> None:
+
         """
         Entrypoint runner main loop. It will start the gRPC server and NATS subscription.
         """
+
         with open(self.config.nats_subjects_file) as json_file:
             subjects = json.load(json_file)
             self.logger.info(f"Loaded NATS subject file: {subjects}")
@@ -32,7 +34,7 @@ class EntrypointRunner(Runner):
         # starts the grpc server
         await self.run_grpc_server(self.entrypoint)
 
-    async def stop(self):
+    async def stop(self) -> None:
 
         """
         Stop the Entrypoint service by closing the NATS connection and the asyncio event loop
@@ -42,11 +44,12 @@ class EntrypointRunner(Runner):
         self.entrypoint.stop()
         self.loop.stop()
 
-    async def run_grpc_server(self, entrypoint):
+    async def run_grpc_server(self, entrypoint) -> None:
         services = ServerReflection.extend([entrypoint])
 
         server = Server(services)
         with graceful_exit([server]):
+            # starts the grpc server
             await server.start(self.host, self.port)
             self.logger.info(f'Serving gPRC server on {self.host}:{self.port}')
 

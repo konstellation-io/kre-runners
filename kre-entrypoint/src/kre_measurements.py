@@ -20,6 +20,15 @@ class KreMeasurements:
         self.__write_api__ = client.write_api(write_options=opts)
 
     def save(self, measurement: str, fields: dict, tags: dict) -> None:
+
+        """
+        Save a new measurement to InfluxDB
+
+        :param measurement: measurement name
+        :param fields: measurement fields
+        :param tags: measurement tags
+        """
+
         point = Point(measurement)
 
         for key in fields:

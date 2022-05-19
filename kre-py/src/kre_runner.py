@@ -22,7 +22,7 @@ class Runner:
         self.logger = logging.getLogger(runner_name)
         self.loop = asyncio.get_event_loop()
         self.nc = NATS()
-        self.js = self.nc.jetstream()
+        self.js = None
         self.config = config
         self.subscription_sid = None
         self.runner_name = runner_name
@@ -31,7 +31,12 @@ class Runner:
     def _get_stream_name(version_id: str, workflow_name: str):
         return f"{version_id.replace('.', '-')}-{workflow_name}"
 
-    def start(self):
+    def start(self) -> None:
+
+        """
+        Run the python node service in an asyncio loop and also listen to new NATS messages.
+        """
+
         try:
             asyncio.ensure_future(self.connect())
             asyncio.ensure_future(self.process_messages())
@@ -43,13 +48,21 @@ class Runner:
             self.logger.info("closing loop")
             self.loop.close()
 
-    async def connect(self):
-        self.logger.info(f"Connecting to NATS {self.config.nats_server}...")
-        await self.nc.connect(
-            self.config.nats_server, name=self.runner_name
-        )
+    async def connect(self) -> None:
 
-    async def stop(self):
+        """
+        Connect to NATS.
+        """
+
+        self.logger.info(f"Connecting to NATS {self.config.nats_server}...")
+        await self.nc.connect(self.config.nats_server, name=self.runner_name)
+
+    async def stop(self) -> None:
+
+        """
+        Stop the NATS connection and the asyncio loop.
+        """
+
         if not self.nc.is_closed:
             await self.nc.close()
             self.logger.info("NATS connection closed")
