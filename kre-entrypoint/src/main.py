@@ -45,6 +45,13 @@ class EntrypointRunner(Runner):
         self.loop.stop()
 
     async def run_grpc_server(self, entrypoint) -> None:
+
+        """
+        Starts the gRPC server.
+
+        :param entrypoint: Entrypoint service
+        """
+
         services = ServerReflection.extend([entrypoint])
 
         server = Server(services)

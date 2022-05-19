@@ -7,7 +7,6 @@ import sys
 import traceback
 from datetime import datetime
 
-import pymongo
 from nats.js.api import DeliverPolicy, ConsumerConfig
 
 from compression import compress_if_needed, is_compressed, uncompress
@@ -27,7 +26,6 @@ class NodeRunner(Runner):
         self.handler_ctx = None
         self.handler_init_fn = None
         self.handler_fn = None
-        self.mongo_conn = None
         self.load_handler()
 
     def load_handler(self) -> None:
@@ -76,10 +74,6 @@ class NodeRunner(Runner):
             self.handler_init_fn(self.handler_ctx)
 
     async def process_messages(self) -> None:
-        self.logger.info(f"Connecting to MongoDB {self.config.mongo_uri}...")
-        self.mongo_conn = pymongo.MongoClient(self.config.mongo_uri, socketTimeoutMS=10000, connectTimeoutMS=10000)
-        self.js = self.nc.jetstream()
-
         queue_name = f"queue_{self.config.nats_input}"
 
         self.subscription_sid = await self.js.subscribe(

@@ -2,7 +2,7 @@ import abc
 import asyncio
 import logging
 import time
-
+import pymongo
 from nats.aio.client import Client as NATS
 
 
@@ -26,6 +26,7 @@ class Runner:
         self.config = config
         self.subscription_sid = None
         self.runner_name = runner_name
+        self.mongo_conn = None
 
     @staticmethod
     def _get_stream_name(version_id: str, workflow_name: str):
@@ -54,7 +55,11 @@ class Runner:
         Connect to NATS.
         """
 
+        self.logger.info(f"Connecting to MongoDB {self.config.mongo_uri}...")
+        self.mongo_conn = pymongo.MongoClient(self.config.mongo_uri, socketTimeoutMS=10000, connectTimeoutMS=10000)
+
         self.logger.info(f"Connecting to NATS {self.config.nats_server}...")
+        self.js = self.nc.jetstream()
         await self.nc.connect(self.config.nats_server, name=self.runner_name)
 
     async def stop(self) -> None:
