@@ -1,6 +1,6 @@
 from google.protobuf.any_pb2 import Any
 
-from public_input_pb2 import NodeBRequest, Response
+from public_input_pb2 import NodeBRequest, NodeCRequest
 
 
 def init(ctx):
@@ -8,7 +8,7 @@ def init(ctx):
     ctx.set("greeting", "Hello")
 
 
-async def handler(ctx, data: Any) -> Response:
+async def handler(ctx, data: Any) -> NodeCRequest:
 
     """
     This is the entrypoint handler for the nodeB workflow.
@@ -27,6 +27,6 @@ async def handler(ctx, data: Any) -> Response:
     result = f"{req.lastname}, how are you?"
     ctx.logger.info(f"result -> {result}")
 
-    output = Response()
+    output = NodeCRequest()
     output.greeting = result
     return output

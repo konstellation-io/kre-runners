@@ -14,12 +14,13 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12public_input.proto\x12\x04main\"\x17\n\x07Request\x12\x0c\n\x04name\x18\x01 \x01(\t\" \n\x0cNodeBRequest\x12\x10\n\x08lastname\x18\x01 \x01(\t\"\x1c\n\x08Response\x12\x10\n\x08greeting\x18\x01 \x01(\t26\n\nEntrypoint\x12(\n\x05Greet\x12\r.main.Request\x1a\x0e.main.Response\"\x00\x42\x08Z\x06./mainb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12public_input.proto\x12\x04main\"\x17\n\x07Request\x12\x0c\n\x04name\x18\x01 \x01(\t\" \n\x0cNodeBRequest\x12\x10\n\x08lastname\x18\x01 \x01(\t\" \n\x0cNodeCRequest\x12\x10\n\x08greeting\x18\x01 \x01(\t\"\x1c\n\x08Response\x12\x10\n\x08greeting\x18\x01 \x01(\t26\n\nEntrypoint\x12(\n\x05Greet\x12\r.main.Request\x1a\x0e.main.Response\"\x00\x42\x08Z\x06./mainb\x06proto3')
 
 
 
 _REQUEST = DESCRIPTOR.message_types_by_name['Request']
 _NODEBREQUEST = DESCRIPTOR.message_types_by_name['NodeBRequest']
+_NODECREQUEST = DESCRIPTOR.message_types_by_name['NodeCRequest']
 _RESPONSE = DESCRIPTOR.message_types_by_name['Response']
 Request = _reflection.GeneratedProtocolMessageType('Request', (_message.Message,), {
   'DESCRIPTOR' : _REQUEST,
@@ -34,6 +35,13 @@ NodeBRequest = _reflection.GeneratedProtocolMessageType('NodeBRequest', (_messag
   # @@protoc_insertion_point(class_scope:main.NodeBRequest)
   })
 _sym_db.RegisterMessage(NodeBRequest)
+
+NodeCRequest = _reflection.GeneratedProtocolMessageType('NodeCRequest', (_message.Message,), {
+  'DESCRIPTOR' : _NODECREQUEST,
+  '__module__' : 'public_input_pb2'
+  # @@protoc_insertion_point(class_scope:main.NodeCRequest)
+  })
+_sym_db.RegisterMessage(NodeCRequest)
 
 Response = _reflection.GeneratedProtocolMessageType('Response', (_message.Message,), {
   'DESCRIPTOR' : _RESPONSE,
@@ -51,8 +59,10 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _REQUEST._serialized_end=51
   _NODEBREQUEST._serialized_start=53
   _NODEBREQUEST._serialized_end=85
-  _RESPONSE._serialized_start=87
-  _RESPONSE._serialized_end=115
-  _ENTRYPOINT._serialized_start=117
-  _ENTRYPOINT._serialized_end=171
+  _NODECREQUEST._serialized_start=87
+  _NODECREQUEST._serialized_end=119
+  _RESPONSE._serialized_start=121
+  _RESPONSE._serialized_end=149
+  _ENTRYPOINT._serialized_start=151
+  _ENTRYPOINT._serialized_end=205
 # @@protoc_insertion_point(module_scope)
