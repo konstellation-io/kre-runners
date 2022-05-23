@@ -1,7 +1,5 @@
 import os
 
-NATS_FLUSH_TIMEOUT = 10
-
 
 class Config:
     def __init__(self):
@@ -16,15 +14,11 @@ class Config:
             self.nats_input = os.environ['KRT_NATS_INPUT']
             self.nats_output = os.environ['KRT_NATS_OUTPUT']
             self.nats_stream = os.environ['KRT_NATS_STREAM']
-            # self.nats_entrypoint_subject = os.environ['KRT_NATS_ENTRYPOINT_SUBJECT']
             self.nats_mongo_writer = os.environ['KRT_NATS_MONGO_WRITER']
             self.base_path = os.environ['KRT_BASE_PATH']
             self.handler_path = os.environ['KRT_HANDLER_PATH']
             self.mongo_data_db_name = "data"
             self.mongo_uri = os.environ['KRT_MONGO_URI']
             self.influx_uri = os.environ['KRT_INFLUX_URI']
-            # self.influx_uri = os.environ.get("KRT_INFLUX_URI", "https://influx:8086")
-            self.nats_flush_timeout = NATS_FLUSH_TIMEOUT
-
         except Exception as err:
             raise Exception(f"error reading config: the {str(err)} env var is missing")

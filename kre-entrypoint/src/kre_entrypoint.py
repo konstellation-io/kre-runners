@@ -54,7 +54,7 @@ class EntrypointKRE:
         self.js = self.nc.jetstream()
 
         for workflow, _ in self.subjects.items():
-            stream = f"{self.config.runtime_id}-{self.config.krt_version_id}-{workflow}"
+            stream = f"{self.config.krt_runtime_id}-{self.config.krt_version_id}-{workflow}"
             subjects = [f"{stream}.*"]
             input_subject = f"{stream}.{self.config.runner_name}"
 

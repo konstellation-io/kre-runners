@@ -119,7 +119,7 @@ class NodeRunner(Runner):
                 end = datetime.utcnow()
 
                 # Save the elapsed time for this node and for the workflow if it is the last node.
-                is_last_node = self.config.nats_output == ""
+                is_last_node = self.config.nats_output == ""  # TODO: REVIEW
                 self.save_elapsed_time(request_msg, start, end, is_last_node)
 
                 # Generate a KreNatsMessage response.

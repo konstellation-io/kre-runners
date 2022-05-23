@@ -45,22 +45,23 @@ await ctx.prediction.save(
 )
 ```
 
-The runner will have the following environment variables:
+It is necessary to set the following environment variables in order to use the runner:
 
-```bash
-KRT_WORKFLOW_NAME
-KRT_VERSION_ID
-KRT_VERSION
-KRT_NODE_NAME
-KRT_NATS_SERVER
-KRT_NATS_INPUT
-KRT_NATS_OUTPUT
-KRT_NATS_MONGO_WRITER
-KRT_BASE_PATH
-KRT_HANDLER_PATH
-KRT_MONGO_URI
-KRT_INFLUX_URI
-```
+| Name                  | Description                                                         | 
+|-----------------------|---------------------------------------------------------------------|
+| KRT_WORKFLOW_NAME     | Name of the current workflow                                        | 
+| KRT_VERSION_ID        | ID of the current version                                           | 
+| KRT_VERSION           | Name of the current version                                         | 
+| KRT_NODE_NAME         | Name of the current node                                            |
+| KRT_NATS_SERVER       | NATS server URL                                                     |
+| KRT_NATS_INPUT        | Input NATS subject to which the node will be subscribed             |
+| KRT_NATS_OUTPUT       | Output NATS subject to which the node will publish the next message |
+| KRT_NATS_STREAM       | NATS stream name                                                    |
+| KRT_NATS_MONGO_WRITER | Mongo writer name                                                   |
+| KRT_BASE_PATH         | Base path where the src folder is located                           |
+| KRT_HANDLER_PATH      | Path to the handler file                                            |
+| KRT_MONGO_URI         | Mongo database URI                                                  |
+| KRT_INFLUX_URI        | Influx database URI                                                 |
 
 This is an example of the code that will be run by the docker py3 runner:
 
