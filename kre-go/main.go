@@ -35,6 +35,12 @@ func Start(handlerInit HandlerInit, handler Handler) {
 	}
 	defer nc.Close()
 
+	js, err := nc.JetStream()
+	if err != nil {
+		logger.Errorf("Error connecting to JetStream: %s", err)
+		os.Exit(1)
+	}
+
 	// Connect to MongoDB
 	mongoM := mongodb.NewMongoManager(cfg, logger)
 	err = mongoM.Connect()
@@ -44,10 +50,12 @@ func Start(handlerInit HandlerInit, handler Handler) {
 	}
 
 	// Handle incoming messages from NATS
-	runner := NewRunner(logger, cfg, nc, handler, handlerInit, mongoM)
+	runner := NewRunner(logger, cfg, nc, js, handler, handlerInit, mongoM)
 	logger.Infof("Listening to '%s' subject...", cfg.NATS.InputSubject)
-	// nc.QueueSubscribe(cfg.NATS.InputSubject, "", runner.ProcessMessage)
-	s, err := nc.Subscribe(cfg.NATS.InputSubject, runner.ProcessMessage)
+
+	// s, err := nc.Subscribe(cfg.NATS.InputSubject, runner.ProcessMessage)
+
+	s, err := js.QueueSubscribe(cfg.NATS.InputSubject, cfg.NATS.Stream, runner.ProcessMessage)
 	if err != nil {
 		logger.Errorf("Error subscribing to the NATS subject: %s", err)
 		os.Exit(1)

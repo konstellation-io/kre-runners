@@ -3,8 +3,9 @@ package kre
 import (
 	"errors"
 	"fmt"
-	"github.com/konstellation-io/kre-runners/kre-go/mongodb"
 	"time"
+
+	"github.com/konstellation-io/kre-runners/kre-go/mongodb"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
@@ -25,16 +26,19 @@ type Runner struct {
 	logger         *simplelogger.SimpleLogger
 	cfg            config.Config
 	nc             *nats.Conn
+	js             nats.JetStreamContext
 	handler        Handler
 	handlerContext *HandlerContext
 }
 
 // NewRunner creates a new Runner instance.
-func NewRunner(logger *simplelogger.SimpleLogger, cfg config.Config, nc *nats.Conn, handler Handler, handlerInit HandlerInit, mongoM *mongodb.MongoDB) *Runner {
+func NewRunner(logger *simplelogger.SimpleLogger, cfg config.Config, nc *nats.Conn, js nats.JetStreamContext,
+	handler Handler, handlerInit HandlerInit, mongoM *mongodb.MongoDB) *Runner {
 	runner := &Runner{
 		logger:  logger,
 		cfg:     cfg,
 		nc:      nc,
+		js:      js,
 		handler: handler,
 	}
 
@@ -203,7 +207,7 @@ func (r *Runner) getOutputSubject(replySubject string, isLastNode bool) string {
 	var outputSubject string
 
 	if isLastNode {
-		outputSubject = replySubject
+		outputSubject = r.cfg.NATS.EntrypointSubject
 	} else {
 		outputSubject = r.cfg.NATS.OutputSubject
 	}
@@ -227,7 +231,7 @@ func (r *Runner) publishResponse(outputSubject string, responseMsg *KreNatsMessa
 
 	r.logger.Infof("Publishing response to '%s' subject", outputSubject)
 
-	err = r.nc.Publish(outputSubject, outputMsg)
+	_, err = r.js.Publish(outputSubject, outputMsg)
 	if err != nil {
 		r.logger.Errorf("Error publishing output: %s", err)
 	}
