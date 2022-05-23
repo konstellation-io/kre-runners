@@ -109,10 +109,6 @@ class NodeRunner(Runner):
                 # if the "request_msg.reply" has no value, it means that is the last message of the workflow.
                 # In this case we set this value into the "self.config.nats_entrypoint_subject" field in order
                 # respond to the entrypoint.
-                if request_msg.reply == "":
-                    request_msg.reply = self.config.nats_entrypoint_subject
-
-                self.logger.info(f"Received message on '{msg.subject}' with final reply '{request_msg.reply}'")
 
                 # Make a shallow copy of the ctx object to set inside the request msg.
                 ctx = copy.copy(self.handler_ctx)
@@ -126,17 +122,11 @@ class NodeRunner(Runner):
                 is_last_node = self.config.nats_output == ""
                 self.save_elapsed_time(request_msg, start, end, is_last_node)
 
-                # Ignore send reply if the msg was replied previously.
-                if is_last_node and request_msg.replied:
-                    if handler_result is not None:
-                        self.logger.info("ignoring the last node response because the message was replied previously")
-                    return
-
                 # Generate a KreNatsMessage response.
                 res = self.new_response_msg(request_msg, handler_result, start, end)
 
                 # Publish the response message to the output subject.
-                output_subject = request_msg.reply if is_last_node else self.config.nats_output
+                output_subject = self.config.nats_output
 
                 self.logger.info(f"Publishing response to '{output_subject}'")
                 await self.publish_response(output_subject, res)
@@ -146,8 +136,7 @@ class NodeRunner(Runner):
                 self.logger.error(f"error executing handler: {err} \n\n{tb}")
                 response_err = KreNatsMessage()
                 response_err.error = f"error in '{self.config.krt_node_name}': {str(err)}"
-                is_last_node = self.config.nats_output == ""
-                output_subject = request_msg.reply if is_last_node else self.config.nats_output
+                output_subject = self.config.nats_output
 
                 await self.js.publish(
                     stream=self.config.nats_stream,

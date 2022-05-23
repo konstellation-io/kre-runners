@@ -154,7 +154,8 @@ class EntrypointKRE:
 
             # wait for the response
             self.logger.info(f"Waiting for response message...")
-            msg = await subscription.next_msg(timeout=1000)
+            msg = await subscription.next_msg(timeout=self.config.request_timeout)
+            self.logger.info(f"Response message received: {msg.data}")
 
             # prepare the grpc response message
             response = self.create_grpc_response(workflow, msg.data)

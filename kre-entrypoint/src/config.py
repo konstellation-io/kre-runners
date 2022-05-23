@@ -3,7 +3,7 @@ import os
 
 class Config:
     def __init__(self):
-        self.request_timeout = int(os.getenv('KRT_REQUEST_TIMEOUT', 30))
+        self.request_timeout = int(os.getenv('KRT_REQUEST_TIMEOUT', 30000))
         self.runner_name = "entrypoint"
 
         # Mandatory environment variables

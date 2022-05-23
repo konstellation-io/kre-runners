@@ -1,5 +1,5 @@
+import asyncio
 import os
-import sys
 from datetime import datetime
 import logging
 import time
@@ -8,7 +8,10 @@ from unittest import mock
 
 import pytest
 from nats.aio.client import Client as NATS
+from nats.js import JetStreamContext
 from nats.js.api import DeliverPolicy, ConsumerConfig
+
+from config import Config
 from kre_nats_msg_pb2 import KreNatsMessage
 from main import NodeRunner
 from test_utils.public_input_for_testing_pb2 import Request, Response
@@ -36,13 +39,13 @@ logger = logging.getLogger(__name__)
 def runner():
     print("Starting the node runner...")
 
-    with mock.patch.dict(os.environ, TEST_ENV_VARS):
-        runner = NodeRunner()
+    #with mock.patch.dict(os.environ, TEST_ENV_VARS):
+        #runner = NodeRunner()
 
-    p = Process(target=runner.start)
-    p.start()
-    yield runner
-    p.terminate()
+    #p = Process(target=runner.start)
+    #p.start()
+    # yield runner
+    #p.terminate()
 
 
 def prepare_nats_message():
@@ -109,3 +112,64 @@ async def test_main() -> None:
 
     nc.close()
 
+
+@pytest.fixture
+def mocked_nats() -> mock.Mock:
+    mocked_nats = mock.Mock()
+
+    future = asyncio.Future()
+    future.set_result(123)
+    mock_js = mock.Mock(spec=JetStreamContext)
+
+    mocked_nats.connect.return_value = future
+    mocked_nats.jetstream.return_value = mock_js
+    return mocked_nats
+
+
+@pytest.fixture
+@mock.patch(os.environ, environment_variables)
+def node_runner(mocked_nats: mock.Mock, ) -> NodeRunner:
+    environment_variables = {
+        "KRT_VERSION_ID": "v1",
+        "KRT_VERSION": "version1",
+        "KRT_RUNTIME_ID": "runtime1",
+        "KRT_NODE_NAME": "entrypoint",
+        "KRT_NODE_ID": "entrypoint-id",
+        "KRT_NATS_SERVER": "mock:4222",
+        "KRT_NATS_SUBJECTS_FILE": "/src/conf/subjects.json",
+        "KRT_INFLUX_URI": "http://mock:8088",
+        "KRT_NATS_STREAM": "runtime-1-version-1-workflow-a",
+        "KRT_NATS_INPUT": "runtime-1-version-1-workflow-a.node-a",
+        "KRT_NATS_OUTPUT": "runtime-1-version-1-workflow-a.node-b",
+        "KRT_WORKFLOW_NAME": "workflow-a",
+        "KRT_NATS_MONGO_WRITER": "mongo_writer",
+        "KRT_BASE_PATH": "/tmp",
+        "KRT_HANDLER_PATH": "src/node/node_handler.py",
+        "KRT_MONGO_URI": "mongodb://mock:mock@mock:27017/admin",
+    }
+
+    with mock.patch.dict(os.environ, environment_variables):
+        with mock.patch.object(NodeRunner, "load_handler", return_value=None):
+            runner = NodeRunner()
+            runner.nc = mocked_nats
+            return runner
+
+
+@pytest.mark.asyncio
+async def test_create_message_cb(node_runner: NodeRunner) -> None:
+    msg = "Hi! "
+    response = node_runner.create_message_cb()
+
+    node_runner.handler_fn.return_value = "Hello!"
+
+    await response.__call__(msg)
+
+
+
+@pytest.mark.asyncio
+async def test_process_messages(node_runner: NodeRunner) -> None:
+    node_runner.js = node_runner.nc.jetstream()
+
+    await node_runner.process_messages()
+
+    assert node_runner.js.subscribe.call_count == 1
