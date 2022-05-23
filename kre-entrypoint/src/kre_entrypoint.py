@@ -54,7 +54,7 @@ class EntrypointKRE:
         self.js = self.nc.jetstream()
 
         for workflow, _ in self.subjects.items():
-            stream = f"{self.config.runtime_id}-{self.config.krt_version_id}-{workflow}"
+            stream = f"{self.config.krt_runtime_id}-{self.config.krt_version_id}-{workflow}"
             subjects = [f"{stream}.*"]
             input_subject = f"{stream}.{self.config.runner_name}"
 
@@ -154,7 +154,8 @@ class EntrypointKRE:
 
             # wait for the response
             self.logger.info(f"Waiting for response message...")
-            msg = await subscription.next_msg(timeout=1000)
+            msg = await subscription.next_msg(timeout=self.config.request_timeout)
+            self.logger.info(f"Response message received: {msg.data}")
 
             # prepare the grpc response message
             response = self.create_grpc_response(workflow, msg.data)
