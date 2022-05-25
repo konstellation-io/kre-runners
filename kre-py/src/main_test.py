@@ -11,6 +11,7 @@ from nats.aio.client import Client as NATS
 from nats.js import JetStreamContext
 from nats.js.api import DeliverPolicy, ConsumerConfig
 
+import kre_nats_msg_pb2
 from context import HandlerContext
 from kre_nats_msg_pb2 import KreNatsMessage
 from main import NodeRunner
@@ -177,6 +178,7 @@ async def test_create_message_cb(node_runner: NodeRunner) -> None:
 
     node_runner.new_request_msg.return_value = mock_payload
     node_runner.save_elapsed_time = mock.Mock(return_value=None)
+    node_runner.new_response_msg = mock.Mock(return_value=kre_nats_msg_pb2.KreNatsMessage())
 
     future = asyncio.Future()
     future.set_result("Hello!")
@@ -191,6 +193,8 @@ async def test_create_message_cb(node_runner: NodeRunner) -> None:
     )
 
     await response.__call__(message_mock)
+
+    assert node_runner.js.publish.call_count == 1
 
 
 @pytest.mark.asyncio
