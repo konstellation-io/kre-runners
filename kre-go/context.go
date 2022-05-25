@@ -97,9 +97,9 @@ func (c *HandlerContext) GetFloat(key string) float64 {
 	return -1.0
 }
 
-// Reply sends a reply to the entrypoint. The workflow execution continues.
+// EarlyReply sends a reply to the entrypoint. The workflow execution continues.
 // Use this function when you need to reply faster than the workflow execution duration.
-func (c *HandlerContext) Reply(response proto.Message) error {
+func (c *HandlerContext) EarlyReply(response proto.Message) error {
 	if c.reqMsg.Replied {
 		return errors.New("error the message was replied previously")
 	}
