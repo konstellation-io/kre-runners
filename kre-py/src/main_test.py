@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 import logging
 import time
-from multiprocessing import Process
+from nats.aio.msg import Msg
 from unittest import mock
 
 import pytest
@@ -11,7 +11,7 @@ from nats.aio.client import Client as NATS
 from nats.js import JetStreamContext
 from nats.js.api import DeliverPolicy, ConsumerConfig
 
-from config import Config
+from context import HandlerContext
 from kre_nats_msg_pb2 import KreNatsMessage
 from main import NodeRunner
 from test_utils.public_input_for_testing_pb2 import Request, Response
@@ -127,7 +127,6 @@ def mocked_nats() -> mock.Mock:
 
 
 @pytest.fixture
-@mock.patch(os.environ, environment_variables)
 def node_runner(mocked_nats: mock.Mock, ) -> NodeRunner:
     environment_variables = {
         "KRT_VERSION_ID": "v1",
@@ -157,13 +156,41 @@ def node_runner(mocked_nats: mock.Mock, ) -> NodeRunner:
 
 @pytest.mark.asyncio
 async def test_create_message_cb(node_runner: NodeRunner) -> None:
-    msg = "Hi! "
+    message_mock = mock.Mock(spec=Msg)
+    message_mock.data = b"Hello World!"
+
+    mock_payload = {
+        "payload": {
+            "type_url": "type.googleapis.com/kre.api.Request",
+            "value": message_mock.data,
+        },
+        "tracking": [
+            {
+                "node_name": "node-a",
+                "start": "2020-01-01T00:00:00Z",
+                "end": "2020-01-01T00:00:00Z",
+            }
+        ],
+    }
     response = node_runner.create_message_cb()
+    node_runner.js = node_runner.nc.jetstream()
 
-    node_runner.handler_fn.return_value = "Hello!"
+    node_runner.new_request_msg.return_value = mock_payload
+    node_runner.save_elapsed_time = mock.Mock(return_value=None)
 
-    await response.__call__(msg)
+    future = asyncio.Future()
+    future.set_result("Hello!")
 
+    node_runner.handler_fn = mock.Mock(return_value=future)
+    node_runner.handler_ctx = HandlerContext(
+        config=node_runner.config,
+        nc=node_runner.nc,
+        mongo_conn=node_runner.mongo_conn,
+        logger=node_runner.logger,
+        reply=node_runner.early_reply
+    )
+
+    await response.__call__(message_mock)
 
 
 @pytest.mark.asyncio
