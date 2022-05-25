@@ -12,7 +12,7 @@ message KreNatsMessage {
 
   string tracking_id = 1;
   repeated Tracking tracking = 2;
-  string reply = 3;
+  string reply = 3; // deprecated
   google.protobuf.Any payload = 4;
   string error = 5;
   bool replied = 6;
