@@ -83,7 +83,7 @@ class NodeRunner(Runner):
             durable=self.runner_name,
             cb=self.create_message_cb(),
             config=ConsumerConfig(
-                deliver_policy=DeliverPolicy.ALL,
+                deliver_policy=DeliverPolicy.NEW,
             ),
         )
 

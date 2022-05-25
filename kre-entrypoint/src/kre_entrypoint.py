@@ -68,7 +68,7 @@ class EntrypointKRE:
                 stream=stream,
                 subject=input_subject,
                 config=ConsumerConfig(
-                    deliver_policy=DeliverPolicy.ALL,
+                    deliver_policy=DeliverPolicy.NEW,
                 )
             )
             self.logger.info(
@@ -155,6 +155,7 @@ class EntrypointKRE:
             # wait for the response
             self.logger.info(f"Waiting for response message...")
             msg = await subscription.next_msg(timeout=self.config.request_timeout)
+            await msg.ack()
             self.logger.info(f"Response message received: {msg.data}")
 
             # prepare the grpc response message
