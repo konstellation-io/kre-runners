@@ -105,6 +105,8 @@ class NodeRunner(Runner):
             # Parse incoming message
             request_msg = self.new_request_msg(msg.data)
 
+            self.logger.info(f"Received new request message from NATS subject {msg.subject}")
+
             try:
                 # if the "request_msg.reply" has no value, it means that is the last message of the workflow.
                 # In this case we set this value into the "self.config.nats_entrypoint_subject" field in order
@@ -119,8 +121,7 @@ class NodeRunner(Runner):
                 end = datetime.utcnow()
 
                 # Save the elapsed time for this node and for the workflow if it is the last node.
-                is_last_node = self.config.nats_output == ""  # TODO: REVIEW
-                self.save_elapsed_time(request_msg, start, end, is_last_node)
+                self.save_elapsed_time(request_msg, start, end)
 
                 # Generate a KreNatsMessage response.
                 res = self.new_response_msg(request_msg, handler_result, start, end)
@@ -212,7 +213,6 @@ class NodeRunner(Runner):
         req_msg: KreNatsMessage,
         start: datetime,
         end: datetime,
-        is_last_node: bool,
     ) -> None:
         """
         save_elapsed_time stores in InfluxDB the elapsed time for the current node and the total elapsed time
@@ -221,7 +221,6 @@ class NodeRunner(Runner):
         :param req_msg: the request message.
         :param start: when this node started.
         :param end: when this node ended.
-        :param is_last_node: indicates if this node is the last one.
         :return: None
         """
         # Save the elapsed time for this node
@@ -245,6 +244,8 @@ class NodeRunner(Runner):
         }
 
         self.handler_ctx.measurement.save("node_elapsed_time", fields, tags)
+
+        is_last_node = True if self.config.krt_last_node == "true" else False
 
         if is_last_node:
             # Save the complete workflow elapsed time
