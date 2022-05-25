@@ -2,9 +2,10 @@ package kre
 
 import (
 	"errors"
-	"github.com/golang/protobuf/proto"
 	"path"
 	"time"
+
+	"github.com/golang/protobuf/proto"
 
 	"github.com/konstellation-io/kre/libs/simplelogger"
 	"github.com/nats-io/nats.go"
@@ -19,12 +20,12 @@ var (
 	getDataTimeout    = 1 * time.Second
 )
 
-type ReplyFunc = func(subject string, response proto.Message) error
+type EarlyReplyFunc = func(response proto.Message) error
 
 type HandlerContext struct {
 	cfg         config.Config
 	values      map[string]interface{}
-	reply       ReplyFunc
+	reply       EarlyReplyFunc
 	reqMsg      *KreNatsMessage
 	Logger      *simplelogger.SimpleLogger
 	Prediction  *contextPrediction
@@ -32,7 +33,7 @@ type HandlerContext struct {
 	DB          *contextData
 }
 
-func NewHandlerContext(cfg config.Config, nc *nats.Conn, mongoM mongodb.Manager, logger *simplelogger.SimpleLogger, reply ReplyFunc) *HandlerContext {
+func NewHandlerContext(cfg config.Config, nc *nats.Conn, mongoM mongodb.Manager, logger *simplelogger.SimpleLogger, reply EarlyReplyFunc) *HandlerContext {
 	return &HandlerContext{
 		cfg:    cfg,
 		values: map[string]interface{}{},
@@ -104,5 +105,5 @@ func (c *HandlerContext) Reply(response proto.Message) error {
 	}
 
 	c.reqMsg.Replied = true
-	return c.reply(c.reqMsg.Reply, response)
+	return c.reply(response)
 }

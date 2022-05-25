@@ -1,6 +1,6 @@
 version: "3"
 services:
-  
+
   mongo:
     image: "mongo:5.0.8"
     environment:
@@ -8,7 +8,7 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=123456
       - MONGO_INITDB_DATABASE=admin
     ports:
-        - 27017:27017
+      - 27017:27017
 
   influx:
     image: "influxdb:1.8-alpine"
@@ -19,10 +19,10 @@ services:
     image: "influxdb:1.8-alpine"
     environment:
       INFLUX_DATABASE: "kre"
-    volumes: 
+    volumes:
       - "./influx:/docker-entrypoint-initdb.d"
     command: /init-influxdb.sh
-  
+
   nats:
     image: "nats:2.8.1"
     command:
@@ -52,6 +52,7 @@ services:
       "KRT_NATS_INPUT": ${NODEA_KRT_NATS_INPUT}
       "KRT_NATS_OUTPUT": ${NODEA_KRT_NATS_OUTPUT}
       "KRT_HANDLER_PATH": ${NODEA_KRT_HANDLER_PATH}
+      "KRE_IS_LATS_NODE": ${NODEA_KRT_IS_LATS_NODE}
 
   node-py-2:
     build:
@@ -74,6 +75,7 @@ services:
       "KRT_NATS_INPUT": ${NODEB_KRT_NATS_INPUT}
       "KRT_NATS_OUTPUT": ${NODEB_KRT_NATS_OUTPUT}
       "KRT_HANDLER_PATH": ${NODEB_KRT_HANDLER_PATH}
+      "KRE_IS_LATS_NODE": ${NODEB_KRT_IS_LATS_NODE}
 
   node-go-1:
     build:
@@ -96,7 +98,7 @@ services:
       "KRT_NATS_INPUT": ${NODEC_KRT_NATS_INPUT}
       "KRT_NATS_OUTPUT": ${NODEC_KRT_NATS_OUTPUT}
       "KRT_HANDLER_PATH": ${NODEC_KRT_HANDLER_PATH}
-
+      "KRE_IS_LATS_NODE": ${NODEC_KRT_IS_LATS_NODE}
 
   node-entrypoint:
     build:
