@@ -7,7 +7,7 @@ import uuid
 from grpclib.server import Stream
 from grpclib import GRPCError
 from grpclib.const import Status
-from nats.js.api import ConsumerConfig, DeliverPolicy
+from nats.js.api import ConsumerConfig, DeliverPolicy, StreamConfig, RetentionPolicy
 from nats.aio.client import Client as NATS
 
 from kre_nats_msg_pb2 import KreNatsMessage
@@ -54,12 +54,12 @@ class EntrypointKRE:
         self.js = self.nc.jetstream()
 
         for workflow, _ in self.subjects.items():
-            stream = f"{self.config.krt_runtime_id}-{self.config.krt_version_id}-{workflow}"
+            stream = f"{self.config.krt_runtime_id}-{self.config.krt_version}-{workflow}"
             subjects = [f"{stream}.*"]
             input_subject = f"{stream}.{self.config.runner_name}"
 
             # Create NATS stream
-            await self.js.add_stream(name=stream, subjects=subjects)
+            await self.js.add_stream(name=stream, subjects=subjects, config=StreamConfig(retention=RetentionPolicy.INTEREST))
             self.logger.info(f"Created stream {stream} with subjects: {subjects}")
 
             # Create NATS subscription for the entrypoint
@@ -68,7 +68,7 @@ class EntrypointKRE:
                 stream=stream,
                 subject=input_subject,
                 config=ConsumerConfig(
-                    deliver_policy=DeliverPolicy.ALL
+                    deliver_policy=DeliverPolicy.ALL,
                 )
             )
             self.logger.info(

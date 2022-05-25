@@ -53,8 +53,6 @@ func Start(handlerInit HandlerInit, handler Handler) {
 	runner := NewRunner(logger, cfg, nc, js, handler, handlerInit, mongoM)
 	logger.Infof("Listening to '%s' subject...", cfg.NATS.InputSubject)
 
-	// s, err := nc.Subscribe(cfg.NATS.InputSubject, runner.ProcessMessage)
-
 	s, err := js.QueueSubscribe(cfg.NATS.InputSubject, cfg.NATS.Stream, runner.ProcessMessage)
 	if err != nil {
 		logger.Errorf("Error subscribing to the NATS subject: %s", err)
