@@ -21,5 +21,6 @@ class Config:
             self.mongo_uri = os.environ['KRT_MONGO_URI']
             self.influx_uri = os.environ['KRT_INFLUX_URI']
             self.krt_last_node = os.environ['KRT_IS_LAST_NODE']
+            self.nats_entrypoint_subject = os.environ['KRT_NATS_ENTRYPOINT_SUBJECT']
         except Exception as err:
             raise Exception(f"error reading config: the {str(err)} env var is missing")
