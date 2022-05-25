@@ -202,10 +202,10 @@ class NodeRunner(Runner):
         except Exception as err:
             self.logger.error(f"Error publishing response: {err}")
 
-    async def early_reply(self, nats_reply_subject: str, response: any):
+    async def early_reply(self, response: any):
         res = KreNatsMessage()
         res.payload.Pack(response)
-        await self.publish_response(nats_reply_subject, res)
+        await self.publish_response(self.config.nats_output, res)
 
     def save_elapsed_time(
         self,
