@@ -30,4 +30,4 @@ class HandlerContext:
             raise Exception("error the message was replied previously")
 
         self.__request_msg__.replied = True
-        await self.__reply__(self.__request_msg__.reply, response)
+        await self.__reply__(response)

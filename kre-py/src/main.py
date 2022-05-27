@@ -206,7 +206,7 @@ class NodeRunner(Runner):
     async def early_reply(self, response: any):
         res = KreNatsMessage()
         res.payload.Pack(response)
-        await self.publish_response(self.config.nats_output, res)
+        await self.publish_response(self.config.nats_entrypoint_subject, res)
 
     def save_elapsed_time(
         self,
