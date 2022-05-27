@@ -38,11 +38,6 @@ async def test_parallel_main() -> None:
         assert_sequential_call,
         assert_sequential_call,
         assert_sequential_call,
-        assert_sequential_call,
-        assert_sequential_call,
-        assert_sequential_call,
-        assert_sequential_call,
-        assert_sequential_call
     ])
 
 

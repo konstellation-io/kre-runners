@@ -59,7 +59,10 @@ class EntrypointKRE:
             input_subject = f"{stream}.{self.config.runner_name}"
 
             # Create NATS stream
-            await self.js.add_stream(name=stream, subjects=subjects, config=StreamConfig(retention=RetentionPolicy.INTEREST))
+            await self.js.add_stream(
+                name=stream,
+                subjects=subjects
+            )
             self.logger.info(f"Created stream {stream} with subjects: {subjects}")
 
             # Create NATS subscription for the entrypoint
@@ -138,6 +141,7 @@ class EntrypointKRE:
 
         try:
             grpc_raw_msg = await grpc_stream.recv_message()
+            self.logger.info(f"Received gRPC message from {grpc_stream.peer}")
             self.logger.info(f"gRPC message received {grpc_raw_msg}")
 
             # get the correct subject, subscription and stream depending on the workflow
