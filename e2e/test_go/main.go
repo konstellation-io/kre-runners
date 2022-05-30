@@ -3,6 +3,7 @@ package main
 import (
 	context "context"
 	"fmt"
+	"main/proto"
 	"math/rand"
 	"os"
 	sync "sync"
@@ -38,7 +39,7 @@ func sendRequests(numberOfRequests int) {
 	}
 	defer conn.Close()
 
-	client := NewEntrypointClient(conn)
+	client := proto.NewEntrypointClient(conn)
 	myExpectedResponses := make(map[string]bool)
 
 	fmt.Printf("%v+\n", client)
@@ -50,7 +51,7 @@ func sendRequests(numberOfRequests int) {
 		generatedResponse := fmt.Sprintf("Hello %s!, how are you? from nodeC", generatedName)
 		myExpectedResponses[generatedResponse] = true
 
-		resp, err := client.Greet(context.Background(), &Request{Name: generatedName})
+		resp, err := client.Greet(context.Background(), &proto.Request{Name: generatedName})
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)

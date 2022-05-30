@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package main;
 
-option go_package = "./main";
+option go_package = "./proto";
 
 message Request {
   string name = 1;
