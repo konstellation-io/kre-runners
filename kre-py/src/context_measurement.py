@@ -36,10 +36,11 @@ class ContextMeasurement:
             point.tag(key, tags[key])
 
         point.tag("version", self.__config__.krt_version)
+        point.tag("runtime", self.__config__.krt_runtime_id)
 
         if time is None:
             time = datetime.utcnow()
 
         point.time(time, precision)
 
-        self.__write_api__.write(INFLUX_BUCKET, INFLUX_ORG, point)
+        self.__write_api__.write(self.__config__.krt_runtime_id, INFLUX_ORG, point)

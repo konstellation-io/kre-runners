@@ -1,7 +1,7 @@
 package kre
 
 import (
-	"github.com/influxdata/influxdb-client-go"
+	influxdb2 "github.com/influxdata/influxdb-client-go"
 	"github.com/influxdata/influxdb-client-go/api"
 	"github.com/konstellation-io/kre-runners/kre-go/config"
 	"github.com/konstellation-io/kre/libs/simplelogger"
@@ -14,9 +14,8 @@ import (
 //   - The organization parameter is not used. Use an empty string ("") where necessary.
 //   - Use the form database/retention-policy where a bucket is required. Skip retention policy if the default retention policy should be used.
 const (
-	org    = ""    // not used
-	bucket = "kre" // kre is the created database during the deployment
-	token  = ""    // we don't need authentication
+	org   = "" // not used
+	token = "" // we don't need authentication
 )
 
 type contextMeasurement struct {
@@ -27,7 +26,7 @@ type contextMeasurement struct {
 
 func NewContextMeasurement(cfg config.Config, logger *simplelogger.SimpleLogger) *contextMeasurement {
 	influxCli := influxdb2.NewClient(cfg.InfluxDB.URI, token)
-	writeAPI := influxCli.WriteAPI(org, bucket)
+	writeAPI := influxCli.WriteAPI(org, cfg.RuntimeID)
 
 	return &contextMeasurement{
 		cfg,
@@ -48,6 +47,7 @@ func (c *contextMeasurement) Save(measurement string, fields map[string]interfac
 	}
 
 	p.AddTag("version", c.cfg.Version)
+	p.AddTag("runtime", c.cfg.RuntimeID)
 
 	p.SetTime(time.Now())
 

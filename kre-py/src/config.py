@@ -8,6 +8,7 @@ class Config:
         # Mandatory variables
         try:
             self.krt_workflow_name = os.environ.get('KRT_WORKFLOW_NAME', "workflow1")
+            self.krt_runtime_id = os.environ.get('KRT_RUNTIME_ID', "runtime1")
             self.krt_version_id = os.environ.get('KRT_VERSION_ID', "version.1234")
             self.krt_version = os.environ.get('KRT_VERSION', "testVersion1")
             self.krt_node_name = os.environ.get('KRT_NODE_NAME', "nodeA")

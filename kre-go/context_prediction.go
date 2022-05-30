@@ -3,12 +3,11 @@ package kre
 import (
 	"encoding/json"
 	"fmt"
+	nats2 "github.com/nats-io/nats.go"
 	"time"
 
-	"github.com/konstellation-io/kre/libs/simplelogger"
-	"github.com/nats-io/nats.go"
-
 	"github.com/konstellation-io/kre-runners/kre-go/config"
+	"github.com/konstellation-io/kre/libs/simplelogger"
 )
 
 type SaveMetricErr string
@@ -37,13 +36,14 @@ type SaveMetricMsgDoc struct {
 	Error          string `json:"error"`
 	PredictedValue string `json:"predictedValue"`
 	TrueValue      string `json:"trueValue"`
+	RuntimeID      string `json:"runtimeId"`
 	VersionID      string `json:"versionId"`
 	VersionName    string `json:"versionName"`
 }
 
 type contextPrediction struct {
 	cfg    config.Config
-	nc     *nats.Conn
+	nc     *nats2.Conn
 	logger *simplelogger.SimpleLogger
 }
 
@@ -54,6 +54,7 @@ func (c *contextPrediction) Save(date time.Time, predictedValue, trueValue strin
 			Date:           date.Format(time.RFC3339),
 			PredictedValue: predictedValue,
 			TrueValue:      trueValue,
+			RuntimeID:      c.cfg.RuntimeID,
 			VersionID:      c.cfg.VersionID,
 			VersionName:    c.cfg.Version,
 		},
@@ -80,6 +81,7 @@ func (c *contextPrediction) SaveError(saveMetricErr SaveMetricErr) {
 		Coll: classificationMetricsColl,
 		Doc: SaveMetricMsgDoc{
 			Date:        time.Now().Format(time.RFC3339),
+			RuntimeID:   c.cfg.RuntimeID,
 			VersionName: c.cfg.Version,
 			Error:       string(saveMetricErr),
 		},
