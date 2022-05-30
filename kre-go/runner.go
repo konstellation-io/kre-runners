@@ -63,7 +63,7 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 		return
 	}
 
-	r.logger.Infof("Received a message on '%s' to be published in '%s'", msg.Subject, r.cfg.NATS.OutputSubject)
+	r.logger.Infof("Received a message on '%s' to be published in '%s' with requestId '%s'", msg.Subject, r.cfg.NATS.OutputSubject, requestMsg.Reply)
 
 	// Make a shallow copy of the ctx object to set inside the request msg.
 	hCtx := r.handlerContext
@@ -159,6 +159,7 @@ func (r *Runner) newResponseMsg(handlerResult proto.Message, requestMsg *KreNats
 		TrackingId: requestMsg.TrackingId,
 		Tracking:   tracking,
 		Payload:    payload,
+		Reply:      requestMsg.Reply,
 	}
 
 	return responseMsg, nil

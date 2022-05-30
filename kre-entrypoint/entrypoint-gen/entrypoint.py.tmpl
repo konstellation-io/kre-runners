@@ -3,6 +3,7 @@ from grpclib.server import Stream
 from kre_entrypoint import EntrypointKRE
 
 from public_input_grpc import EntrypointBase
+from kre_nats_msg_pb2 import KreNatsMessage
 import public_input_pb2
 
 
@@ -18,7 +19,7 @@ class Entrypoint(EntrypointBase, EntrypointKRE):
 
     {{end}}
 
-    def make_response_object(self, workflow, kre_nats_msg):
+    def make_response_object(self, workflow: str, kre_nats_msg: KreNatsMessage):
 
         """
         Generate response object with the KRE message for a certain workflow

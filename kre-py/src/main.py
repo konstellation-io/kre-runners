@@ -106,6 +106,7 @@ class NodeRunner(Runner):
             request_msg = self.new_request_msg(msg.data)
 
             self.logger.info(f"Received new request message from NATS subject {msg.subject}")
+            self.logger.info(f"Request message REPLY: {request_msg.reply}")
 
             try:
                 # if the "request_msg.reply" has no value, it means that is the last message of the workflow.
