@@ -80,9 +80,7 @@ class EntrypointKRE:
                 f"Workflow {workflow} subscribed to NATS subject: '{input_subject}' from stream: '{stream}'"
             )
 
-    def create_kre_request_message(
-        self, raw_msg: bytes, start: str, request_id: str
-    ) -> bytes:
+    def create_kre_request_message(self, raw_msg: bytes, start: str, request_id: str) -> bytes:
 
         """
         Creates a KreNatsMessage that packages the grpc request (raw_msg) and adds the required
@@ -91,6 +89,7 @@ class EntrypointKRE:
 
         :param raw_msg: the raw grpc request message
         :param start: the start time of the request
+        :param request_id: the id of the gRPC that should be responded.
 
         :return: the message in bytes
         """
@@ -108,14 +107,11 @@ class EntrypointKRE:
 
         return self._prepare_nats_request(request_msg.SerializeToString())
 
-    def create_grpc_response(
-        self, workflow: str, message_data: bytes
-    ) -> KreNatsMessage:
+    def create_grpc_response(self, message_data: bytes) -> KreNatsMessage:
 
         """
         Creates a gRPC response from the message data received from the NATS server.
 
-        :param workflow: the workflow name
         :param message_data: the message data received from the NATS server
 
         :return: the gRPC response message
@@ -133,11 +129,11 @@ class EntrypointKRE:
 
         return response_msg
 
-    async def response_to_grcp_stream(self, response: bytes, request_id: str) -> None:
+    async def response_to_grpc_stream(self, response: bytes, request_id: str) -> None:
         """
         Sends the response to the gRPC stream.
         :param response: the response to be sent to the gRPC stream.
-        :param stream: the gRPC stream.
+        :param request_id: the gRPC request id that should be responded.
         """
         self.logger.info(f"Sending response to gRPC stream {request_id}")
         stream = self.grpc_streams[request_id]
@@ -195,10 +191,10 @@ class EntrypointKRE:
             self.logger.info(f"Response message received: {msg.data}")
 
             # prepare the grpc response message
-            kre_nats_message = self.create_grpc_response(workflow, msg.data)
+            kre_nats_message = self.create_grpc_response(msg.data)
             response = self.make_response_object(workflow, kre_nats_message)
 
-            await self.response_to_grcp_stream(response, kre_nats_message.reply)
+            await self.response_to_grpc_stream(response, kre_nats_message.reply)
 
         except Exception as err:
             err_msg = f"Exception on gRPC call : {err}"
