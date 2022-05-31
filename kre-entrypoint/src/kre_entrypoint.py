@@ -3,6 +3,7 @@ from datetime import datetime
 import gzip
 import traceback
 import uuid
+import asyncio
 
 from grpclib.server import Stream
 from grpclib import GRPCError
@@ -80,6 +81,30 @@ class EntrypointKRE:
                 f"Workflow {workflow} subscribed to NATS subject: '{input_subject}' from stream: '{stream}'"
             )
 
+            # for each subscription start listening for messages
+            await self.start_listening_messages(self.subscriptions[workflow], workflow)
+
+    async def wait_for_response(self, request_id: str) -> None:
+        while request_id in self.grpc_streams:
+            await asyncio.sleep(0.1)
+            pass
+
+    async def start_listening_messages(self, sub, workflow) -> None:
+        while True:
+            # wait for the response
+            self.logger.info(f"Waiting for response message...")
+            msg = await sub.next_msg(timeout=self.config.request_timeout)
+            await msg.ack()
+            
+            # prepare the grpc response message
+            kre_nats_message = self.create_grpc_response(workflow, msg.data)
+            response = self.make_response_object(workflow, kre_nats_message)
+
+            self.logger.info(f"Response message received: {kre_nats_message.payload} with request_id {kre_nats_message.reply}")
+
+            await self.response_to_grcp_stream(response, kre_nats_message.reply)
+            # await grpc_stream.send_message(response)
+
     def create_kre_request_message(
         self, raw_msg: bytes, start: str, request_id: str
     ) -> bytes:
@@ -139,17 +164,18 @@ class EntrypointKRE:
         :param response: the response to be sent to the gRPC stream.
         :param stream: the gRPC stream.
         """
-        self.logger.info(f"Sending response to gRPC stream {request_id}")
-        stream = self.grpc_streams[request_id]
-        self.logger.info(f"This is the stream {stream}")
-        self.logger.info(f"------------------------------")
-        self.logger.info(f"{response}")
+        grpc_stream = self.grpc_streams.pop(request_id)
+        self.logger.info(f"{grpc_stream.peer}")
 
-        await stream.send_message(response)
-        self.grpc_streams.pop(request_id)
+        await grpc_stream.send_message(response)
+        # try:
+        #     await grpc_stream.send_message(response)
+        # except Exception as e:
+        #     self.logger.error(f"Error sending response to gRPC stream: {e}")
+            
         self.logger.info(f"gRPC response successfully sent")
 
-    async def process_grpc_message(self, grpc_stream: Stream, workflow: str) -> None:
+    async def process_grpc_message(self, grpc_stream: Stream, workflow: str, request_id: str) -> None:
 
         """
         This function is called each time a gRPC message is received.
@@ -163,19 +189,18 @@ class EntrypointKRE:
         start = datetime.utcnow().isoformat()
 
         try:
+            # as multiple requests can be sent to the same workflow, we need to track each open gRPC stream to
+            # send the response to the correct gRPC stream
+            self.grpc_streams[request_id] = grpc_stream
+            
+            self.logger.info("############################# RECV_MESSAGE #############################")
             grpc_raw_msg = await grpc_stream.recv_message()
-            self.logger.info(f"Received gRPC message from {grpc_stream.peer}")
-            self.logger.info(f"gRPC message received {grpc_raw_msg}")
+            self.logger.info(f"gRPC message received {grpc_raw_msg} from {grpc_stream.peer} and request_id {request_id}")
 
             # get the correct subject, subscription and stream depending on the workflow
             subject = self.subjects[workflow]
             subscription = self.subscriptions[workflow]
             stream = self.streams[workflow]
-
-            # as multiple requests can be sent to the same workflow, we need to track each open gRPC stream to
-            # send the response to the correct gRPC stream
-            request_id = str(uuid.uuid4())
-            self.grpc_streams[request_id] = grpc_stream
 
             # creates the msg to be sent to the NATS server
             request_msg = self.create_kre_request_message(
@@ -184,21 +209,21 @@ class EntrypointKRE:
 
             # publish the msg to the NATS server
             await self.js.publish(stream=stream, subject=subject, payload=request_msg)
-            self.logger.info(
-                f"Message published to NATS subject: '{subject}' from stream: '{stream}'"
-            )
-
+            self.logger.info(f"Message published to NATS subject: '{subject}' from stream: '{stream}'")
+    
             # wait for the response
-            self.logger.info(f"Waiting for response message...")
-            msg = await subscription.next_msg(timeout=self.config.request_timeout)
-            await msg.ack()
-            self.logger.info(f"Response message received: {msg.data}")
+            #self.logger.info(f"Waiting for response message...")
+            #msg = await subscription.next_msg(timeout=self.config.request_timeout)
+            #await msg.ack()
+            #self.logger.info(f"Response message received: {msg.data}")
 
-            # prepare the grpc response message
-            kre_nats_message = self.create_grpc_response(workflow, msg.data)
-            response = self.make_response_object(workflow, kre_nats_message)
+            ## prepare the grpc response message
+            #kre_nats_message = self.create_grpc_response(workflow, msg.data)
+            #response = self.make_response_object(workflow, kre_nats_message)
 
-            await self.response_to_grcp_stream(response, kre_nats_message.reply)
+            #self.logger.info(f"Response to request_id {kre_nats_message.reply}: {kre_nats_message.payload}")
+            #await self.response_to_grcp_stream(response, kre_nats_message.reply)
+            ## await grpc_stream.send_message(response)
 
         except Exception as err:
             err_msg = f"Exception on gRPC call : {err}"

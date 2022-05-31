@@ -9,11 +9,17 @@ services:
       - MONGO_INITDB_DATABASE=admin
     ports:
       - 27017:27017
+    logging:
+      driver: none
 
   influx:
     image: "influxdb:1.8-alpine"
     ports:
-      - 8086:8086
+      - 8088:8088
+    logging:
+      driver: none
+
+
 
   influx_init:
     image: "influxdb:1.8-alpine"
@@ -30,6 +36,8 @@ services:
     ports:
       - "4222:4222"
       - "8222:8222"
+    logging:
+      driver: none
 
   node-py:
     build:

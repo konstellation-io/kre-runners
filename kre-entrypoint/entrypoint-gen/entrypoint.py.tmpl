@@ -6,6 +6,8 @@ from public_input_grpc import EntrypointBase
 from kre_nats_msg_pb2 import KreNatsMessage
 import public_input_pb2
 
+import uuid
+
 
 class Entrypoint(EntrypointBase, EntrypointKRE):
     def __init__(self, logger, subjects, config):
@@ -15,7 +17,9 @@ class Entrypoint(EntrypointBase, EntrypointKRE):
     {{range .Methods}}
 
     async def {{.Name}}(self, stream: Stream[public_input_pb2.{{.RequestType}}, public_input_pb2.{{.ReturnsType}}]) -> None:
-        return await self.process_grpc_message(stream, "{{ .Name }}")
+        request_id = str(uuid.uuid4())
+        await self.process_grpc_message(stream, "{{ .Name }}", request_id)
+        await self.wait_for_response(request_id)
 
     {{end}}
 

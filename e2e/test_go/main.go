@@ -13,22 +13,24 @@ import (
 
 // WaitGroup is used to wait for the program to finish goroutines.
 var wg sync.WaitGroup
+var totalRequests int = 0
 
 func main() {
 
 	fmt.Println("Sending requests..")
 
-	wg.Add(4)
+	wg.Add(7)
 	go sendRequests(100)
 	go sendRequests(100)
 	go sendRequests(100)
 	go sendRequests(100)
-	// go sendRequests(conn, 100)
-	// go sendRequests(conn, 100)
-	// go sendRequests(conn, 1000)
+	go sendRequests(100)
+	go sendRequests(100)
+	go sendRequests(100)
 
 	wg.Wait()
 
+	fmt.Printf("Total number of requests %d", totalRequests)
 	fmt.Println("Program finished")
 }
 
@@ -39,6 +41,8 @@ func sendRequests(numberOfRequests int) {
 	}
 	defer conn.Close()
 
+	fmt.Println(conn)
+
 	client := proto.NewEntrypointClient(conn)
 	myExpectedResponses := make(map[string]bool)
 
@@ -47,8 +51,10 @@ func sendRequests(numberOfRequests int) {
 	fails := 0
 
 	for i := 0; i < numberOfRequests; i++ {
+
 		generatedName := fmt.Sprintf("Alex-%d", (rand.Intn(10000)))
 		generatedResponse := fmt.Sprintf("Hello %s!, how are you? from nodeC", generatedName)
+		// fmt.Printf("Send message to %s", generatedName)
 		myExpectedResponses[generatedResponse] = true
 
 		resp, err := client.Greet(context.Background(), &proto.Request{Name: generatedName})
@@ -60,6 +66,9 @@ func sendRequests(numberOfRequests int) {
 			fmt.Println(generatedResponse, "---", resp.Greeting)
 			fails++
 		}
+
+		totalRequests++
+		// time.Sleep(time.Millisecond * 500)
 	}
 	fmt.Println("Fails", fails)
 	wg.Done()
