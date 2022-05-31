@@ -116,6 +116,7 @@ class EntrypointKRE:
 
         :param raw_msg: the raw grpc request message
         :param start: the start time of the request
+        :param request_id: the id of the gRPC that should be responded.
 
         :return: the message in bytes
         """
@@ -133,14 +134,11 @@ class EntrypointKRE:
 
         return self._prepare_nats_request(request_msg.SerializeToString())
 
-    def create_grpc_response(
-        self, workflow: str, message_data: bytes
-    ) -> KreNatsMessage:
+    def create_grpc_response(self, message_data: bytes) -> KreNatsMessage:
 
         """
         Creates a gRPC response from the message data received from the NATS server.
 
-        :param workflow: the workflow name
         :param message_data: the message data received from the NATS server
 
         :return: the gRPC response message
@@ -158,11 +156,11 @@ class EntrypointKRE:
 
         return response_msg
 
-    async def response_to_grcp_stream(self, response: bytes, request_id: str) -> None:
+    async def response_to_grpc_stream(self, response: bytes, request_id: str) -> None:
         """
         Sends the response to the gRPC stream.
         :param response: the response to be sent to the gRPC stream.
-        :param stream: the gRPC stream.
+        :param request_id: the gRPC request id that should be responded.
         """
         grpc_stream = self.grpc_streams.pop(request_id)
         self.logger.info(f"{grpc_stream.peer}")
