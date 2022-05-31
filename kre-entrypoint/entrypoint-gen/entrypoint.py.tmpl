@@ -19,7 +19,6 @@ class Entrypoint(EntrypointBase, EntrypointKRE):
     async def {{.Name}}(self, stream: Stream[public_input_pb2.{{.RequestType}}, public_input_pb2.{{.ReturnsType}}]) -> None:
         request_id = str(uuid.uuid4())
         await self.process_grpc_message(stream, "{{ .Name }}", request_id)
-        await self.wait_for_response(request_id)
 
     {{end}}
 
