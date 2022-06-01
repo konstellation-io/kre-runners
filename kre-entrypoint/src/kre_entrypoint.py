@@ -135,6 +135,7 @@ class EntrypointKRE:
 
                 if kre_nats_message.reply == request_id:
                     message_recv = True
+                    # when we receive the exptected message, we delete the subscription and send the response
                     await sub.unsubscribe()
                     response = self.make_response_object(workflow, kre_nats_message)
                     await self._respond_to_grpc_stream(response, kre_nats_message.reply)
