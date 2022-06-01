@@ -13,24 +13,33 @@ import (
 
 // WaitGroup is used to wait for the program to finish goroutines.
 var wg sync.WaitGroup
+var counterMutex sync.Mutex
 var totalRequests int = 0
+
+func increaseCounter() {
+	counterMutex.Lock()
+	totalRequests++
+	counterMutex.Unlock()
+}
 
 func main() {
 
 	fmt.Println("Sending requests..")
 
-	wg.Add(7)
-	go sendRequests(100)
-	go sendRequests(100)
-	go sendRequests(100)
-	go sendRequests(100)
-	go sendRequests(100)
-	go sendRequests(100)
-	go sendRequests(100)
+	wg.Add(9)
+	go sendRequests(10)
+	go sendRequests(10)
+	go sendRequests(10)
+	go sendRequests(10)
+	go sendRequests(10)
+	go sendRequests(10)
+	go sendRequests(10)
+	go sendRequests(10)
+	go sendRequests(10)
 
 	wg.Wait()
 
-	fmt.Printf("Total number of requests %d", totalRequests)
+	fmt.Printf("Total number of requests: %d\n", totalRequests)
 	fmt.Println("Program finished")
 }
 
@@ -40,8 +49,6 @@ func sendRequests(numberOfRequests int) {
 		os.Exit(1)
 	}
 	defer conn.Close()
-
-	fmt.Println(conn)
 
 	client := proto.NewEntrypointClient(conn)
 	myExpectedResponses := make(map[string]bool)
@@ -67,7 +74,7 @@ func sendRequests(numberOfRequests int) {
 			fails++
 		}
 
-		totalRequests++
+		increaseCounter()
 		// time.Sleep(time.Millisecond * 500)
 	}
 	fmt.Println("Fails", fails)

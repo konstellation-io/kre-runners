@@ -143,7 +143,9 @@ class EntrypointKRE:
 
         self.logger.info(f"gRPC response successfully sent")
 
-    async def process_grpc_message(self, grpc_stream: Stream, workflow: str, request_id: str) -> None:
+    async def process_grpc_message(
+        self, grpc_stream: Stream, workflow: str, request_id: str
+    ) -> None:
 
         """
         This function is called each time a gRPC message is received.
@@ -161,7 +163,9 @@ class EntrypointKRE:
             # send the response to the correct gRPC stream
             self.grpc_streams[request_id] = grpc_stream
 
-            self.logger.info("############################# RECV_MESSAGE #############################")
+            self.logger.info(
+                "############################# RECV_MESSAGE #############################"
+            )
             grpc_raw_msg = await grpc_stream.recv_message()
             self.logger.info(
                 f"gRPC message received {grpc_raw_msg} from {grpc_stream.peer} and request_id {request_id}"
@@ -184,11 +188,14 @@ class EntrypointKRE:
                 config=ConsumerConfig(
                     deliver_policy=DeliverPolicy.NEW,
                 ),
+                durable=request_id,
             )
 
             # publish the msg to the NATS server
             await self.js.publish(stream=stream, subject=subject, payload=request_msg)
-            self.logger.info(f"Message published to NATS subject: '{subject}' from stream: '{stream}'")
+            self.logger.info(
+                f"Message published to NATS subject: '{subject}' from stream: '{stream}'"
+            )
 
             # wait until a message for the request arrives ignoring the rest
             message_recv = False
@@ -205,9 +212,23 @@ class EntrypointKRE:
 
                 if kre_nats_message.reply == request_id:
                     message_recv = True
+                    self.logger.info(
+                        f"Consumer info: {self.js.consumer_info(stream=stream, consumer=request_id)}"
+                    )
+
                     sub.unsubscribe()
+                    self.logger.info(f"+++++++++++++++++++++++")
+                    self.logger.info(
+                        f"Deleting consumer {request_id} for stream: {stream}"
+                    )
+                    self.js.delete_consumer(stream=stream, consumer=request_id)
+                    self.logger.info(
+                        f"Consumer info: {self.js.consumer_info(stream=stream, consumer=request_id)}"
+                    )
                     response = self.make_response_object(workflow, kre_nats_message)
-                    self.logger.info(f"Response to request_id {kre_nats_message.reply}: {kre_nats_message.payload}")
+                    self.logger.info(
+                        f"Response to request_id {kre_nats_message.reply}: {kre_nats_message.payload}"
+                    )
                     await self.response_to_grpc_stream(response, kre_nats_message.reply)
 
         except Exception as err:
