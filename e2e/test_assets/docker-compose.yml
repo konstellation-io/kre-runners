@@ -9,11 +9,15 @@ services:
       - MONGO_INITDB_DATABASE=admin
     ports:
       - 27017:27017
+    logging:
+      driver: none
 
   influx:
     image: "influxdb:1.8-alpine"
     ports:
       - 8088:8088
+    logging:
+      driver: none
 
   influx_init:
     image: "influxdb:1.8-alpine"
@@ -22,6 +26,8 @@ services:
     volumes:
       - "./influx:/docker-entrypoint-initdb.d"
     command: /init-influxdb.sh
+    logging:
+      driver: none
 
   nats:
     image: "nats:2.8.1"
@@ -53,6 +59,8 @@ services:
       "KRT_NATS_ENTRYPOINT_SUBJECT": ${NODEA_KRT_NATS_ENTRYPOINT_SUBJECT}
       "KRT_HANDLER_PATH": ${NODEA_KRT_HANDLER_PATH}
       "KRT_IS_LAST_NODE": ${NODEA_KRT_IS_LAST_NODE}
+    logging:
+      driver: none
 
   node-py-2:
     build:
@@ -76,6 +84,8 @@ services:
       "KRT_NATS_ENTRYPOINT_SUBJECT": ${NODEB_KRT_NATS_ENTRYPOINT_SUBJECT}
       "KRT_HANDLER_PATH": ${NODEB_KRT_HANDLER_PATH}
       "KRT_IS_LAST_NODE": ${NODEB_KRT_IS_LAST_NODE}
+    logging:
+      driver: none
 
   node-go-1:
     build:
@@ -99,6 +109,9 @@ services:
       "KRT_NATS_ENTRYPOINT_SUBJECT": ${NODEC_KRT_NATS_ENTRYPOINT_SUBJECT}
       "KRT_HANDLER_PATH": ${NODEC_KRT_HANDLER_PATH}
       "KRT_IS_LAST_NODE": ${NODEC_KRT_IS_LAST_NODE}
+
+    logging:
+      driver: none
 
   node-entrypoint:
     build:
