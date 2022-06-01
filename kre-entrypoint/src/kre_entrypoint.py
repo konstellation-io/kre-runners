@@ -7,7 +7,7 @@ import uuid
 from grpclib.server import Stream
 from grpclib import GRPCError
 from grpclib.const import Status
-from nats.js.api import ConsumerConfig, DeliverPolicy
+from nats.js.api import ConsumerConfig, DeliverPolicy, RetentionPolicy, StreamConfig
 from nats.aio.client import Client as NATS
 
 from kre_nats_msg_pb2 import KreNatsMessage
@@ -61,15 +61,21 @@ class EntrypointKRE:
                 f"{self.config.krt_runtime_id}-{self.config.krt_version}-{workflow}"
             )
             subjects = [f"{stream}.*"]
-            
+
             self.input_subjects[workflow] = f"{stream}.{self.config.runner_name}"
             self.streams[workflow] = stream
 
             # Create NATS stream
-            await self.js.add_stream(name=stream, subjects=subjects)
+            await self.js.add_stream(
+                name=stream,
+                subjects=subjects,
+                config=StreamConfig(retention=RetentionPolicy.INTEREST),
+            )
             self.logger.info(f"Created stream {stream} with subjects: {subjects}")
 
-    async def process_grpc_message(self, grpc_stream: Stream, workflow: str, request_id: str) -> None:
+    async def process_grpc_message(
+        self, grpc_stream: Stream, workflow: str, request_id: str
+    ) -> None:
         """
         This function is called each time a gRPC message is received.
 
@@ -96,7 +102,9 @@ class EntrypointKRE:
             input_subject = self.input_subjects[workflow]
 
             # creates the msg to be sent to the NATS server
-            request_msg = self._create_kre_request_message(grpc_raw_msg, start, request_id)
+            request_msg = self._create_kre_request_message(
+                grpc_raw_msg, start, request_id
+            )
 
             # create an ephemeral subscription for the request
             sub = await self.js.subscribe(
@@ -104,12 +112,14 @@ class EntrypointKRE:
                 subject=input_subject,
                 config=ConsumerConfig(
                     deliver_policy=DeliverPolicy.NEW,
-                )
+                ),
             )
 
             # publish the msg to the NATS server
             await self.js.publish(stream=stream, subject=subject, payload=request_msg)
-            self.logger.info(f"Message published to NATS subject: '{subject}' to stream: '{stream}'")
+            self.logger.info(
+                f"Message published to NATS subject: '{subject}' to stream: '{stream}'"
+            )
 
             # wait until a message for the request arrives ignoring the rest
             message_recv = False

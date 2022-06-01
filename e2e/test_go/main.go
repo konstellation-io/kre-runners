@@ -4,6 +4,7 @@ import (
 	context "context"
 	"fmt"
 	"main/proto"
+	"math"
 	"math/rand"
 	"os"
 	sync "sync"
@@ -16,7 +17,7 @@ var wg sync.WaitGroup
 var counterMutex sync.Mutex
 var totalRequests int = 0
 var numberOfClients int = 10
-var numberOfRequestsPerClient = 100
+var numberOfRequestsPerClient = 1000
 
 func increaseCounter() {
 	counterMutex.Lock()
@@ -53,6 +54,7 @@ func sendRequests(numberOfRequests int) {
 	fmt.Printf("%v+\n", client)
 
 	fails := 0
+	myCounter := 0
 
 	for i := 0; i < numberOfRequests; i++ {
 
@@ -72,6 +74,11 @@ func sendRequests(numberOfRequests int) {
 		}
 
 		increaseCounter()
+		myCounter++
+		myPercentage := float64(myCounter) / float64(numberOfRequests) * 100
+		if math.Mod(myPercentage, 10) == 0 {
+			fmt.Printf("%v%%\n", myPercentage)
+		}
 	}
 	fmt.Println("Fails", fails)
 	wg.Done()
