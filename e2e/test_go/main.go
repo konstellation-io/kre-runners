@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"os"
 	sync "sync"
+	"time"
 
 	"google.golang.org/grpc"
 )
@@ -17,7 +18,7 @@ var wg sync.WaitGroup
 var counterMutex sync.Mutex
 var totalRequests int = 0
 var numberOfClients int = 4
-var numberOfRequestsPerClient = 100
+var numberOfRequestsPerClient = 1000
 
 func increaseCounter() {
 	counterMutex.Lock()
@@ -42,6 +43,7 @@ func main() {
 }
 
 func sendRequests(numberOfRequests int) {
+	start := time.Now()
 	conn, err := grpc.Dial("localhost:9000", grpc.WithInsecure())
 	if err != nil {
 		os.Exit(1)
@@ -80,6 +82,9 @@ func sendRequests(numberOfRequests int) {
 			fmt.Printf("%v%%\n", myPercentage)
 		}
 	}
-	fmt.Println("Fails", fails)
+
+	elapsed := time.Since(start)
+	time.Sleep(100 * time.Millisecond)
+	fmt.Printf("Sent %d messages with execution time %s with %d fails\n", numberOfRequests, elapsed, fails)
 	wg.Done()
 }
