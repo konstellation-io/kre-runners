@@ -59,7 +59,7 @@ async def test_streams_should_be_created_with_proper_names(entrypoint: Entrypoin
     # GIVEN an entrypoint subject with name "workflow-a"
     # AND a runtime id "runtime-1"
     # AND a version id "version-1"
-    entrypoint.subjects = {
+    entrypoint.output_subjects = {
         "workflow-a": "runtime-1-version-1-workflow-a.node-a",
     }
 
@@ -82,7 +82,7 @@ async def test_streams_should_be_created_with_proper_names(entrypoint: Entrypoin
 async def test_start_should_create_all_workflow_streams(entrypoint: EntrypointKRE) -> None:
 
     # GIVEN three entrypoint subjects with names "workflow-a", "workflow-b", "workflow-c"
-    entrypoint.subjects = {
+    entrypoint.output_subjects = {
         "workflow-a": "runtime-1-version-1-workflow-a.node-a",
         "workflow-b": "runtime-1-version-1-workflow-b.node-a",
         "workflow-c": "runtime-1-version-1-workflow-b.node-a",
@@ -117,7 +117,7 @@ async def test_process_grpc_message_should_a_configurable_timeout_upon_nats_subs
     grpc_stream_mock.recv_message.return_value = kre_nats_msg_pb2.KreNatsMessage()
     grpc_stream_mock.send_message.return_value = kre_nats_msg_pb2.KreNatsMessage()
 
-    entrypoint.subjects = {
+    entrypoint.output_subjects = {
         workflow_name: "runtime-1-version-1-workflow-a.node-a",
     }
 

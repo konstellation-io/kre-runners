@@ -15,6 +15,8 @@ import (
 var wg sync.WaitGroup
 var counterMutex sync.Mutex
 var totalRequests int = 0
+var numberOfClients int = 10
+var numberOfRequestsPerClient = 100
 
 func increaseCounter() {
 	counterMutex.Lock()
@@ -26,16 +28,11 @@ func main() {
 
 	fmt.Println("Sending requests..")
 
-	wg.Add(9)
-	go sendRequests(10)
-	go sendRequests(10)
-	go sendRequests(10)
-	go sendRequests(10)
-	go sendRequests(10)
-	go sendRequests(10)
-	go sendRequests(10)
-	go sendRequests(10)
-	go sendRequests(10)
+	wg.Add(numberOfClients)
+
+	for i := 0; i < numberOfClients; i++ {
+		go sendRequests(numberOfRequestsPerClient)
+	}
 
 	wg.Wait()
 
@@ -75,7 +72,6 @@ func sendRequests(numberOfRequests int) {
 		}
 
 		increaseCounter()
-		// time.Sleep(time.Millisecond * 500)
 	}
 	fmt.Println("Fails", fails)
 	wg.Done()
