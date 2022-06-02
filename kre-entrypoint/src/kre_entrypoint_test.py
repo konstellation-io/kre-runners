@@ -29,7 +29,9 @@ def mocked_nats() -> mock.Mock:
 
 
 @pytest.fixture
-def entrypoint(mocked_nats: mock.Mock, ) -> EntrypointKRE:
+def entrypoint(
+    mocked_nats: mock.Mock,
+) -> EntrypointKRE:
     environment_variables = {
         "KRT_VERSION_ID": "v1",
         "KRT_VERSION": "version1",
@@ -74,7 +76,9 @@ async def test_streams_should_be_created_with_proper_names(entrypoint: Entrypoin
 
     # THEN the streams should be created with proper names
     # AND only one stream should be created for the subject "workflow-a"
-    entrypoint.js.add_stream.assert_called_with(name=expected_stream_name, subjects=expected_subjects)
+    entrypoint.js.add_stream.assert_called_with(
+        name=expected_stream_name, subjects=expected_subjects
+    )
     assert entrypoint.js.add_stream.call_count == 1
 
 
@@ -97,7 +101,7 @@ async def test_start_should_create_all_workflow_streams(entrypoint: EntrypointKR
 
 @pytest.mark.asyncio
 async def test_process_grpc_message_should_a_configurable_timeout_upon_nats_subscriptions(
-    entrypoint: EntrypointKRE
+    entrypoint: EntrypointKRE,
 ) -> None:
 
     # GIVEN an entrypoint subject with name "workflow-a"
@@ -121,13 +125,9 @@ async def test_process_grpc_message_should_a_configurable_timeout_upon_nats_subs
         workflow_name: "runtime-1-version-1-workflow-a.node-a",
     }
 
-    entrypoint.subscriptions = {
-        workflow_name: subscription_mock
-    }
+    entrypoint.subscriptions = {workflow_name: subscription_mock}
 
-    entrypoint.streams = {
-        workflow_name: stream_mock
-    }
+    entrypoint.streams = {workflow_name: stream_mock}
 
     entrypoint.config.request_timeout = 927
     entrypoint.js = entrypoint.nc.jetstream()
