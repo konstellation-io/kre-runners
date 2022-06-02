@@ -40,13 +40,13 @@ logger = logging.getLogger(__name__)
 def runner():
     print("Starting the node runner...")
 
-    #with mock.patch.dict(os.environ, TEST_ENV_VARS):
-        #runner = NodeRunner()
+    # with mock.patch.dict(os.environ, TEST_ENV_VARS):
+    # runner = NodeRunner()
 
-    #p = Process(target=runner.start)
-    #p.start()
+    # p = Process(target=runner.start)
+    # p.start()
     # yield runner
-    #p.terminate()
+    # p.terminate()
 
 
 def prepare_nats_message():
@@ -70,7 +70,9 @@ def prepare_nats_message():
 @pytest.mark.asyncio
 async def test_main() -> None:
     input_subject = TEST_ENV_VARS["KRT_NATS_INPUT"]
-    stream = TEST_ENV_VARS["KRT_VERSION_ID"].replace('.', '-') + "-" + TEST_ENV_VARS["KRT_WORKFLOW_NAME"]
+    stream = (
+        TEST_ENV_VARS["KRT_VERSION_ID"].replace(".", "-") + "-" + TEST_ENV_VARS["KRT_WORKFLOW_NAME"]
+    )
     output_subject = "entrypoint_subject"
 
     logger.info("Connecting to NATS...")
@@ -128,7 +130,9 @@ def mocked_nats() -> mock.Mock:
 
 
 @pytest.fixture
-def node_runner(mocked_nats: mock.Mock, ) -> NodeRunner:
+def node_runner(
+    mocked_nats: mock.Mock,
+) -> NodeRunner:
     environment_variables = {
         "KRT_VERSION_ID": "v1",
         "KRT_VERSION": "version1",
@@ -189,7 +193,7 @@ async def test_create_message_cb(node_runner: NodeRunner) -> None:
         nc=node_runner.nc,
         mongo_conn=node_runner.mongo_conn,
         logger=node_runner.logger,
-        reply=node_runner.early_reply
+        reply=node_runner.early_reply,
     )
 
     await response.__call__(message_mock)

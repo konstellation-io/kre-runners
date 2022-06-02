@@ -41,11 +41,15 @@ class NodeRunner(Runner):
             spec.loader.exec_module(handler_module)
         except Exception as err:
             tb = traceback.format_exc()
-            self.logger.error(f"Error loading handler script {self.config.handler_path}: {err}\n\n{tb}")
+            self.logger.error(
+                f"Error loading handler script {self.config.handler_path}: {err}\n\n{tb}"
+            )
             sys.exit(1)
 
         if not hasattr(handler_module, "handler"):
-            raise Exception(f"Handler module '{handler_full_path}' must implement a function 'handler(ctx, data)'")
+            raise Exception(
+                f"Handler module '{handler_full_path}' must implement a function 'handler(ctx, data)'"
+            )
 
         if hasattr(handler_module, "init"):
             self.handler_init_fn = handler_module.init
@@ -87,7 +91,9 @@ class NodeRunner(Runner):
             ),
         )
 
-        self.logger.info(f"Listening to '{self.config.nats_input}' subject with queue '{queue_name}'")
+        self.logger.info(
+            f"Listening to '{self.config.nats_input}' subject with queue '{queue_name}'"
+        )
 
         await self.execute_handler_init()
 
@@ -143,7 +149,7 @@ class NodeRunner(Runner):
                 await self.js.publish(
                     stream=self.config.nats_stream,
                     subject=output_subject,
-                    payload=response_err.SerializeToString()
+                    payload=response_err.SerializeToString(),
                 )
 
         return message_cb
@@ -160,7 +166,9 @@ class NodeRunner(Runner):
 
     # new_response_msg creates a KreNatsMessage maintaining the tracking ID and adding the
     # handler result and the tracking information for this nodeA.
-    def new_response_msg(self, request_msg: KreNatsMessage, payload: any, start, end) -> KreNatsMessage:
+    def new_response_msg(
+        self, request_msg: KreNatsMessage, payload: any, start, end
+    ) -> KreNatsMessage:
         res = KreNatsMessage()
         res.replied = request_msg.replied
         res.reply = request_msg.reply
@@ -186,13 +194,13 @@ class NodeRunner(Runner):
             response_msg:  The response message to publish.
         """
 
-        serialized_response_msg = compress_if_needed(response_msg.SerializeToString(), logger=self.logger)
+        serialized_response_msg = compress_if_needed(
+            response_msg.SerializeToString(), logger=self.logger
+        )
 
         try:
             await self.js.publish(
-                stream=self.config.nats_stream,
-                subject=subject,
-                payload=serialized_response_msg
+                stream=self.config.nats_stream, subject=subject, payload=serialized_response_msg
             )
             self.logger.info(f"Published response to NATS subject {subject}")
         except ConnectionClosedError as err:

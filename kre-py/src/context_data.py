@@ -36,9 +36,7 @@ class ContextData:
             )
 
         if not isinstance(query, dict) or not query:
-            raise Exception(
-                f"[ctx.db.find] invalid 'query'='{query}', must be a nonempty dict"
-            )
+            raise Exception(f"[ctx.db.find] invalid 'query'='{query}', must be a nonempty dict")
 
         try:
             collection = self.__mongo_conn__[self.__config__.mongo_data_db_name][coll]
