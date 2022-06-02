@@ -26,7 +26,14 @@ class ContextMeasurement:
         opts = WriteOptions(write_type=WriteType.batching, batch_size=1_000, flush_interval=1_000)
         self.__write_api__ = client.write_api(write_options=opts)
 
-    def save(self, measurement: str, fields: dict, tags: dict, time: datetime=None, precision=PRECISION_NS):
+    def save(
+        self,
+        measurement: str,
+        fields: dict,
+        tags: dict,
+        time: datetime = None,
+        precision=PRECISION_NS,
+    ):
         point = Point(measurement)
 
         for key in fields:

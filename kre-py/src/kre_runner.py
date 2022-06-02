@@ -56,7 +56,9 @@ class Runner:
         """
 
         self.logger.info(f"Connecting to MongoDB {self.config.mongo_uri}...")
-        self.mongo_conn = pymongo.MongoClient(self.config.mongo_uri, socketTimeoutMS=10000, connectTimeoutMS=10000)
+        self.mongo_conn = pymongo.MongoClient(
+            self.config.mongo_uri, socketTimeoutMS=10000, connectTimeoutMS=10000
+        )
 
         self.logger.info(f"Connecting to NATS {self.config.nats_server}...")
         self.js = self.nc.jetstream()

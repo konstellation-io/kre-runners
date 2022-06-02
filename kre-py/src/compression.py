@@ -102,8 +102,6 @@ def compress_if_needed(
             f"compressed message {size_in_kb(out)} exceeds maximum size allowed of {bytes_to_kb(max_size)}."
         )
 
-    logger.info(
-        "Original message size: %s. Compressed: %s", size_in_kb(data), size_in_kb(out)
-    )
+    logger.info("Original message size: %s. Compressed: %s", size_in_kb(data), size_in_kb(out))
 
     return out

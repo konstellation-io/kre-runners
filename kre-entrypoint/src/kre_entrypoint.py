@@ -45,7 +45,9 @@ class EntrypointKRE:
         Starts the entrypoint service by connecting to the NATS server and subscribing to the
         subjects related to each workflow exposed by the Entrypoint.
         """
-        self.logger.info(f"Connecting to NATS {self.config.nats_server} with runner name {self.config.runner_name}...")
+        self.logger.info(
+            f"Connecting to NATS {self.config.nats_server} with runner name {self.config.runner_name}..."
+        )
 
         # connect to NATS server and jetstream
         await self.nc.connect(self.config.nats_server, name=self.config.runner_name)
@@ -68,7 +70,9 @@ class EntrypointKRE:
             )
             self.logger.info(f"Created stream {stream} with subjects: {subjects}")
 
-    async def process_grpc_message(self, grpc_stream: Stream, workflow: str, request_id: str) -> None:
+    async def process_grpc_message(
+        self, grpc_stream: Stream, workflow: str, request_id: str
+    ) -> None:
         """
         This function is called each time a gRPC message is received.
 
@@ -84,9 +88,7 @@ class EntrypointKRE:
             # as multiple requests can be sent to the same workflow, we need to track each open gRPC stream to
             # send the response to the correct gRPC stream
             if "grpc_streams" not in self.jetstream_data[workflow]:
-                self.jetstream_data[workflow]["grpc_streams"] = {
-                    request_id: grpc_stream
-                }
+                self.jetstream_data[workflow]["grpc_streams"] = {request_id: grpc_stream}
             else:
                 self.jetstream_data[workflow]["grpc_streams"][request_id] = grpc_stream
 
@@ -114,7 +116,9 @@ class EntrypointKRE:
 
             # publish the msg to the NATS server
             await self.js.publish(stream=stream, subject=subject, payload=request_msg)
-            self.logger.info(f"Message published to NATS subject: '{subject}' to stream: '{stream}'")
+            self.logger.info(
+                f"Message published to NATS subject: '{subject}' to stream: '{stream}'"
+            )
 
             # wait until a message for the request arrives ignoring the rest
             message_recv = False
@@ -188,7 +192,9 @@ class EntrypointKRE:
 
         return response_msg
 
-    async def _respond_to_grpc_stream(self, response: bytes, workflow: str, request_id: str) -> None:
+    async def _respond_to_grpc_stream(
+        self, response: bytes, workflow: str, request_id: str
+    ) -> None:
         """
         Sends a response to the corresponding gRPC stream based on the request id.
 
@@ -196,7 +202,7 @@ class EntrypointKRE:
         :param workflow: the workflow name
         :param request_id: the gRPC request id that should be responded.
         """
-        # grpc_stream = self.grpc_streams.pop(request_id)
+
         grpc_stream = self.jetstream_data[workflow]["grpc_streams"].pop(request_id)
         await grpc_stream.send_message(response)
         self.logger.info(f"gRPC request '{request_id}' response successfully sent")

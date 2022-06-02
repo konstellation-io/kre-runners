@@ -14,18 +14,30 @@ class ContextPrediction:
         self.__nc__ = nc
         self.__logger__ = logger
 
-    async def save(self, predicted_value: str = "", true_value: str = "", extra: dict = None, utcdate: datetime = None,
-                   error: str = "") -> None:
+    async def save(
+        self,
+        predicted_value: str = "",
+        true_value: str = "",
+        extra: dict = None,
+        utcdate: datetime = None,
+        error: str = "",
+    ) -> None:
         if error != "":
             if error not in self.PREDICTION_ERRORS:
-                raise Exception(f"[ctx.prediction.save] invalid value for metric error {error} "
-                                f"should be one of '{','.join(self.PREDICTION_ERRORS)}'")
+                raise Exception(
+                    f"[ctx.prediction.save] invalid value for metric error {error} "
+                    f"should be one of '{','.join(self.PREDICTION_ERRORS)}'"
+                )
         else:
             if not isinstance(predicted_value, str) or predicted_value == "":
-                raise Exception(f"[ctx.prediction.save] invalid 'predicted_value'='{predicted_value}',"
-                                f" must be a nonempty string")
+                raise Exception(
+                    f"[ctx.prediction.save] invalid 'predicted_value'='{predicted_value}',"
+                    f" must be a nonempty string"
+                )
             if not isinstance(true_value, str) or true_value == "":
-                raise Exception(f"[ctx.prediction.save] invalid 'true_value'='{true_value}', must be a nonempty string")
+                raise Exception(
+                    f"[ctx.prediction.save] invalid 'true_value'='{true_value}', must be a nonempty string"
+                )
 
         if utcdate is None:
             utcdate = datetime.utcnow()
@@ -38,15 +50,15 @@ class ContextPrediction:
             "trueValue": true_value,
             "extra": extra,
             "versionId": self.__config__.krt_version_id,
-            "versionName": self.__config__.krt_version
+            "versionName": self.__config__.krt_version,
         }
 
         try:
             subject = self.__config__.nats_mongo_writer
-            payload = bytes(json.dumps({"coll": coll, "doc": doc}), encoding='utf-8')
+            payload = bytes(json.dumps({"coll": coll, "doc": doc}), encoding="utf-8")
             response = await self.__nc__.request(subject, payload, timeout=1)
             res_json = json.loads(response.data.decode())
-            if not res_json['success']:
+            if not res_json["success"]:
                 self.__logger__.error("Unexpected error saving metric")
         except TimeoutError:
             self.__logger__.error("Error saving metric: request timed out")
@@ -57,4 +69,4 @@ def utcdate_to_rfc3339(utcdate):
     if offset and offset.total_seconds() != 0:
         raise Exception("Input date must be a UTC datetime")
 
-    return utcdate.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+    return utcdate.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
