@@ -83,7 +83,6 @@ class EntrypointKRE:
         try:
             # as multiple requests can be sent to the same workflow, we need to track each open gRPC stream to
             # send the response to the correct gRPC stream
-            # self.grpc_streams[request_id] = grpc_stream
             if "grpc_streams" not in self.jetstream_data[workflow]:
                 self.jetstream_data[workflow]["grpc_streams"] = {
                     request_id: grpc_stream
