@@ -160,9 +160,7 @@ class NodeRunner(Runner):
 
     # new_response_msg creates a KreNatsMessage maintaining the tracking ID and adding the
     # handler result and the tracking information for this nodeA.
-    def new_response_msg(
-        self, request_msg: KreNatsMessage, payload: any, start, end
-    ) -> KreNatsMessage:
+    def new_response_msg(self, request_msg: KreNatsMessage, payload: any, start, end) -> KreNatsMessage:
         res = KreNatsMessage()
         res.replied = request_msg.replied
         res.reply = request_msg.reply
@@ -209,12 +207,7 @@ class NodeRunner(Runner):
         res.payload.Pack(response)
         await self.publish_response(self.config.nats_entrypoint_subject, res)
 
-    def save_elapsed_time(
-        self,
-        req_msg: KreNatsMessage,
-        start: datetime,
-        end: datetime,
-    ) -> None:
+    def save_elapsed_time(self, req_msg: KreNatsMessage, start: datetime, end: datetime) -> None:
         """
         save_elapsed_time stores in InfluxDB the elapsed time for the current node and the total elapsed time
         of the complete workflow if it is the last node.
