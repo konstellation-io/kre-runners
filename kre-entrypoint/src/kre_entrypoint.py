@@ -196,7 +196,7 @@ class EntrypointKRE:
         :param workflow: the workflow name
         :param request_id: the gRPC request id that should be responded.
         """
-        # grpc_stream = self.grpc_streams.pop(request_id)
+
         grpc_stream = self.jetstream_data[workflow]["grpc_streams"].pop(request_id)
         await grpc_stream.send_message(response)
         self.logger.info(f"gRPC request '{request_id}' response successfully sent")
