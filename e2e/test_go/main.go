@@ -17,8 +17,8 @@ import (
 var wg sync.WaitGroup
 var counterMutex sync.Mutex
 var totalRequests int = 0
-var numberOfClients int = 4
-var numberOfRequestsPerClient = 1000
+var numberOfClients int = 5
+var numberOfRequestsPerClient = 100
 
 func increaseCounter() {
 	counterMutex.Lock()

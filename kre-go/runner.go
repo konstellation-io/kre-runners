@@ -99,6 +99,13 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 
 	// Publish the response message to the output subject.
 	r.publishResponse(r.cfg.NATS.OutputSubject, responseMsg)
+
+	// Tell NATS we don't need to receive the message anymore and we are done processing it.
+	err = msg.Ack()
+	if err != nil {
+		r.stopWorkflowReturningErr(err, r.cfg.NATS.EntrypointSubject)
+		return
+	}
 }
 
 // stopWorkflowReturningErr publishes a error message to the final reply subject
