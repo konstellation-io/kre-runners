@@ -112,6 +112,7 @@ class EntrypointKRE:
                 config=ConsumerConfig(
                     deliver_policy=DeliverPolicy.NEW,
                 ),
+                manual_ack=True,
             )
 
             # publish the msg to the NATS server
@@ -138,6 +139,8 @@ class EntrypointKRE:
                     await sub.unsubscribe()
                     response = self.make_response_object(workflow, kre_nats_message)
                     await self._respond_to_grpc_stream(response, workflow, kre_nats_message.reply)
+
+                await msg.ack()
 
         except Exception as err:
             err_msg = f"Exception on gRPC call : {err}"

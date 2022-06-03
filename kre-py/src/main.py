@@ -89,6 +89,7 @@ class NodeRunner(Runner):
             config=ConsumerConfig(
                 deliver_policy=DeliverPolicy.NEW,
             ),
+            manual_ack=True,
         )
 
         self.logger.info(
@@ -137,6 +138,7 @@ class NodeRunner(Runner):
                 output_subject = self.config.nats_output
 
                 self.logger.info(f"Publishing response to '{output_subject}'")
+                await msg.ack()
                 await self.publish_response(output_subject, res)
 
             except Exception as err:
