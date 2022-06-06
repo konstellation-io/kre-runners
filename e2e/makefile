@@ -11,3 +11,6 @@ build_go:
 
 test:
 	./scripts/run_go_test.sh
+
+proto: 
+	./scripts/generate_proto.sh

@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 
+	localProto "main/proto"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/konstellation-io/kre-runners/kre-go"
@@ -17,8 +19,8 @@ func handlerInit(ctx *kre.HandlerContext) {
 func handler(ctx *kre.HandlerContext, data *any.Any) (proto.Message, error) {
 	ctx.Logger.Info("[worker handler]")
 
-	req := &NodeCRequest{}
-	res := &Response{}
+	req := &localProto.NodeCRequest{}
+	res := &localProto.Response{}
 
 	ctx.Logger.Info(data.String())
 
