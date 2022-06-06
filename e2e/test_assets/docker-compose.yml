@@ -8,7 +8,7 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=123456
       - MONGO_INITDB_DATABASE=admin
     ports:
-      - 27017:27017
+      - "27017:27017"
     logging:
       driver: none
 
@@ -16,16 +16,9 @@ services:
     image: "influxdb:1.8-alpine"
     ports:
       - "8086:8086"
-
-  influx_init:
-    image: "influxdb:1.8-alpine"
     environment:
-      INFLUX_DATABASE: "kre"
-    volumes:
-      - "./influx:/docker-entrypoint-initdb.d"
-    command: /init-influxdb.sh
-    logging:
-      driver: none
+      "INFLUXDB_DB": "kre"
+      "INFLUXDB_META_DIR": "/var/lib/influxdb/meta2"
 
   nats:
     image: "nats:2.8.1"
@@ -105,8 +98,6 @@ services:
       "KRT_NATS_ENTRYPOINT_SUBJECT": ${NODEC_KRT_NATS_ENTRYPOINT_SUBJECT}
       "KRT_HANDLER_PATH": ${NODEC_KRT_HANDLER_PATH}
       "KRT_IS_LAST_NODE": ${NODEC_KRT_IS_LAST_NODE}
-    logging:
-      driver: none
 
   node-entrypoint:
     build:
