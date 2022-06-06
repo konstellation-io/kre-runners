@@ -17,6 +17,5 @@ In two terminals:
 If you were to change the proto contract, and you need to generate new proto files:
 
 ```sh
-In two terminals:
 - make proto
 ```
