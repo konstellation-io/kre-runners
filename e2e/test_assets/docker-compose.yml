@@ -98,6 +98,8 @@ services:
       "KRT_NATS_ENTRYPOINT_SUBJECT": ${NODEC_KRT_NATS_ENTRYPOINT_SUBJECT}
       "KRT_HANDLER_PATH": ${NODEC_KRT_HANDLER_PATH}
       "KRT_IS_LAST_NODE": ${NODEC_KRT_IS_LAST_NODE}
+    logging:
+      driver: none
 
   node-entrypoint:
     build:
