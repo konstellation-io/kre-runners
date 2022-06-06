@@ -1,11 +1,13 @@
 build:
+	./scripts/build_go_node.sh
 	docker-compose --env-file .env.e2e -f test_assets/docker-compose.yml up --build
 	
+# done automatically by docker-compose
 init-influx:
 	curl "http://localhost:8086/query" --data-urlencode "q=CREATE DATABASE kre"
 
-build2:
-	docker-compose --env-file .env.e2e -f test_assets/docker-compose.yml up --build \
-  curl "http://localhost:8086/query" --data-urlencode "q=CREATE DATABASE kre"
+build_go:
+	./scripts/build_go_node.sh
 
-#command: sh -c "apk add curl && sleep 5 && curl 'http://localhost:8086/query' --data-urlencode 'q=CREATE DATABASE kre'"
+test:
+	./scripts/run_go_test.sh
