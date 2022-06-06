@@ -48,7 +48,8 @@ class NodeRunner(Runner):
 
         if not hasattr(handler_module, "handler"):
             raise Exception(
-                f"Handler module '{handler_full_path}' must implement a function 'handler(ctx, data)'"
+                f"Handler module '{handler_full_path}' must "
+                f"implement a function 'handler(ctx, data)'"
             )
 
         if hasattr(handler_module, "init"):
@@ -93,7 +94,8 @@ class NodeRunner(Runner):
         )
 
         self.logger.info(
-            f"Listening to '{self.config.nats_input}' subject with queue '{queue_name}'"
+            f"Listening to '{self.config.nats_input}' subject with queue '{queue_name}' "
+            f"from stream '{self.config.nats_stream}'"
         )
 
         await self.execute_handler_init()
@@ -113,12 +115,11 @@ class NodeRunner(Runner):
             request_msg = self.new_request_msg(msg.data)
 
             self.logger.info(f"Received new request message from NATS subject {msg.subject}")
-            self.logger.info(f"Request message REPLY: {request_msg.reply}")
 
             try:
-                # if the "request_msg.reply" has no value, it means that is the last message of the workflow.
-                # In this case we set this value into the "self.config.nats_entrypoint_subject" field in order
-                # respond to the entrypoint.
+                # if the "request_msg.reply" has no value, t means that is the last message
+                # of the workflow.  In this case we set this value into the
+                # "self.config.nats_entrypoint_subject" field in order respond to the entrypoint.
 
                 # Make a shallow copy of the ctx object to set inside the request msg.
                 ctx = copy.copy(self.handler_ctx)
@@ -137,7 +138,6 @@ class NodeRunner(Runner):
                 # Publish the response message to the output subject.
                 output_subject = self.config.nats_output
 
-                self.logger.info(f"Publishing response to '{output_subject}'")
                 await msg.ack()
                 await self.publish_response(output_subject, res)
 
@@ -204,7 +204,10 @@ class NodeRunner(Runner):
             await self.js.publish(
                 stream=self.config.nats_stream, subject=subject, payload=serialized_response_msg
             )
-            self.logger.info(f"Published response to NATS subject {subject}")
+            self.logger.info(
+                f"Published response to NATS subject {subject} "
+                f"from stream {self.config.nats_stream}"
+            )
         except ConnectionClosedError as err:
             self.logger.error(f"Connection closed when publishing response: {err}")
         except TimeoutError as err:
@@ -219,8 +222,8 @@ class NodeRunner(Runner):
 
     def save_elapsed_time(self, req_msg: KreNatsMessage, start: datetime, end: datetime) -> None:
         """
-        save_elapsed_time stores in InfluxDB the elapsed time for the current node and the total elapsed time
-        of the complete workflow if it is the last node.
+        save_elapsed_time stores in InfluxDB the elapsed time for the current node and the
+        total elapsed time of the complete workflow if it is the last node.
 
         :param req_msg: the request message.
         :param start: when this node started.

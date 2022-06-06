@@ -46,7 +46,8 @@ class EntrypointKRE:
         subjects related to each workflow exposed by the Entrypoint.
         """
         self.logger.info(
-            f"Connecting to NATS {self.config.nats_server} with runner name {self.config.runner_name}..."
+            f"Connecting to NATS {self.config.nats_server} "
+            f"with runner name {self.config.runner_name}..."
         )
 
         # connect to NATS server and jetstream
@@ -93,8 +94,9 @@ class EntrypointKRE:
                 self.jetstream_data[workflow]["grpc_streams"][request_id] = grpc_stream
 
             grpc_raw_msg = await grpc_stream.recv_message()
-            self.logger.info(
-                f"gRPC message received {grpc_raw_msg} from {grpc_stream.peer} and request_id {request_id}"
+            self.logger.debug(
+                f"gRPC message received {grpc_raw_msg} "
+                f"from {grpc_stream.peer} and request_id {request_id}"
             )
 
             # get the correct subject, subscription and stream depending on the workflow
@@ -118,7 +120,7 @@ class EntrypointKRE:
             # publish the msg to the NATS server
             await self.js.publish(stream=stream, subject=subject, payload=request_msg)
             self.logger.info(
-                f"Message published to NATS subject: '{subject}' to stream: '{stream}'"
+                f"Message published to NATS subject: '{subject}' from stream: '{stream}'"
             )
 
             # wait until a message for the request arrives ignoring the rest
@@ -128,14 +130,15 @@ class EntrypointKRE:
                 # wait for the response
                 self.logger.info("Waiting for response message...")
                 msg = await sub.next_msg(timeout=self.config.request_timeout)
-                self.logger.info(f"Response message received: {msg.data}")
+                self.logger.debug(f"Response message received: {msg.data}")
 
                 # prepare the grpc response message
                 kre_nats_message = self._create_grpc_response(msg.data)
 
                 if kre_nats_message.reply == request_id:
                     message_recv = True
-                    # when we receive the expected message, we delete the subscription and send the response
+                    # when we receive the expected message,
+                    # we delete the subscription and send the response
                     await sub.unsubscribe()
                     response = self.make_response_object(workflow, kre_nats_message)
                     await self._respond_to_grpc_stream(response, workflow, kre_nats_message.reply)
@@ -226,7 +229,9 @@ class EntrypointKRE:
         if len(out) > MESSAGE_THRESHOLD:
             raise Exception("compressed message exceeds maximum size allowed of 1 MB.")
 
-        self.logger.info(f"Original message size: {size_in_kb(msg)}. Compressed: {size_in_kb(out)}")
+        self.logger.debug(
+            f"Original message size: {size_in_kb(msg)}. Compressed: {size_in_kb(out)}"
+        )
 
         return out
 
