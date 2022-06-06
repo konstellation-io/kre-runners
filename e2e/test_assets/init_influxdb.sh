@@ -1,0 +1,1 @@
+curl "http://influx:8086/query" --data-urlencode "q=CREATE DATABASE kre"

@@ -1,5 +1,3 @@
-import time
-import random
 from google.protobuf.any_pb2 import Any
 
 from public_input_pb2 import NodeBRequest, NodeCRequest
@@ -28,10 +26,6 @@ async def handler(ctx, data: Any) -> NodeCRequest:
 
     result = f"{req.lastname}, how are you?"
     ctx.logger.info(f"result -> {result}")
-
-    # sleep = random.randint(1, 5)
-    # ctx.logger.info("Sleep for %d seconds" % sleep)
-    # time.sleep(sleep)
 
     output = NodeCRequest()
     output.greeting = result
