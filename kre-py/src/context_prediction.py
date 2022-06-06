@@ -36,7 +36,8 @@ class ContextPrediction:
                 )
             if not isinstance(true_value, str) or true_value == "":
                 raise Exception(
-                    f"[ctx.prediction.save] invalid 'true_value'='{true_value}', must be a nonempty string"
+                    f"[ctx.prediction.save] invalid "
+                    f"'true_value'='{true_value}', must be a nonempty string"
                 )
 
         if utcdate is None:

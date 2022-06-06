@@ -48,7 +48,8 @@ class NodeRunner(Runner):
 
         if not hasattr(handler_module, "handler"):
             raise Exception(
-                f"Handler module '{handler_full_path}' must implement a function 'handler(ctx, data)'"
+                f"Handler module '{handler_full_path}' must "
+                f"implement a function 'handler(ctx, data)'"
             )
 
         if hasattr(handler_module, "init"):
@@ -116,9 +117,9 @@ class NodeRunner(Runner):
             self.logger.info(f"Request message REPLY: {request_msg.reply}")
 
             try:
-                # if the "request_msg.reply" has no value, it means that is the last message of the workflow.
-                # In this case we set this value into the "self.config.nats_entrypoint_subject" field in order
-                # respond to the entrypoint.
+                # if the "request_msg.reply" has no value, t means that is the last message
+                # of the workflow.  In this case we set this value into the
+                # "self.config.nats_entrypoint_subject" field in order respond to the entrypoint.
 
                 # Make a shallow copy of the ctx object to set inside the request msg.
                 ctx = copy.copy(self.handler_ctx)
@@ -219,8 +220,8 @@ class NodeRunner(Runner):
 
     def save_elapsed_time(self, req_msg: KreNatsMessage, start: datetime, end: datetime) -> None:
         """
-        save_elapsed_time stores in InfluxDB the elapsed time for the current node and the total elapsed time
-        of the complete workflow if it is the last node.
+        save_elapsed_time stores in InfluxDB the elapsed time for the current node and the
+        total elapsed time of the complete workflow if it is the last node.
 
         :param req_msg: the request message.
         :param start: when this node started.
