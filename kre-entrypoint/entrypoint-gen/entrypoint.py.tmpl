@@ -35,8 +35,10 @@ class Entrypoint(EntrypointBase, EntrypointKRE):
 
         {{- range .Methods}}
         if workflow == '{{ .Name }}':
-            self.logger.info(f"Creating a response to {{ .Name }}({{ .RequestType }})"
-                              f" with type: '{{ .ReturnsType }}'")
+            self.logger.debug(
+                f"Creating a response to {{ .Name }}({{ .RequestType }})"
+                f" with type: '{{ .ReturnsType }}'"
+            )
 
             res_msg = public_input_pb2.{{.ReturnsType}}()
             kre_nats_msg.payload.Unpack(res_msg)

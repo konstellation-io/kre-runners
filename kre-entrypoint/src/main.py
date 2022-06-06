@@ -26,7 +26,7 @@ class EntrypointRunner(Runner):
 
         with open(self.config.nats_subjects_file) as json_file:
             subjects = json.load(json_file)
-            self.logger.info(f"Loaded NATS subject file: {subjects}")
+            self.logger.debug(f"Loaded NATS subject file: {subjects}")
 
         self.logger.info(f"Creating entrypoint service")
         self.entrypoint = Entrypoint(self.logger, subjects, self.config)

@@ -94,7 +94,8 @@ class NodeRunner(Runner):
         )
 
         self.logger.info(
-            f"Listening to '{self.config.nats_input}' subject with queue '{queue_name}'"
+            f"Listening to '{self.config.nats_input}' subject with queue '{queue_name}' "
+            f"from stream '{self.config.nats_stream}'"
         )
 
         await self.execute_handler_init()
@@ -114,7 +115,6 @@ class NodeRunner(Runner):
             request_msg = self.new_request_msg(msg.data)
 
             self.logger.info(f"Received new request message from NATS subject {msg.subject}")
-            self.logger.info(f"Request message REPLY: {request_msg.reply}")
 
             try:
                 # if the "request_msg.reply" has no value, t means that is the last message
@@ -138,7 +138,6 @@ class NodeRunner(Runner):
                 # Publish the response message to the output subject.
                 output_subject = self.config.nats_output
 
-                self.logger.info(f"Publishing response to '{output_subject}'")
                 await msg.ack()
                 await self.publish_response(output_subject, res)
 
@@ -205,7 +204,10 @@ class NodeRunner(Runner):
             await self.js.publish(
                 stream=self.config.nats_stream, subject=subject, payload=serialized_response_msg
             )
-            self.logger.info(f"Published response to NATS subject {subject}")
+            self.logger.info(
+                f"Published response to NATS subject {subject} "
+                f"from stream {self.config.nats_stream}"
+            )
         except ConnectionClosedError as err:
             self.logger.error(f"Connection closed when publishing response: {err}")
         except TimeoutError as err:
