@@ -118,7 +118,7 @@ async def handler(ctx, data):
 
 ## Development
 
-First of all, install the dependencies using pipenv:
+First, install the dependencies using pipenv:
 
 ```bash
 pipenv install --dev
