@@ -6,6 +6,22 @@ This is an implementation in Python for the KRE runner.
 
 This image is built on top of `nvidia/cuda-10.2-devel` to add GPU support on the runner.
 
+## How it works
+
+The python runner is one of the two types of runners that can be used in a KRE workflow and allows executing python code.
+
+Once the python runner is deployed, it connects to NATS and subscribes permanently to an input subject. 
+Each node knows to which subject it has to subscribe and also to which subject it has to send messages, 
+since the K8s manager (REFERENCE TO k8S MANAGER) tells it with environment variables. 
+It's important to note that the nodes use a queue subscription, 
+which allows load balancing of messages when there are multiple replicas of the runner.
+
+When a new message is published in the input subject of a node, the runner processes the message 
+and passes it to the handler, along with a context object formed by variables and useful methods for processing data. 
+This handler is in charge of processing the message and returning the response to the node, 
+which transforms the response to a NATS format and publishes it to the subject that corresponds to (which is indicated by an environment variable).
+After that, the node ACKs the message manually.
+
 ## Usage
 
 The injected code must implement a `handler(ctx, data)` function and optionally a `init(ctx)` function.
