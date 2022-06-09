@@ -28,7 +28,8 @@ Also, the subjects to where the rest of the nodes will be subscribed follow the 
 
 - `<RUNTIME_ID>-<KRT_VERSION>-<KRT_WORKFLOW_NAME>-<KRT_NODE_NAME>`
 
-Once the stream is created, the entrypoint stores it and the subjects on a dictionary so it knows all the streams and subjects that are available.
+Once the stream is created, the entrypoint stores it and the subjects on a dictionary, so it 
+knows all the streams and subjects that are available.
 
 After that, the entrypoint starts to listen on a gRPC server and when a new message is received, a unique ID is generated and stored together with the gRPC client in a dictionary, so it can be used to respond to the client. 
 Then an ephemeral subscription is created to the entrypoint subject (we use one subscription per message) and the message is published on the next node subject.
