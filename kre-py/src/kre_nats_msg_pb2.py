@@ -3,6 +3,7 @@
 # source: kre_nats_msg.proto
 """Generated protocol buffer code."""
 from google.protobuf import descriptor as _descriptor
+from google.protobuf import descriptor_pool as _descriptor_pool
 from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
@@ -270,6 +271,12 @@ KreNatsMessage = _reflection.GeneratedProtocolMessageType(
 _sym_db.RegisterMessage(KreNatsMessage)
 _sym_db.RegisterMessage(KreNatsMessage.Tracking)
 
+if _descriptor._USE_C_DESCRIPTORS == False:
 
-DESCRIPTOR._options = None
+    DESCRIPTOR._options = None
+    DESCRIPTOR._serialized_options = b"Z\003kre"
+    _KRENATSMESSAGE._serialized_start = 50
+    _KRENATSMESSAGE._serialized_end = 276
+    _KRENATSMESSAGE_TRACKING._serialized_start = 219
+    _KRENATSMESSAGE_TRACKING._serialized_end = 276
 # @@protoc_insertion_point(module_scope)

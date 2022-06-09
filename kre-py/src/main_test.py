@@ -14,7 +14,6 @@ from nats.js.api import DeliverPolicy, ConsumerConfig
 import kre_nats_msg_pb2
 from context import HandlerContext
 from kre_nats_msg_pb2 import KreNatsMessage
-from main import NodeRunner
 from test_utils.public_input_for_testing_pb2 import Request, Response
 
 TEST_ENV_VARS = {

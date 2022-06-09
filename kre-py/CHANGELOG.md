@@ -1,3 +1,20 @@
+# [kre-py-v1.29.0](https://github.com/konstellation-io/kre-runners/compare/kre-py-v1.28.1...kre-py-v1.29.0) (2022-04-07)
+
+
+### Bug Fixes
+
+* **kre-py:** Go back on protobuf version ([545f40d](https://github.com/konstellation-io/kre-runners/commit/545f40decbf8a45a092c5f3a471f61687952ee87))
+* **kre-py:** Install pytest-cov ([fc7ad41](https://github.com/konstellation-io/kre-runners/commit/fc7ad413aaa0f32081510f24babb01c03fdf4fb6))
+* **kre-py:** remove go coverage path on kre-py ([1110bc1](https://github.com/konstellation-io/kre-runners/commit/1110bc1f2506aef2fec83e9dfaec393f196f52df))
+* **kre-py:** remove tests ([bff379d](https://github.com/konstellation-io/kre-runners/commit/bff379d9e061a10860ea62c464a6977697e32815))
+
+
+### Features
+
+* **kre-py:** Add tests ([4a0ccff](https://github.com/konstellation-io/kre-runners/commit/4a0ccffc28e5e4ff48965350898a2664f46e4ac2))
+* **kre-py:** Update protobuf ([3bb9cbf](https://github.com/konstellation-io/kre-runners/commit/3bb9cbfbedfef7106fa77d01dcd01105bba1b279))
+* **workflow:** Update kre-py semantic workflow ([f32eb5e](https://github.com/konstellation-io/kre-runners/commit/f32eb5eacf0b18270f798b2192af6ed97b6a1fda))
+
 # [kre-py-v1.28.1](https://github.com/konstellation-io/kre-runners/compare/kre-py-v1.28.0...kre-py-v1.28.1) (2022-03-18)
 
 
