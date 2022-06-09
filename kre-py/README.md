@@ -16,10 +16,11 @@ since the K8s manager (REFERENCE TO k8S MANAGER) tells it with environment varia
 It's important to note that the nodes use a queue subscription, 
 which allows load balancing of messages when there are multiple replicas of the runner.
 
-When a new message is published in the input subject of a node, the runner processes the message 
-and passes it to the handler, along with a context object formed by variables and useful methods for processing data. 
-This handler is in charge of processing the message and returning the response to the node, 
-which transforms the response to a NATS format and publishes it to the subject that corresponds to (which is indicated by an environment variable).
+When a new message is published in the input subject of a node, the runner passes it down to a 
+handler function, along with a context object formed by variables and useful methods for processing data. 
+This handler is the solution implemented by the client and given in the krt file generated. 
+Once executed, the result will be taken by the runner and transformed into a NATS message that 
+will then be published to the next node's subject (indicated by an environment variable).
 After that, the node ACKs the message manually.
 
 ## Usage
