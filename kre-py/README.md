@@ -62,6 +62,8 @@ await ctx.prediction.save(
 )
 ```
 
+## Requirements
+
 It is necessary to set the following environment variables in order to use the runner:
 
 | Name                  | Description                                                         | 
@@ -79,6 +81,8 @@ It is necessary to set the following environment variables in order to use the r
 | KRT_HANDLER_PATH      | Path to the handler file                                            |
 | KRT_MONGO_URI         | Mongo database URI                                                  |
 | KRT_INFLUX_URI        | Influx database URI                                                 |
+
+## Example
 
 This is an example of the code that will be run by the docker py3 runner:
 
