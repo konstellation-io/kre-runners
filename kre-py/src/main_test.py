@@ -15,6 +15,7 @@ import kre_nats_msg_pb2
 from context import HandlerContext
 from kre_nats_msg_pb2 import KreNatsMessage
 from test_utils.public_input_for_testing_pb2 import Request, Response
+from main import NodeRunner
 
 TEST_ENV_VARS = {
     "KRT_WORKFLOW_NAME": "workflow1",
