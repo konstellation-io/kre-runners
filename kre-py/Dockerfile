@@ -9,6 +9,7 @@ LABEL maintainer "Intelygenz - Konstellation Team"
 ARG TZ=Europe/Madrid 
 ARG USER=kre
 ARG ID=1001
+ARG BUILD_ENV
 
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
@@ -56,7 +57,7 @@ RUN python3 -m pip install --upgrade --no-cache-dir  \
 
 USER ${USER}
 
-RUN pipenv --clear install --system --deploy
+RUN pipenv install --system --deploy $([ ! -z $BUILD_ENV ] && echo --dev)
 
 WORKDIR /kre
 
