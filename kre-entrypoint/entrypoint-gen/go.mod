@@ -1,6 +1,6 @@
 module entrypoint-gen
 
-go 1.14
+go 1.18
 
 require (
 		github.com/emicklei/proto v1.9.0
