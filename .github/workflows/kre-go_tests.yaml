@@ -1,6 +1,12 @@
 name: kre-go Tests
 
 on:
+  pull_request:
+    branches:
+      - "*"
+    paths:
+      - "kre-go/**/*"
+      - ".github/workflows/kre-go*"
   push:
     branches:
       - "*"
