@@ -150,6 +150,8 @@ def node_runner(
         "KRT_BASE_PATH": "/tmp",
         "KRT_HANDLER_PATH": "src/node/node_handler.py",
         "KRT_MONGO_URI": "mongodb://mock:mock@mock:27017/admin",
+        "KRT_IS_LAST_NODE": "true",
+        "KRT_NATS_ENTRYPOINT_SUBJECT": "entrypoint_subject",
     }
 
     with mock.patch.dict(os.environ, environment_variables):
