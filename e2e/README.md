@@ -1,19 +1,22 @@
 # END-TO-END TESTING (E2E)
 
-This section describes how to run the end-to-end test which performs different request to a full local environment with an entrypoint, 2 python nodes and 1 golang node.
+This section describes how to run the end-to-end test suite, which performs different requests to a
+full local environment consisting of an entrypoint, 2 python nodes and 1 golang node.
 
-The test checks if the requests are properly responded and also responded in the same order as the requests were sent.
+The test launches several concurrent clients, each client will make several requests to the entrypoint.
+Our point is to prove that several concurrent clients calling the entrypoint will receive all expected
+responses without them being disorganized or lost.
 
 ## How to use
 
 In order to execute the E2E test, run the following commands in two different terminals:
 
 ```sh
-$ make build
+make build
 ```
 
 ```sh
-$ make test
+make test
 ```
 
 ## Proto files
@@ -21,5 +24,5 @@ $ make test
 It's also possible to generate the protobuf files from the source code with the following command:
 
 ```sh
-$ make proto
+make proto
 ```

@@ -117,10 +117,6 @@ class NodeRunner(Runner):
             self.logger.info(f"Received new request message from NATS subject {msg.subject}")
 
             try:
-                # if the "request_msg.reply" has no value, t means that is the last message
-                # of the workflow.  In this case we set this value into the
-                # "self.config.nats_entrypoint_subject" field in order respond to the entrypoint.
-
                 # Make a shallow copy of the ctx object to set inside the request msg.
                 ctx = copy.copy(self.handler_ctx)
                 ctx.__request_msg__ = request_msg
@@ -132,14 +128,22 @@ class NodeRunner(Runner):
                 # Save the elapsed time for this node and for the workflow if it is the last node.
                 self.save_elapsed_time(request_msg, start, end)
 
+                # Ignore send reply if the msg was replied previously.
+                if self.config.krt_last_node == "true" and request_msg.replied:
+                    if handler_result is not None:
+                        self.logger.info(
+                            "ignoring the last node response because the message was replied previously"
+                        )
+                    return
+
                 # Generate a KreNatsMessage response.
                 res = self.new_response_msg(request_msg, handler_result, start, end)
 
                 # Publish the response message to the output subject.
-                output_subject = self.config.nats_output
+                await self.publish_response(self.config.nats_output, res)
 
+                # Tell NATS we don't need to receive the message anymore and we are done processing it.
                 await msg.ack()
-                await self.publish_response(output_subject, res)
 
             except Exception as err:
                 tb = traceback.format_exc()
@@ -166,8 +170,8 @@ class NodeRunner(Runner):
 
         return request_msg
 
-    # new_response_msg creates a KreNatsMessage maintaining the tracking ID and adding the
-    # handler result and the tracking information for this nodeA.
+    # new_response_msg creates a KreNatsMessage maintaining the tracking ID plus adding the
+    # handler result and the tracking information for this node.
     def new_response_msg(
         self, request_msg: KreNatsMessage, payload: any, start, end
     ) -> KreNatsMessage:

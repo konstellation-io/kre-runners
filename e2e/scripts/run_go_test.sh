@@ -3,7 +3,7 @@
   set -eu
 
   cd ./test_go
-  echo "Running Go test..."
+  echo "Running e2e Go test..."
   go run main.go
 
   echo "Done"

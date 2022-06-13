@@ -9,7 +9,7 @@ message Request {
 }
 
 message NodeBRequest {
-  string lastname = 1;
+  string greeting = 1;
 }
 
 message NodeCRequest {

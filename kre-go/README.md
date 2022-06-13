@@ -10,7 +10,7 @@ executing go code.
 Once the go runner is deployed, it connects to NATS and subscribes permanently to an input
 subject.
 Each node knows to which subject it has to subscribe and also to which subject it has to send messages,
-since the K8s manager (REFERENCE TO k8S MANAGER) tells it with environment variables.
+since the [K8s manager](https://github.com/konstellation-io/kre/tree/main/engine/k8s-manager) tells it with environment variables.
 It's important to note that the nodes use a queue subscription,
 which allows load balancing of messages when there are multiple replicas of the runner.
 

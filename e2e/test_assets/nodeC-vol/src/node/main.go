@@ -29,7 +29,7 @@ func handler(ctx *kre.HandlerContext, data *any.Any) (proto.Message, error) {
 		return res, fmt.Errorf("invalid request: %s", err)
 	}
 
-	result := req.Greeting + " from nodeC"
+	result := req.Greeting + " and nodeC!"
 
 	ctx.Logger.Info(fmt.Sprintf("result -> %s", result))
 

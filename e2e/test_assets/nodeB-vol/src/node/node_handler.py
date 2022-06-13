@@ -5,7 +5,6 @@ from public_input_pb2 import NodeBRequest, NodeCRequest
 
 def init(ctx):
     print("[worker init]")
-    ctx.set("greeting", "Hello")
 
 
 async def handler(ctx, data: Any) -> NodeCRequest:
@@ -24,7 +23,7 @@ async def handler(ctx, data: Any) -> NodeCRequest:
     req = NodeBRequest()
     data.Unpack(req)
 
-    result = f"{req.lastname}, how are you?"
+    result = f"{req.greeting}, nodeB"
     ctx.logger.info(f"result -> {result}")
 
     output = NodeCRequest()

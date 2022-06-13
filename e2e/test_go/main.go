@@ -27,7 +27,6 @@ func increaseCounter() {
 }
 
 func main() {
-
 	fmt.Println("Sending requests..")
 
 	wg.Add(numberOfClients)
@@ -51,27 +50,23 @@ func sendRequests(numberOfRequests int) {
 	defer conn.Close()
 
 	client := proto.NewEntrypointClient(conn)
-	myExpectedResponses := make(map[string]bool)
 
-	fmt.Printf("%v+\n", client)
+	fmt.Printf("Created client with address: %v+\n", client)
 
 	fails := 0
 	myCounter := 0
 
 	for i := 0; i < numberOfRequests; i++ {
-
 		generatedName := fmt.Sprintf("Alex-%d", (rand.Intn(10000)))
-		generatedResponse := fmt.Sprintf("Hello %s!, how are you? from nodeC", generatedName)
-		// fmt.Printf("Send message to %s", generatedName)
-		myExpectedResponses[generatedResponse] = true
+		expectedResponse := fmt.Sprintf("Hello %s! greetings from nodeA, nodeB and nodeC!", generatedName)
 
 		resp, err := client.Greet(context.Background(), &proto.Request{Name: generatedName})
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-		if generatedResponse != resp.Greeting && !myExpectedResponses[resp.Greeting] {
-			fmt.Println(generatedResponse, "---", resp.Greeting)
+		if expectedResponse != resp.Greeting {
+			fmt.Println(expectedResponse, "---", resp.Greeting)
 			fails++
 		}
 

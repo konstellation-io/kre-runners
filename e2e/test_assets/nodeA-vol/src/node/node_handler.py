@@ -24,10 +24,10 @@ async def handler(ctx, data: Any) -> NodeBRequest:
     req = Request()
     data.Unpack(req)
 
-    result = f"{ctx.get('greeting')} {req.name}!"
+    result = f"{ctx.get('greeting')} {req.name}! greetings from nodeA"
     ctx.logger.info(f"result -> {result}")
 
     output = NodeBRequest()
-    output.lastname = result
+    output.greeting = result
 
     return output
