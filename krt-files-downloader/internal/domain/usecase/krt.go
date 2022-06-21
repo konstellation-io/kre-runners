@@ -14,8 +14,8 @@ func NewKRTInteractor(krtRepo repository.KRTRepository) *KRTInteractor {
 	return &KRTInteractor{krtRepo: krtRepo}
 }
 
-func (i KRTInteractor) DownloadKRTFiles(versionID, destination string) error {
-	krt, err := i.krtRepo.DownloadKRT(versionID)
+func (i KRTInteractor) DownloadKRTFiles(runtimeID, versionID, destination string) error {
+	krt, err := i.krtRepo.DownloadKRT(runtimeID, versionID)
 	if err != nil {
 		return fmt.Errorf("downloading the KRT file: %w", err)
 	}
