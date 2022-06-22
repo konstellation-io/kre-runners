@@ -3,15 +3,14 @@ package kre
 import (
 	"errors"
 	"fmt"
-	"github.com/konstellation-io/kre-runners/kre-go/mongodb"
+	"github.com/nats-io/nats.go"
 	"time"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
-	"github.com/konstellation-io/kre/libs/simplelogger"
-	"github.com/nats-io/nats.go"
-
 	"github.com/konstellation-io/kre-runners/kre-go/config"
+	"github.com/konstellation-io/kre-runners/kre-go/mongodb"
+	"github.com/konstellation-io/kre/libs/simplelogger"
 )
 
 const (
