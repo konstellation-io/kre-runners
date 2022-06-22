@@ -36,7 +36,6 @@ class ContextMeasurement:
             point.tag(key, tags[key])
 
         point.tag("version", self.__config__.krt_version)
-        point.tag("runtime", self.__config__.krt_runtime_id)
 
         if time is None:
             time = datetime.utcnow()

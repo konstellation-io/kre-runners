@@ -47,7 +47,6 @@ func (c *contextMeasurement) Save(measurement string, fields map[string]interfac
 	}
 
 	p.AddTag("version", c.cfg.Version)
-	p.AddTag("runtime", c.cfg.RuntimeID)
 
 	p.SetTime(time.Now())
 
