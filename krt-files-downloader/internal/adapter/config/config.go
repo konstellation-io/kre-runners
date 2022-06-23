@@ -4,6 +4,7 @@ import "github.com/kelseyhightower/envconfig"
 
 type Config struct {
 	VersionID   string `envconfig:"KRT_VERSION_ID" required:"true"`
+	RuntimeID   string `envconfig:"KRT_RUNTIME_ID" required:"true"`
 	KRTBasePath string `envconfig:"KRT_BASE_PATH" required:"true"`
 	MongoDB     struct {
 		URI    string `envconfig:"KRT_MONGO_URI" required:"true"`

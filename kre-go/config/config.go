@@ -8,6 +8,7 @@ import (
 
 type Config struct {
 	WorkflowName string
+	RuntimeID    string
 	VersionID    string
 	Version      string
 	NodeName     string
@@ -37,6 +38,7 @@ type InfluxDB struct {
 func NewConfig(logger *simplelogger.SimpleLogger) Config {
 	return Config{
 		WorkflowName: getCfgFromEnv(logger, "KRT_WORKFLOW_NAME"),
+		RuntimeID:    getCfgFromEnv(logger, "KRT_RUNTIME_ID"),
 		VersionID:    getCfgFromEnv(logger, "KRT_VERSION_ID"),
 		Version:      getCfgFromEnv(logger, "KRT_VERSION"),
 		NodeName:     getCfgFromEnv(logger, "KRT_NODE_NAME"),

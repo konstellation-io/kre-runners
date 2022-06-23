@@ -42,4 +42,4 @@ class ContextMeasurement:
 
         point.time(time, precision)
 
-        self.__write_api__.write(INFLUX_BUCKET, INFLUX_ORG, point)
+        self.__write_api__.write(self.__config__.krt_runtime_id, INFLUX_ORG, point)
