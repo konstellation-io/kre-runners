@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/nats-io/nats.go"
 	"testing"
 	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/konstellation-io/kre/libs/simplelogger"
 	testserver "github.com/nats-io/nats-server/v2/test"
-	"github.com/nats-io/nats.go"
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/konstellation-io/kre-runners/kre-go/config"
@@ -31,6 +31,7 @@ func TestHandlerContext_GetData(t *testing.T) {
 		"KRT_WORKFLOW_NAME":     "workflowTest",
 		"KRT_VERSION":           "testVersion1",
 		"KRT_VERSION_ID":        "version.12345",
+		"KRT_RUNTIME_ID":        "runtime.12345",
 		"KRT_NODE_NAME":         "nodeA",
 		"KRT_BASE_PATH":         "./test",
 		"KRT_NATS_SERVER":       "localhost:4222",
