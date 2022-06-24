@@ -2,8 +2,6 @@ name: kre-go Tests
 
 on:
   push:
-    branches:
-      - "*"
     paths:
       - "kre-go/**/*"
       - ".github/workflows/kre-go*"
@@ -26,6 +24,7 @@ jobs:
           KRT_MONGO_URI: "mongodb"
           KRT_INFLUX_URI: "influx"
           KRT_VERSION_ID: "test"
+          KRT_RUNTIME_ID: "test"
         # TODO: Enable all tests
         run: |
           # go test -cover -v -coverprofile=coverage.out -covermode=atomic -coverpkg=./... ./...
