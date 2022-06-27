@@ -39,7 +39,6 @@ func TestKRTInteractor_DownloadKRTFiles(t *testing.T) {
 	const (
 		runtimeID   = "runtime1234"
 		versionID   = "version1234"
-		runtimeID   = "runtime1234"
 		destination = "_test/output"
 		krtFile     = "_test/greeter-v1.krt"
 	)
