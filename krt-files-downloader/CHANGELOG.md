@@ -1,3 +1,10 @@
+# [krt-files-downloader-v2.0.1](https://github.com/konstellation-io/kre-runners/compare/krt-files-downloader-v2.0.0...krt-files-downloader-v2.0.1) (2022-06-27)
+
+
+### Bug Fixes
+
+* **krt-files-downloader:** enable release on action ([92f073b](https://github.com/konstellation-io/kre-runners/commit/92f073b9447fc589260f09d599b7b7a93277e0d4))
+
 # [krt-files-downloader-v2.0.0](https://github.com/konstellation-io/kre-runners/compare/krt-files-downloader-v1.0.1...krt-files-downloader-v2.0.0) (2022-06-27)
 
 
