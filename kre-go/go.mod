@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	bou.ke/monkey v1.0.2
-	github.com/golang/mock v1.4.4
+	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.2
 	github.com/influxdata/influxdb-client-go v1.4.0
 	github.com/konstellation-io/kre/libs/simplelogger v0.0.0-20220411095035-228ab5da0b15
@@ -45,7 +45,6 @@ require (
 	golang.org/x/sys v0.0.0-20220111092808-5a964db01320 // indirect
 	golang.org/x/text v0.3.6 // indirect
 	golang.org/x/time v0.0.0-20211116232009-f0f3c7e86c11 // indirect
-	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	gopkg.in/yaml.v2 v2.2.8 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
 )
