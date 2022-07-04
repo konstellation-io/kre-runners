@@ -8,10 +8,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/nats-io/nats.go"
+
 	"github.com/golang/mock/gomock"
 	"github.com/konstellation-io/kre/libs/simplelogger"
 	testserver "github.com/nats-io/nats-server/v2/test"
-	"github.com/nats-io/nats.go"
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/konstellation-io/kre-runners/kre-go/config"

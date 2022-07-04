@@ -17,7 +17,7 @@ services:
     ports:
       - "8086:8086"
     environment:
-      "INFLUXDB_DB": "kre"
+      "INFLUXDB_DB": ${KRT_RUNTIME_ID}
       "INFLUXDB_META_DIR": "/var/lib/influxdb/meta2"
 
   nats:
@@ -36,6 +36,7 @@ services:
       - "./nodeA-vol:/tmp"
     environment:
       "KRT_WORKFLOW_NAME": ${KRT_WORKFLOW_NAME}
+      "KRT_RUNTIME_ID": ${KRT_RUNTIME_ID}
       "KRT_VERSION_ID": ${KRT_VERSION_ID}
       "KRT_VERSION": ${KRT_VERSION}
       "KRT_NATS_SERVER": ${KRT_NATS_SERVER}
@@ -59,6 +60,7 @@ services:
       - "./nodeB-vol:/tmp"
     environment:
       "KRT_WORKFLOW_NAME": ${KRT_WORKFLOW_NAME}
+      "KRT_RUNTIME_ID": ${KRT_RUNTIME_ID}
       "KRT_VERSION_ID": ${KRT_VERSION_ID}
       "KRT_VERSION": ${KRT_VERSION}
       "KRT_NATS_SERVER": ${KRT_NATS_SERVER}
@@ -82,6 +84,7 @@ services:
       - "./nodeC-vol:/tmp"
     environment:
       "KRT_WORKFLOW_NAME": ${KRT_WORKFLOW_NAME}
+      "KRT_RUNTIME_ID": ${KRT_RUNTIME_ID}
       "KRT_VERSION_ID": ${KRT_VERSION_ID}
       "KRT_VERSION": ${KRT_VERSION}
       "KRT_NATS_SERVER": ${KRT_NATS_SERVER}
@@ -107,7 +110,6 @@ services:
     ports:
       - "9000:9000"
     environment:
-      #"KRT_WORKFLOW_NAME": ${KRT_WORKFLOW_NAME}
       "KRT_VERSION_ID": ${KRT_VERSION_ID}
       "KRT_VERSION": ${KRT_VERSION}
       "KRT_NODE_NAME": ${KRT_NODE_NAME}

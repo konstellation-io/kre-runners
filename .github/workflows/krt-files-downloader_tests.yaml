@@ -2,8 +2,6 @@ name: krt-files-downloader Tests
 
 on:
   push:
-    branches:
-      - "*"
     paths:
       - "krt-files-downloader/**/*"
       - ".github/workflows/krt-files-downloader*"
