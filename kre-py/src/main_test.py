@@ -40,14 +40,6 @@ logger = logging.getLogger(__name__)
 def runner():
     print("Starting the node runner...")
 
-    # with mock.patch.dict(os.environ, TEST_ENV_VARS):
-    # runner = NodeRunner()
-
-    # p = Process(target=runner.start)
-    # p.start()
-    # yield runner
-    # p.terminate()
-
 
 def prepare_nats_message():
     # Prepare request message

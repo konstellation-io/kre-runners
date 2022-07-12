@@ -2,6 +2,7 @@ import abc
 import asyncio
 import logging
 import time
+from exceptions import ProcessMessagesNotImplemented
 import pymongo
 from nats.aio.client import Client as NATS
 
@@ -78,4 +79,4 @@ class Runner:
 
     @abc.abstractmethod
     async def process_messages(self):
-        raise Exception(f"Process_messages should be implemented.")
+        raise ProcessMessagesNotImplemented(Exception)
