@@ -4,7 +4,6 @@ import os
 class Config:
     def __init__(self):
         self.request_timeout = int(os.getenv("KRT_REQUEST_TIMEOUT", 30000))
-        self.runner_name = "entrypoint"
 
         # Mandatory environment variables
         try:
@@ -16,5 +15,6 @@ class Config:
             self.nats_server = os.environ['KRT_NATS_SERVER']
             self.nats_subjects_file = os.environ['KRT_NATS_SUBJECTS_FILE']
             self.influx_uri = os.environ['KRT_INFLUX_URI']
+            self.runner_name = self.krt_node_name
         except Exception as err:
             raise Exception(f"error reading config: the {str(err)} env var is missing")
