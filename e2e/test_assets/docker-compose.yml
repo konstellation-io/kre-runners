@@ -17,7 +17,7 @@ services:
     ports:
       - "8086:8086"
     environment:
-      "INFLUXDB_DB": ${KRT_RUNTIME_ID}
+      "INFLUXDB_DB": "runtime1"
       "INFLUXDB_META_DIR": "/var/lib/influxdb/meta2"
 
   nats:
@@ -28,77 +28,35 @@ services:
       - "4222:4222"
       - "8222:8222"
 
-  node-py:
+  node-a-py:
     build:
       context: "../../kre-py"
       dockerfile: "./Dockerfile"
     volumes:
       - "./nodeA-vol:/tmp"
-    environment:
-      "KRT_WORKFLOW_NAME": ${KRT_WORKFLOW_NAME}
-      "KRT_RUNTIME_ID": ${KRT_RUNTIME_ID}
-      "KRT_VERSION_ID": ${KRT_VERSION_ID}
-      "KRT_VERSION": ${KRT_VERSION}
-      "KRT_NATS_SERVER": ${KRT_NATS_SERVER}
-      "KRT_NATS_STREAM": ${KRT_NATS_STREAM}
-      "KRT_NATS_MONGO_WRITER": ${KRT_NATS_MONGO_WRITER}
-      "KRT_BASE_PATH": ${KRT_BASE_PATH}
-      "KRT_MONGO_URI": ${KRT_MONGO_URI}
-      "KRT_INFLUX_URI": ${KRT_INFLUX_URI}
-      "KRT_NODE_NAME": ${NODEA_KRT_NODE_NAME}
-      "KRT_NATS_INPUT": ${NODEA_KRT_NATS_INPUT}
-      "KRT_NATS_OUTPUT": ${NODEA_KRT_NATS_OUTPUT}
-      "KRT_NATS_ENTRYPOINT_SUBJECT": ${NODEA_KRT_NATS_ENTRYPOINT_SUBJECT}
-      "KRT_HANDLER_PATH": ${NODEA_KRT_HANDLER_PATH}
-      "KRT_IS_LAST_NODE": ${NODEA_KRT_IS_LAST_NODE}
+    env_file:
+        - env/.env.common
+        - env/.env.nodeA
 
-  node-py-2:
+  node-b-py:
     build:
       context: "../../kre-py"
       dockerfile: "./Dockerfile"
     volumes:
       - "./nodeB-vol:/tmp"
-    environment:
-      "KRT_WORKFLOW_NAME": ${KRT_WORKFLOW_NAME}
-      "KRT_RUNTIME_ID": ${KRT_RUNTIME_ID}
-      "KRT_VERSION_ID": ${KRT_VERSION_ID}
-      "KRT_VERSION": ${KRT_VERSION}
-      "KRT_NATS_SERVER": ${KRT_NATS_SERVER}
-      "KRT_NATS_STREAM": ${KRT_NATS_STREAM}
-      "KRT_NATS_MONGO_WRITER": ${KRT_NATS_MONGO_WRITER}
-      "KRT_BASE_PATH": ${KRT_BASE_PATH}
-      "KRT_MONGO_URI": ${KRT_MONGO_URI}
-      "KRT_INFLUX_URI": ${KRT_INFLUX_URI}
-      "KRT_NODE_NAME": ${NODEB_KRT_NODE_NAME}
-      "KRT_NATS_INPUT": ${NODEB_KRT_NATS_INPUT}
-      "KRT_NATS_OUTPUT": ${NODEB_KRT_NATS_OUTPUT}
-      "KRT_NATS_ENTRYPOINT_SUBJECT": ${NODEB_KRT_NATS_ENTRYPOINT_SUBJECT}
-      "KRT_HANDLER_PATH": ${NODEB_KRT_HANDLER_PATH}
-      "KRT_IS_LAST_NODE": ${NODEB_KRT_IS_LAST_NODE}
+    env_file:
+        - env/.env.common
+        - env/.env.nodeB
 
-  node-go-1:
+  node-c-go:
     build:
       context: "../../kre-go"
       dockerfile: "./Dockerfile"
     volumes:
       - "./nodeC-vol:/tmp"
-    environment:
-      "KRT_WORKFLOW_NAME": ${KRT_WORKFLOW_NAME}
-      "KRT_RUNTIME_ID": ${KRT_RUNTIME_ID}
-      "KRT_VERSION_ID": ${KRT_VERSION_ID}
-      "KRT_VERSION": ${KRT_VERSION}
-      "KRT_NATS_SERVER": ${KRT_NATS_SERVER}
-      "KRT_NATS_STREAM": ${KRT_NATS_STREAM}
-      "KRT_NATS_MONGO_WRITER": ${KRT_NATS_MONGO_WRITER}
-      "KRT_BASE_PATH": ${KRT_BASE_PATH}
-      "KRT_MONGO_URI": ${KRT_MONGO_URI}
-      "KRT_INFLUX_URI": ${KRT_INFLUX_URI}
-      "KRT_NODE_NAME": ${NODEC_KRT_NODE_NAME}
-      "KRT_NATS_INPUT": ${NODEC_KRT_NATS_INPUT}
-      "KRT_NATS_OUTPUT": ${NODEC_KRT_NATS_OUTPUT}
-      "KRT_NATS_ENTRYPOINT_SUBJECT": ${NODEC_KRT_NATS_ENTRYPOINT_SUBJECT}
-      "KRT_HANDLER_PATH": ${NODEC_KRT_HANDLER_PATH}
-      "KRT_IS_LAST_NODE": ${NODEC_KRT_IS_LAST_NODE}
+    env_file:
+      - env/.env.common
+      - env/.env.nodeC
 
   node-entrypoint:
     build:
@@ -109,16 +67,6 @@ services:
       - "./entrypoint-vol/krt-files:/krt-files"
     ports:
       - "9000:9000"
-    environment:
-      "KRT_VERSION_ID": ${KRT_VERSION_ID}
-      "KRT_VERSION": ${KRT_VERSION}
-      "KRT_NODE_NAME": ${KRT_NODE_NAME}
-      "KRT_NODE_ID": ${ENTRYPOINT_KRT_NODE_ID}
-      "KRT_NATS_STREAM": ${KRT_NATS_STREAM}
-      "KRT_NATS_SERVER": ${KRT_NATS_SERVER}
-      "KRT_NATS_SUBJECTS_FILE": ${ENTRYPOINT_KRT_NATS_SUBJECTS_FILE}
-      "KRT_INFLUX_URI": ${KRT_INFLUX_URI}
-      "KRT_NATS_INPUT": ${ENTRYPOINT_KRT_NATS_INPUT}
-      "KRT_NATS_OUTPUT": ${ENTRYPOINT_KRT_NATS_OUTPUT}
-      "KRT_RUNTIME_ID": ${KRT_RUNTIME_ID}
-      "KRT_NATS_SUBSCRIPTION_TIMEOUT": ${KRT_NATS_SUBSCRIPTION_TIMEOUT}
+    env_file:
+      - env/.env.common
+      - env/.env.entrypoint
