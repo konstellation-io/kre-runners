@@ -1,3 +1,10 @@
+# [krt-files-downloader-v2.1.0](https://github.com/konstellation-io/kre-runners/compare/krt-files-downloader-v2.0.1...krt-files-downloader-v2.1.0) (2022-07-18)
+
+
+### Features
+
+* **krt-files-downloader:** add compatibility with NATS jetstream ([#92](https://github.com/konstellation-io/kre-runners/issues/92)) ([b8ec569](https://github.com/konstellation-io/kre-runners/commit/b8ec5697a0a7d337b98edfd4c26b44f396c1eae7))
+
 # [krt-files-downloader-v2.0.1](https://github.com/konstellation-io/kre-runners/compare/krt-files-downloader-v2.0.0...krt-files-downloader-v2.0.1) (2022-06-27)
 
 
