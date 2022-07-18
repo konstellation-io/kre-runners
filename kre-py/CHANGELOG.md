@@ -1,3 +1,10 @@
+# [kre-py-v2.1.0](https://github.com/konstellation-io/kre-runners/compare/kre-py-v2.0.0...kre-py-v2.1.0) (2022-07-18)
+
+
+### Features
+
+* **kre-py:** add compatibility with NATS jetstream on kre-py ([#90](https://github.com/konstellation-io/kre-runners/issues/90)) ([9824f56](https://github.com/konstellation-io/kre-runners/commit/9824f56114bb1b26f332eac486b454f7811987b6))
+
 # [kre-py-v2.0.0](https://github.com/konstellation-io/kre-runners/compare/kre-py-v1.29.0...kre-py-v2.0.0) (2022-06-24)
 
 
