@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/nats-io/nats.go"
+	"os"
 	"testing"
 	"time"
+
+	"github.com/nats-io/nats.go"
 
 	"github.com/golang/mock/gomock"
 	"github.com/konstellation-io/kre/libs/simplelogger"
@@ -24,22 +26,33 @@ type TestPrediction struct {
 	Asset      string
 }
 
+func setEnvVars(t *testing.T, envVars map[string]string) {
+	for name, value := range envVars {
+		err := os.Setenv(name, value)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
 func TestHandlerContext_GetData(t *testing.T) {
 	logger := simplelogger.New(simplelogger.LevelDebug)
 	const inputSubject = "test-subject-input"
 	setEnvVars(t, map[string]string{
-		"KRT_WORKFLOW_NAME":     "workflowTest",
-		"KRT_VERSION":           "testVersion1",
-		"KRT_VERSION_ID":        "version.12345",
-		"KRT_RUNTIME_ID":        "runtime.12345",
-		"KRT_NODE_NAME":         "nodeA",
-		"KRT_BASE_PATH":         "./test",
-		"KRT_NATS_SERVER":       "localhost:4222",
-		"KRT_NATS_INPUT":        inputSubject,
-		"KRT_NATS_OUTPUT":       "",
-		"KRT_NATS_MONGO_WRITER": "mongo_writer",
-		"KRT_MONGO_URI":         "mongodb://mock",
-		"KRT_INFLUX_URI":        "influxdb-uri",
+		"KRT_WORKFLOW_NAME":           "workflowTest",
+		"KRT_VERSION":                 "testVersion1",
+		"KRT_VERSION_ID":              "version.12345",
+		"KRT_NODE_NAME":               "nodeA",
+		"KRT_BASE_PATH":               "./test",
+		"KRT_NATS_SERVER":             "localhost:4222",
+		"KRT_NATS_INPUT":              inputSubject,
+		"KRT_NATS_OUTPUT":             "",
+		"KRT_NATS_MONGO_WRITER":       "mongo_writer",
+		"KRT_MONGO_URI":               "mongodb://mock",
+		"KRT_INFLUX_URI":              "influxdb-uri",
+		"KRT_IS_LAST_NODE":            "true",
+		"KRT_NATS_STREAM":             "runtime-1-greeter-v1-Greet",
+		"KRT_NATS_ENTRYPOINT_SUBJECT": "runtime-1-greeter-v1-Greet.entrypoint",
 	})
 
 	cfg := config.NewConfig(logger)
@@ -120,17 +133,20 @@ func TestHandlerContext_SaveData(t *testing.T) {
 	logger := simplelogger.New(simplelogger.LevelDebug)
 	const inputSubject = "test-subject-input"
 	setEnvVars(t, map[string]string{
-		"KRT_WORKFLOW_NAME":     "workflowTest",
-		"KRT_VERSION":           "testVersion1",
-		"KRT_VERSION_ID":        "version.123456",
-		"KRT_NODE_NAME":         "nodeA",
-		"KRT_BASE_PATH":         "./test",
-		"KRT_NATS_SERVER":       "localhost:4222",
-		"KRT_NATS_INPUT":        inputSubject,
-		"KRT_NATS_OUTPUT":       "",
-		"KRT_NATS_MONGO_WRITER": "mongo_writer",
-		"KRT_MONGO_URI":         "mongodb://localhost:27017",
-		"KRT_INFLUX_URI":        "influxdb-uri",
+		"KRT_WORKFLOW_NAME":           "workflowTest",
+		"KRT_VERSION":                 "testVersion1",
+		"KRT_VERSION_ID":              "version.123456",
+		"KRT_NODE_NAME":               "nodeA",
+		"KRT_BASE_PATH":               "./test",
+		"KRT_NATS_SERVER":             "localhost:4222",
+		"KRT_NATS_INPUT":              inputSubject,
+		"KRT_NATS_OUTPUT":             "",
+		"KRT_NATS_MONGO_WRITER":       "mongo_writer",
+		"KRT_MONGO_URI":               "mongodb://localhost:27017",
+		"KRT_INFLUX_URI":              "influxdb-uri",
+		"KRT_IS_LAST_NODE":            "true",
+		"KRT_NATS_STREAM":             "runtime-1-greeter-v1-Greet",
+		"KRT_NATS_ENTRYPOINT_SUBJECT": "runtime-1-greeter-v1-Greet.entrypoint",
 	})
 
 	cfg := config.NewConfig(logger)

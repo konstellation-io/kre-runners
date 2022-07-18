@@ -3,8 +3,9 @@ package kre
 import (
 	"errors"
 	"fmt"
-	"github.com/nats-io/nats.go"
 	"time"
+
+	"github.com/nats-io/nats.go"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
@@ -24,16 +25,19 @@ type Runner struct {
 	logger         *simplelogger.SimpleLogger
 	cfg            config.Config
 	nc             *nats.Conn
+	js             nats.JetStreamContext
 	handler        Handler
 	handlerContext *HandlerContext
 }
 
 // NewRunner creates a new Runner instance.
-func NewRunner(logger *simplelogger.SimpleLogger, cfg config.Config, nc *nats.Conn, handler Handler, handlerInit HandlerInit, mongoM *mongodb.MongoDB) *Runner {
+func NewRunner(logger *simplelogger.SimpleLogger, cfg config.Config, nc *nats.Conn, js nats.JetStreamContext,
+	handler Handler, handlerInit HandlerInit, mongoM *mongodb.MongoDB) *Runner {
 	runner := &Runner{
 		logger:  logger,
 		cfg:     cfg,
 		nc:      nc,
+		js:      js,
 		handler: handler,
 	}
 
@@ -58,21 +62,7 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 		return
 	}
 
-	// Validations
-	if requestMsg.Reply == "" && msg.Reply == "" {
-		r.logger.Error("the reply subject was not found")
-		return
-	}
-
-	// If the "msg.Reply" has a value, it means that is the first message of the workflow.
-	// In other words, it comes from the initial entrypoint request.
-	// In this case we set this value into the "requestMsg.Reply" field in order
-	// to be propagated for the rest of workflow nodes.
-	if msg.Reply != "" {
-		requestMsg.Reply = msg.Reply
-	}
-
-	r.logger.Infof("Received a message on '%s' with final reply '%s'", msg.Subject, requestMsg.Reply)
+	r.logger.Infof("Received a message on '%s' to be published in '%s' with requestId '%s'", msg.Subject, r.cfg.NATS.OutputSubject, requestMsg.Reply)
 
 	// Make a shallow copy of the ctx object to set inside the request msg.
 	hCtx := r.handlerContext
@@ -81,18 +71,17 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 	// Execute the handler function sending context and the payload.
 	handlerResult, err := r.handler(hCtx, requestMsg.Payload)
 	if err != nil {
-		r.stopWorkflowReturningErr(err, requestMsg.Reply)
+		r.stopWorkflowReturningErr(err, r.cfg.NATS.EntrypointSubject)
 		return
 	}
 
 	end := time.Now().UTC()
 
 	// Save the elapsed time for this node and for the workflow if it is the last node.
-	isLastNode := r.cfg.NATS.OutputSubject == ""
-	r.saveElapsedTime(requestMsg, start, end, isLastNode)
+	r.saveElapsedTime(requestMsg, start, end, r.cfg.IsLastNode)
 
 	// Ignore send reply if the msg was replied previously.
-	if isLastNode && requestMsg.Replied {
+	if r.cfg.IsLastNode && requestMsg.Replied {
 		if handlerResult != nil {
 			r.logger.Info("ignoring the last node response because the message was replied previously")
 		}
@@ -101,15 +90,21 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 	}
 
 	// Generate a KreNatsMessage response.
-	responseMsg, err := r.newResponseMsg(handlerResult, requestMsg, start, end, requestMsg.Reply)
+	responseMsg, err := r.newResponseMsg(handlerResult, requestMsg, start, end)
 	if err != nil {
-		r.stopWorkflowReturningErr(err, requestMsg.Reply)
+		r.stopWorkflowReturningErr(err, r.cfg.NATS.EntrypointSubject)
 		return
 	}
 
 	// Publish the response message to the output subject.
-	outputSubject := r.getOutputSubject(requestMsg.Reply, isLastNode)
-	r.publishResponse(outputSubject, responseMsg)
+	r.publishResponse(r.cfg.NATS.OutputSubject, responseMsg)
+
+	// Tell NATS we don't need to receive the message anymore and we are done processing it.
+	err = msg.Ack()
+	if err != nil {
+		r.stopWorkflowReturningErr(err, r.cfg.NATS.EntrypointSubject)
+		return
+	}
 }
 
 // stopWorkflowReturningErr publishes a error message to the final reply subject
@@ -153,7 +148,7 @@ func (r *Runner) newRequestMessage(data []byte) (*KreNatsMessage, error) {
 
 // newResponseMsg creates a KreNatsMessage maintaining the tracking ID and adding the
 // handler result and the tracking information for this node.
-func (r *Runner) newResponseMsg(handlerResult proto.Message, requestMsg *KreNatsMessage, start time.Time, end time.Time, replySubject string) (*KreNatsMessage, error) {
+func (r *Runner) newResponseMsg(handlerResult proto.Message, requestMsg *KreNatsMessage, start time.Time, end time.Time) (*KreNatsMessage, error) {
 	payload, err := ptypes.MarshalAny(handlerResult)
 	if err != nil {
 		return nil, fmt.Errorf("the handler result is not a valid protobuf: %w", err)
@@ -167,10 +162,10 @@ func (r *Runner) newResponseMsg(handlerResult proto.Message, requestMsg *KreNats
 
 	responseMsg := &KreNatsMessage{
 		Replied:    requestMsg.Replied,
-		Reply:      replySubject,
 		TrackingId: requestMsg.TrackingId,
 		Tracking:   tracking,
 		Payload:    payload,
+		Reply:      requestMsg.Reply,
 	}
 
 	return responseMsg, nil
@@ -197,19 +192,6 @@ func (r *Runner) prepareOutputMessage(msg []byte) ([]byte, error) {
 	return outMsg, nil
 }
 
-// getOutputSubject gets the output subject depending if this node is the last one.
-func (r *Runner) getOutputSubject(replySubject string, isLastNode bool) string {
-	var outputSubject string
-
-	if isLastNode {
-		outputSubject = replySubject
-	} else {
-		outputSubject = r.cfg.NATS.OutputSubject
-	}
-
-	return outputSubject
-}
-
 // publishResponse publishes the response in the NATS output subject.
 func (r *Runner) publishResponse(outputSubject string, responseMsg *KreNatsMessage) {
 	outputMsg, err := proto.Marshal(responseMsg)
@@ -226,13 +208,13 @@ func (r *Runner) publishResponse(outputSubject string, responseMsg *KreNatsMessa
 
 	r.logger.Infof("Publishing response to '%s' subject", outputSubject)
 
-	err = r.nc.Publish(outputSubject, outputMsg)
+	_, err = r.js.Publish(outputSubject, outputMsg)
 	if err != nil {
 		r.logger.Errorf("Error publishing output: %s", err)
 	}
 }
 
-func (r Runner) earlyReply(subject string, response proto.Message) error {
+func (r Runner) earlyReply(response proto.Message) error {
 	payload, err := ptypes.MarshalAny(response)
 	if err != nil {
 		return fmt.Errorf("the handler result is not a valid protobuf: %w", err)
@@ -242,7 +224,7 @@ func (r Runner) earlyReply(subject string, response proto.Message) error {
 		Payload: payload,
 	}
 
-	r.publishResponse(subject, res)
+	r.publishResponse(r.cfg.NATS.EntrypointSubject, res)
 
 	return nil
 }

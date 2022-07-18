@@ -2,9 +2,10 @@ package kre
 
 import (
 	"errors"
-	"github.com/golang/protobuf/proto"
 	"path"
 	"time"
+
+	"github.com/golang/protobuf/proto"
 
 	"github.com/konstellation-io/kre/libs/simplelogger"
 	"github.com/nats-io/nats.go"
@@ -19,12 +20,12 @@ var (
 	getDataTimeout    = 1 * time.Second
 )
 
-type ReplyFunc = func(subject string, response proto.Message) error
+type EarlyReplyFunc = func(response proto.Message) error
 
 type HandlerContext struct {
 	cfg         config.Config
 	values      map[string]interface{}
-	reply       ReplyFunc
+	reply       EarlyReplyFunc
 	reqMsg      *KreNatsMessage
 	Logger      *simplelogger.SimpleLogger
 	Prediction  *contextPrediction
@@ -32,7 +33,7 @@ type HandlerContext struct {
 	DB          *contextData
 }
 
-func NewHandlerContext(cfg config.Config, nc *nats.Conn, mongoM mongodb.Manager, logger *simplelogger.SimpleLogger, reply ReplyFunc) *HandlerContext {
+func NewHandlerContext(cfg config.Config, nc *nats.Conn, mongoM mongodb.Manager, logger *simplelogger.SimpleLogger, reply EarlyReplyFunc) *HandlerContext {
 	return &HandlerContext{
 		cfg:    cfg,
 		values: map[string]interface{}{},
@@ -96,13 +97,13 @@ func (c *HandlerContext) GetFloat(key string) float64 {
 	return -1.0
 }
 
-// Reply sends a reply to the entrypoint. The workflow execution continues.
+// EarlyReply sends a reply to the entrypoint. The workflow execution continues.
 // Use this function when you need to reply faster than the workflow execution duration.
-func (c *HandlerContext) Reply(response proto.Message) error {
+func (c *HandlerContext) EarlyReply(response proto.Message) error {
 	if c.reqMsg.Replied {
 		return errors.New("error the message was replied previously")
 	}
 
 	c.reqMsg.Replied = true
-	return c.reply(c.reqMsg.Reply, response)
+	return c.reply(response)
 }

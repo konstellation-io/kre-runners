@@ -25,9 +25,9 @@ class HandlerContext:
     def get(self, key: str) -> any:
         return getattr(self.__data__, key)
 
-    async def reply(self, response):
+    async def early_reply(self, response):
         if self.__request_msg__.replied:
             raise Exception("error the message was replied previously")
 
         self.__request_msg__.replied = True
-        await self.__reply__(self.__request_msg__.reply, response)
+        await self.__reply__(response)

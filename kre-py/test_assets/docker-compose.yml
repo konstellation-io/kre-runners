@@ -1,7 +1,9 @@
 version: "3"
 services:
   nats:
-    image: "nats-streaming:0.16.2"
+    image: "nats:2.8.4"
+    command:
+      - "-js"
     ports:
       - "4222:4222"
       - "8222:8222"
@@ -20,11 +22,3 @@ services:
     volumes: 
       - "./influx:/docker-entrypoint-initdb.d"
     command: /init-influxdb.sh
-  runner:
-    build:
-      context: "../"
-      dockerfile: "./Dockerfile"
-      args:
-        BUILD_ENV: "test"
-    volumes:
-      - "../test_assets:/tmp"

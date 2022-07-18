@@ -11,28 +11,61 @@ from config import Config
 
 
 class EntrypointRunner(Runner):
-    def __init__(self, host: str = '0.0.0.0', port: int = 9000):
-        Runner.__init__(self, "entrypoint", Config())
+    def __init__(self, host: str = "0.0.0.0", port: int = 9000):
+        self.runner_name = Config().runner_name
         self.host = host
         self.port = port
+        self.entrypoint = None
+        Runner.__init__(self, self.runner_name, Config())
 
-    async def process_messages(self):
+    async def start(self) -> None:
+
+        """
+        Entrypoint runner main loop. It will start the gRPC server and NATS subscription.
+        """
+
         with open(self.config.nats_subjects_file) as json_file:
             subjects = json.load(json_file)
-            self.logger.info(f"Loaded NATS subject file: {subjects}")
+            self.logger.debug(f"Loaded NATS subject file: {subjects}")
 
         self.logger.info(f"Creating entrypoint service")
-        entrypoint = Entrypoint(self.logger, self.nc, subjects, self.config)
+        self.entrypoint = Entrypoint(self.logger, subjects, self.config)
+
+        # starts the grpc server
+        await self.run_grpc_server(self.entrypoint)
+
+    async def stop(self) -> None:
+
+        """
+        Stop the Entrypoint service by closing the NATS connection and the asyncio event loop
+        """
+
+        self.logger.info("Stopping entrypoint service and loop")
+        self.entrypoint.stop()
+        self.loop.stop()
+
+    async def run_grpc_server(self, entrypoint) -> None:
+
+        """
+        Starts the gRPC server.
+
+        :param entrypoint: Entrypoint service
+        """
 
         services = ServerReflection.extend([entrypoint])
 
         server = Server(services)
         with graceful_exit([server]):
+            # starts the grpc server
             await server.start(self.host, self.port)
-            self.logger.info(f'Serving gPRC server on {self.host}:{self.port}')
+            self.logger.info(f"Serving gPRC server on {self.host}:{self.port}")
+
+            # starts the entrypoint service
+            await self.entrypoint.start()
+
             await server.wait_closed()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     runner = EntrypointRunner()
-    runner.start()
+    runner.run()
