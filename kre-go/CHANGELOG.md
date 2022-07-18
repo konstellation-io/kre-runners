@@ -1,3 +1,10 @@
+# [kre-go-v2.1.0](https://github.com/konstellation-io/kre-runners/compare/kre-go-v2.0.1...kre-go-v2.1.0) (2022-07-18)
+
+
+### Features
+
+* **kre-go:** add compatibility with NATS jetstream on kre-go ([#89](https://github.com/konstellation-io/kre-runners/issues/89)) ([4829b13](https://github.com/konstellation-io/kre-runners/commit/4829b137904284f2d2dbcdae3d94a5da75ae33bb))
+
 # [kre-go-v2.0.1](https://github.com/konstellation-io/kre-runners/compare/kre-go-v2.0.0...kre-go-v2.0.1) (2022-06-24)
 
 
