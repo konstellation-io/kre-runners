@@ -1,3 +1,10 @@
+# [kre-py-v2.1.1](https://github.com/konstellation-io/kre-runners/compare/kre-py-v2.1.0...kre-py-v2.1.1) (2022-07-20)
+
+
+### Bug Fixes
+
+* **kre-py:** fixed jetstream subscription error ([48d1cf4](https://github.com/konstellation-io/kre-runners/commit/48d1cf49b8290f767909240ddcecfa369c0b88ca))
+
 # [kre-py-v2.1.0](https://github.com/konstellation-io/kre-runners/compare/kre-py-v2.0.0...kre-py-v2.1.0) (2022-07-18)
 
 
