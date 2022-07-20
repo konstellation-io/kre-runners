@@ -37,25 +37,7 @@ func setEnvVars(t *testing.T, envVars map[string]string) {
 
 func TestHandlerContext_GetData(t *testing.T) {
 	logger := simplelogger.New(simplelogger.LevelDebug)
-	const inputSubject = "test-subject-input"
-	setEnvVars(t, map[string]string{
-		"KRT_WORKFLOW_NAME":           "workflowTest",
-		"KRT_VERSION":                 "testVersion1",
-		"KRT_VERSION_ID":              "version.12345",
-		"KRT_NODE_NAME":               "nodeA",
-		"KRT_BASE_PATH":               "./test",
-		"KRT_NATS_SERVER":             "localhost:4222",
-		"KRT_NATS_INPUT":              inputSubject,
-		"KRT_NATS_OUTPUT":             "",
-		"KRT_NATS_MONGO_WRITER":       "mongo_writer",
-		"KRT_MONGO_URI":               "mongodb://mock",
-		"KRT_INFLUX_URI":              "influxdb-uri",
-		"KRT_IS_LAST_NODE":            "true",
-		"KRT_NATS_STREAM":             "runtime-1-greeter-v1-Greet",
-		"KRT_NATS_ENTRYPOINT_SUBJECT": "runtime-1-greeter-v1-Greet.entrypoint",
-	})
-
-	cfg := config.NewConfig(logger)
+	cfg := config.Config{}
 
 	testPort := 8331
 	opts := testserver.DefaultTestOptions
@@ -130,26 +112,18 @@ func TestHandlerContext_GetData(t *testing.T) {
 }
 
 func TestHandlerContext_SaveData(t *testing.T) {
-	logger := simplelogger.New(simplelogger.LevelDebug)
-	const inputSubject = "test-subject-input"
-	setEnvVars(t, map[string]string{
-		"KRT_WORKFLOW_NAME":           "workflowTest",
-		"KRT_VERSION":                 "testVersion1",
-		"KRT_VERSION_ID":              "version.123456",
-		"KRT_NODE_NAME":               "nodeA",
-		"KRT_BASE_PATH":               "./test",
-		"KRT_NATS_SERVER":             "localhost:4222",
-		"KRT_NATS_INPUT":              inputSubject,
-		"KRT_NATS_OUTPUT":             "",
-		"KRT_NATS_MONGO_WRITER":       "mongo_writer",
-		"KRT_MONGO_URI":               "mongodb://localhost:27017",
-		"KRT_INFLUX_URI":              "influxdb-uri",
-		"KRT_IS_LAST_NODE":            "true",
-		"KRT_NATS_STREAM":             "runtime-1-greeter-v1-Greet",
-		"KRT_NATS_ENTRYPOINT_SUBJECT": "runtime-1-greeter-v1-Greet.entrypoint",
-	})
+	const mongoWriterSubject = "mongo_writer"
 
-	cfg := config.NewConfig(logger)
+	logger := simplelogger.New(simplelogger.LevelDebug)
+
+	cfg := config.Config{
+		NATS: config.ConfigNATS{
+			MongoWriterSubject: mongoWriterSubject,
+		},
+		MongoDB: config.MongoDB{
+			Address: "mongodb://localhost:27017",
+		},
+	}
 
 	testPort := 8331
 	opts := testserver.DefaultTestOptions
@@ -165,7 +139,7 @@ func TestHandlerContext_SaveData(t *testing.T) {
 
 	msgCh := make(chan *nats.Msg, 64)
 
-	sub, err := nc.ChanSubscribe("mongo_writer", msgCh)
+	sub, err := nc.ChanSubscribe(mongoWriterSubject, msgCh)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -184,17 +158,20 @@ func TestHandlerContext_SaveData(t *testing.T) {
 
 	c, cancel := context.WithCancel(context.Background())
 
+	var goFuncErr error
 	go func() {
-		err = ctx.DB.Save("test_predictions", sentMsg)
-		if err != nil {
-			t.Fatal(err)
-		}
+		err := ctx.DB.Save("test_predictions", sentMsg)
+		goFuncErr = err
 		cancel()
 	}()
 
 	receivedMsg := SaveDataMsg{}
 
 	msg := <-msgCh
+	if goFuncErr != nil {
+		t.Fatal(goFuncErr)
+	}
+
 	err = json.Unmarshal(msg.Data, &receivedMsg)
 	if err != nil {
 		t.Fatalf("Error parsing data msg: %s", err)
