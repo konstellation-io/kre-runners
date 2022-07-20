@@ -81,17 +81,24 @@ class NodeRunner(Runner):
     async def process_messages(self) -> None:
         queue_name = f"queue_{self.config.nats_input}"
 
-        self.subscription_sid = await self.js.subscribe(
-            stream=self.config.nats_stream,
-            subject=self.config.nats_input,
-            queue=self.runner_name,
-            durable=self.runner_name,
-            cb=self.create_message_cb(),
-            config=ConsumerConfig(
-                deliver_policy=DeliverPolicy.NEW,
-            ),
-            manual_ack=True,
-        )
+        try:
+            self.subscription_sid = await self.js.subscribe(
+                stream=self.config.nats_stream,
+                subject=self.config.nats_input,
+                queue=self.runner_name,
+                durable=self.runner_name,
+                cb=self.create_message_cb(),
+                config=ConsumerConfig(
+                    deliver_policy=DeliverPolicy.NEW,
+                ),
+                manual_ack=True,
+            )
+        except Exception as err:
+            tb = traceback.format_exc()
+            self.logger.error(
+                f"Error subscribing to stream {self.config.handler_path}: {err}\n\n{tb}"
+            )
+            sys.exit(1)
 
         self.logger.info(
             f"Listening to '{self.config.nats_input}' subject with queue '{queue_name}' "
