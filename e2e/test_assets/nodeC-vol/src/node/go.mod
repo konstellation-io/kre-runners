@@ -3,7 +3,6 @@ module nodeC
 go 1.18
 
 require (
-	github.com/golang/protobuf v1.5.2
 	github.com/konstellation-io/kre-runners/kre-go v0.0.0-20220407115818-0442e5734363
 	google.golang.org/protobuf v1.28.0
 )
@@ -11,6 +10,7 @@ require (
 require (
 	github.com/deepmap/oapi-codegen v1.3.6 // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
+	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/influxdata/influxdb-client-go v1.4.0 // indirect
 	github.com/influxdata/line-protocol v0.0.0-20200327222509-2487e7298839 // indirect

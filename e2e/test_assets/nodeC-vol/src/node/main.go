@@ -3,28 +3,27 @@ package main
 import (
 	"fmt"
 
-	localProto "main/proto"
+	"main/proto"
 
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes/any"
-	"github.com/konstellation-io/kre-runners/kre-go"
-	proto2 "google.golang.org/protobuf/proto"
+	protobuf "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
+
+	"github.com/konstellation-io/kre-runners/kre-go"
 )
 
 func handlerInit(ctx *kre.HandlerContext) {
 	ctx.Logger.Info("[worker init]")
 }
 
-func handler(ctx *kre.HandlerContext, data *any.Any) (proto.Message, error) {
+func handler(ctx *kre.HandlerContext, data *anypb.Any) (protobuf.Message, error) {
 	ctx.Logger.Info("[worker handler]")
 
-	req := &localProto.NodeCRequest{}
-	res := &localProto.Response{}
+	req := &proto.NodeCRequest{}
+	res := &proto.Response{}
 
 	ctx.Logger.Info(data.String())
 
-	err := anypb.UnmarshalTo(data, req, proto2.UnmarshalOptions{})
+	err := anypb.UnmarshalTo(data, req, protobuf.UnmarshalOptions{})
 	if err != nil {
 		return res, fmt.Errorf("invalid request: %s", err)
 	}

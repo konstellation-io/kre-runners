@@ -5,13 +5,12 @@ import (
 	"path"
 	"time"
 
-	"github.com/golang/protobuf/proto"
-
-	"github.com/konstellation-io/kre/libs/simplelogger"
 	"github.com/nats-io/nats.go"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/konstellation-io/kre-runners/kre-go/config"
 	"github.com/konstellation-io/kre-runners/kre-go/mongodb"
+	"github.com/konstellation-io/kre/libs/simplelogger"
 )
 
 var (

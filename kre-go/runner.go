@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/nats-io/nats.go"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/konstellation-io/kre-runners/kre-go/config"
 	"github.com/konstellation-io/kre-runners/kre-go/mongodb"
 	"github.com/konstellation-io/kre/libs/simplelogger"
@@ -149,7 +149,7 @@ func (r *Runner) newRequestMessage(data []byte) (*KreNatsMessage, error) {
 // newResponseMsg creates a KreNatsMessage maintaining the tracking ID and adding the
 // handler result and the tracking information for this node.
 func (r *Runner) newResponseMsg(handlerResult proto.Message, requestMsg *KreNatsMessage, start time.Time, end time.Time) (*KreNatsMessage, error) {
-	payload, err := ptypes.MarshalAny(handlerResult)
+	payload, err := anypb.New(handlerResult)
 	if err != nil {
 		return nil, fmt.Errorf("the handler result is not a valid protobuf: %w", err)
 	}
@@ -215,7 +215,7 @@ func (r *Runner) publishResponse(outputSubject string, responseMsg *KreNatsMessa
 }
 
 func (r Runner) earlyReply(response proto.Message) error {
-	payload, err := ptypes.MarshalAny(response)
+	payload, err := anypb.New(response)
 	if err != nil {
 		return fmt.Errorf("the handler result is not a valid protobuf: %w", err)
 	}
