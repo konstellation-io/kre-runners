@@ -5,12 +5,13 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes/any"
+	"github.com/nats-io/nats.go"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
+
 	"github.com/konstellation-io/kre-runners/kre-go/config"
 	"github.com/konstellation-io/kre-runners/kre-go/mongodb"
 	"github.com/konstellation-io/kre/libs/simplelogger"
-	"github.com/nats-io/nats.go"
 )
 
 // HandlerInit is executed once. It is useful to initialize variables that will be constants
@@ -19,7 +20,7 @@ type HandlerInit func(ctx *HandlerContext)
 
 // Handler is the function executed each time a message from NATS arrives. This function must return
 // the protobuf for the next node or the final response if it is the last one.
-type Handler func(ctx *HandlerContext, data *any.Any) (proto.Message, error)
+type Handler func(ctx *HandlerContext, data *anypb.Any) (proto.Message, error)
 
 // Start receives the handler init function and the handler function
 // connects to NATS and MongoDB and processes all incoming messages.
