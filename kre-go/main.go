@@ -36,6 +36,7 @@ func Start(handlerInit HandlerInit, handler Handler) {
 	}
 	defer nc.Close()
 
+	// Connect to JetStream
 	js, err := nc.JetStream()
 	if err != nil {
 		logger.Errorf("Error connecting to JetStream: %s", err)
