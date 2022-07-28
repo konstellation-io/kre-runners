@@ -112,7 +112,7 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 func (r *Runner) getOutputSubject(earlyExit bool) string {
 	var outputSubject string
 	if earlyExit {
-		r.logger.Info("early exit recieved, worklow has stopped execution")
+		r.logger.Info("Early exit recieved, worklow has stopped execution")
 		outputSubject = r.cfg.NATS.EntrypointSubject
 	} else {
 		outputSubject = r.cfg.NATS.OutputSubject
