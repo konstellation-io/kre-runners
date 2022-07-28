@@ -147,7 +147,8 @@ class NodeRunner(Runner):
                 res = self.new_response_msg(request_msg, handler_result, start, end)
 
                 # Publish the response message to the output subject.
-                await self.publish_response(self.config.nats_output, res)
+                output_subject = self.getOutputSubject(request_msg.early_exit)
+                await self.publish_response(output_subject, res)
 
                 # Tell NATS we don't need to receive the message anymore and we are done processing it.
                 await msg.ack()
@@ -166,6 +167,14 @@ class NodeRunner(Runner):
                 )
 
         return message_cb
+
+    def getOutputSubject(self, early_exit: bool) -> str:
+        if early_exit:
+            self.logger.info(f"Early exit recieved, worklow has stopped execution")
+            outputSubject = self.config.nats_entrypoint_subject
+        else:
+            outputSubject = self.config.nats_output
+        return outputSubject
 
     @staticmethod
     def new_request_msg(data: bytes) -> KreNatsMessage:
@@ -226,9 +235,10 @@ class NodeRunner(Runner):
         except Exception as err:
             self.logger.error(f"Error publishing response: {err}")
 
-    async def early_reply(self, response: any):
+    async def early_reply(self, response: any, requestID: str):
         res = KreNatsMessage()
         res.payload.Pack(response)
+        res.reply = requestID
         await self.publish_response(self.config.nats_entrypoint_subject, res)
 
     def save_elapsed_time(self, req_msg: KreNatsMessage, start: datetime, end: datetime) -> None:
