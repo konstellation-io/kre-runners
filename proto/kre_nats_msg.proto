@@ -1,7 +1,7 @@
 syntax = "proto3";
 import "google/protobuf/any.proto";
 
-option go_package = "kre";
+option go_package = "./kre";
 
 message KreNatsMessage {
   message Tracking {
@@ -16,4 +16,5 @@ message KreNatsMessage {
   google.protobuf.Any payload = 4;
   string error = 5;
   bool replied = 6;
+  bool early_exit = 7;
 }

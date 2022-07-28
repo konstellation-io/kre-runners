@@ -97,7 +97,8 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 	}
 
 	// Publish the response message to the output subject.
-	r.publishResponse(r.cfg.NATS.OutputSubject, responseMsg)
+	outputSubject := r.getOutputSubject(requestMsg.EarlyExit)
+	r.publishResponse(outputSubject, responseMsg)
 
 	// Tell NATS we don't need to receive the message anymore and we are done processing it.
 	err = msg.Ack()
@@ -105,6 +106,18 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 		r.stopWorkflowReturningErr(err, r.cfg.NATS.EntrypointSubject)
 		return
 	}
+}
+
+// getOutputSubject returns the subject to which we must publish our next response.
+func (r *Runner) getOutputSubject(earlyExit bool) string {
+	var outputSubject string
+	if earlyExit {
+		r.logger.Info("early exit recieved, worklow has stopped execution")
+		outputSubject = r.cfg.NATS.EntrypointSubject
+	} else {
+		outputSubject = r.cfg.NATS.OutputSubject
+	}
+	return outputSubject
 }
 
 // stopWorkflowReturningErr publishes a error message to the final reply subject
@@ -214,7 +227,7 @@ func (r *Runner) publishResponse(outputSubject string, responseMsg *KreNatsMessa
 	}
 }
 
-func (r Runner) earlyReply(response proto.Message) error {
+func (r Runner) earlyReply(response proto.Message, requestID string) error {
 	payload, err := anypb.New(response)
 	if err != nil {
 		return fmt.Errorf("the handler result is not a valid protobuf: %w", err)
@@ -222,6 +235,7 @@ func (r Runner) earlyReply(response proto.Message) error {
 
 	res := &KreNatsMessage{
 		Payload: payload,
+		Reply:   requestID,
 	}
 
 	r.publishResponse(r.cfg.NATS.EntrypointSubject, res)
