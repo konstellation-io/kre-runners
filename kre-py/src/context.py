@@ -32,5 +32,5 @@ class HandlerContext:
         self.__request_msg__.replied = True
         await self.__early_reply__(response, self.__request_msg__.reply)
 
-    async def early_exit(self):
+    def early_exit(self):
         self.__request_msg__.early_exit = True
