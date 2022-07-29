@@ -187,7 +187,7 @@ async def test_create_message_cb(node_runner: NodeRunner) -> None:
         nc=node_runner.nc,
         mongo_conn=node_runner.mongo_conn,
         logger=node_runner.logger,
-        reply=node_runner.early_reply,
+        early_reply=node_runner.early_reply,
     )
 
     await response.__call__(message_mock)
