@@ -1,9 +1,13 @@
 name: kre-go Tests
 
 on:
-  push:
+  pull_request:
     branches:
       - "*"
+    paths:
+      - "kre-go/**/*"
+      - ".github/workflows/kre-go*"
+  push:
     paths:
       - "kre-go/**/*"
       - ".github/workflows/kre-go*"
@@ -19,13 +23,14 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.14.x
+          go-version: 1.18.x
       - name: Test
         env:
           # TODO: add nats mock or service
           KRT_MONGO_URI: "mongodb"
           KRT_INFLUX_URI: "influx"
           KRT_VERSION_ID: "test"
+          KRT_RUNTIME_ID: "test"
         # TODO: Enable all tests
         run: |
           # go test -cover -v -coverprofile=coverage.out -covermode=atomic -coverpkg=./... ./...

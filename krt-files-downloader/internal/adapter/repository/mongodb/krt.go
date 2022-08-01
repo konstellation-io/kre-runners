@@ -17,7 +17,7 @@ func NewMongoKRTRepository(cfg *config.Config) *MongoKRTRepository {
 	return &MongoKRTRepository{manager: manager, cfg: cfg}
 }
 
-func (m MongoKRTRepository) DownloadKRT(versionID string) (io.Reader, error) {
+func (m MongoKRTRepository) DownloadKRT(runtimeID, versionID string) (io.Reader, error) {
 	err := m.manager.Connect(m.cfg.MongoDB.URI)
 	if err != nil {
 		return nil, fmt.Errorf("connecting to mongodb: %w", err)
@@ -29,5 +29,5 @@ func (m MongoKRTRepository) DownloadKRT(versionID string) (io.Reader, error) {
 		}
 	}()
 
-	return m.manager.DownloadFile(m.cfg.MongoDB.DBName, m.cfg.MongoDB.Bucket, versionID)
+	return m.manager.DownloadFile(runtimeID, m.cfg.MongoDB.Bucket, versionID)
 }

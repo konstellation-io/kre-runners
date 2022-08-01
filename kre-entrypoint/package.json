@@ -1,26 +1,34 @@
 {
   "name": "kre-entrypoint",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/konstellation-io/kre-runners.git"
-  },
-  "dependencies": {
-    "@semantic-release/exec": "5.0.0",
-    "semantic-release": "17.2.2",
-    "semantic-release-monorepo": "7.0.3"
-  },
+  "version": "0.0.1",
   "release": {
-    "branches": [
-      "main"
-    ],
     "extends": "semantic-release-monorepo",
+    "branches": "main",
     "plugins": [
-      "@semantic-release/commit-analyzer",
-      "@semantic-release/release-notes-generator",
       [
-        "@semantic-release/exec",
+        "@semantic-release/commit-analyzer",
         {
-          "verifyReleaseCmd": "echo ${nextRelease.version} > release_version.txt"
+          "preset": "angular"
+        }
+      ],
+      [
+        "@semantic-release/release-notes-generator",
+        {
+          "preset": "angular"
+        }
+      ],
+      [
+        "@semantic-release/changelog",
+        {
+          "changelogFile": "CHANGELOG.md"
+        }
+      ],
+      [
+        "@semantic-release/git",
+        {
+          "assets": [
+            "CHANGELOG.md"
+          ]
         }
       ]
     ]

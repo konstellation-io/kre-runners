@@ -7,13 +7,15 @@ import sys
 import traceback
 from datetime import datetime
 
-import pymongo
+from nats.js.api import DeliverPolicy, ConsumerConfig
 
 from compression import compress_if_needed, is_compressed, uncompress
 from config import Config
 from context import HandlerContext
 from kre_nats_msg_pb2 import KreNatsMessage
 from kre_runner import Runner
+
+from nats.errors import ConnectionClosedError, TimeoutError
 
 
 class NodeRunner(Runner):
@@ -24,15 +26,12 @@ class NodeRunner(Runner):
         self.handler_ctx = None
         self.handler_init_fn = None
         self.handler_fn = None
-        self.mongo_conn = None
         self.load_handler()
 
-    def load_handler(self):
-        self.logger.info(f"loading handler script {self.config.handler_path}...")
+    def load_handler(self) -> None:
+        self.logger.info(f"Loading handler script {self.config.handler_path}...")
 
-        handler_full_path = os.path.join(
-            self.config.base_path, self.config.handler_path
-        )
+        handler_full_path = os.path.join(self.config.base_path, self.config.handler_path)
         handler_dirname = os.path.dirname(handler_full_path)
         sys.path.append(handler_dirname)
 
@@ -43,23 +42,24 @@ class NodeRunner(Runner):
         except Exception as err:
             tb = traceback.format_exc()
             self.logger.error(
-                f"error loading handler script {self.config.handler_path}: {err}\n\n{tb}"
+                f"Error loading handler script {self.config.handler_path}: {err}\n\n{tb}"
             )
             sys.exit(1)
 
         if not hasattr(handler_module, "handler"):
             raise Exception(
-                f"handler module '{handler_full_path}' must implement a function 'handler(ctx, data)'"
+                f"Handler module '{handler_full_path}' must "
+                f"implement a function 'handler(ctx, data)'"
             )
 
         if hasattr(handler_module, "init"):
             self.handler_init_fn = handler_module.init
 
         self.handler_fn = handler_module.handler
-        self.logger.info(f"handler script was loaded from '{handler_full_path}'")
+        self.logger.info(f"Handler script was loaded from '{handler_full_path}'")
 
-    async def execute_handler_init(self):
-        self.logger.info(f"creating handler context...")
+    async def execute_handler_init(self) -> None:
+        self.logger.info(f"Creating handler context...")
         self.handler_ctx = HandlerContext(
             self.config,
             self.nc,
@@ -71,51 +71,59 @@ class NodeRunner(Runner):
         if not self.handler_init_fn:
             return
 
-        self.logger.info(f"executing handler init...")
+        self.logger.info(f"Executing handler init...")
+
         if inspect.iscoroutinefunction(self.handler_init_fn):
             await asyncio.create_task(self.handler_init_fn(self.handler_ctx))
         else:
             self.handler_init_fn(self.handler_ctx)
 
-    async def process_messages(self):
-        self.logger.info(f"connecting to MongoDB...")
-        self.mongo_conn = pymongo.MongoClient(
-            self.config.mongo_uri, socketTimeoutMS=10000, connectTimeoutMS=10000
-        )
-
+    async def process_messages(self) -> None:
         queue_name = f"queue_{self.config.nats_input}"
-        self.subscription_sid = await self.nc.subscribe(
-            self.config.nats_input, cb=self.create_message_cb(), queue=queue_name
-        )
+
+        try:
+            self.subscription_sid = await self.js.subscribe(
+                stream=self.config.nats_stream,
+                subject=self.config.nats_input,
+                queue=self.runner_name,
+                durable=self.runner_name,
+                cb=self.create_message_cb(),
+                config=ConsumerConfig(
+                    deliver_policy=DeliverPolicy.NEW,
+                ),
+                manual_ack=True,
+            )
+        except Exception as err:
+            tb = traceback.format_exc()
+            self.logger.error(
+                f"Error subscribing to stream {self.config.handler_path}: {err}\n\n{tb}"
+            )
+            sys.exit(1)
+
         self.logger.info(
-            f"listening to '{self.config.nats_input}' subject with queue '{queue_name}'"
+            f"Listening to '{self.config.nats_input}' subject with queue '{queue_name}' "
+            f"from stream '{self.config.nats_stream}'"
         )
 
         await self.execute_handler_init()
 
-    def create_message_cb(self):
-        async def message_cb(msg):
+    def create_message_cb(self) -> callable:
+        async def message_cb(msg) -> None:
+
+            """
+            Callback for processing a message.
+
+            :param msg: The message to process.
+            """
+
             start = datetime.utcnow()
 
             # Parse incoming message
             request_msg = self.new_request_msg(msg.data)
 
+            self.logger.info(f"Received new request message from NATS subject {msg.subject}")
+
             try:
-                # Validations
-                if msg.reply == "" and request_msg.reply == "":
-                    raise Exception("the reply subject was not found")
-
-                # If the "msg.reply" has a value, it means that is the first message of the workflow.
-                # In other words, it comes from the initial entrypoint request.
-                # In this case we set this value into the "request_msg.reply" field in order
-                # to be propagated for the rest of workflow nodes.
-                if msg.reply != "":
-                    request_msg.reply = msg.reply
-
-                self.logger.info(
-                    f"received message on '{msg.subject}' with final reply '{request_msg.reply}'"
-                )
-
                 # Make a shallow copy of the ctx object to set inside the request msg.
                 ctx = copy.copy(self.handler_ctx)
                 ctx.__request_msg__ = request_msg
@@ -125,11 +133,10 @@ class NodeRunner(Runner):
                 end = datetime.utcnow()
 
                 # Save the elapsed time for this node and for the workflow if it is the last node.
-                is_last_node = self.config.nats_output == ""
-                self.save_elapsed_time(request_msg, start, end, is_last_node)
+                self.save_elapsed_time(request_msg, start, end)
 
                 # Ignore send reply if the msg was replied previously.
-                if is_last_node and request_msg.replied:
+                if self.config.krt_last_node == "true" and request_msg.replied:
                     if handler_result is not None:
                         self.logger.info(
                             "ignoring the last node response because the message was replied previously"
@@ -140,20 +147,22 @@ class NodeRunner(Runner):
                 res = self.new_response_msg(request_msg, handler_result, start, end)
 
                 # Publish the response message to the output subject.
-                output_subject = (
-                    request_msg.reply if is_last_node else self.config.nats_output
-                )
-                await self.publish_response(output_subject, res)
+                await self.publish_response(self.config.nats_output, res)
+
+                # Tell NATS we don't need to receive the message anymore and we are done processing it.
+                await msg.ack()
 
             except Exception as err:
                 tb = traceback.format_exc()
                 self.logger.error(f"error executing handler: {err} \n\n{tb}")
                 response_err = KreNatsMessage()
-                response_err.error = (
-                    f"error in '{self.config.krt_node_name}': {str(err)}"
-                )
-                await self.nc.publish(
-                    request_msg.reply, response_err.SerializeToString()
+                response_err.error = f"error in '{self.config.krt_node_name}': {str(err)}"
+                output_subject = self.config.nats_output
+
+                await self.js.publish(
+                    stream=self.config.nats_stream,
+                    subject=output_subject,
+                    payload=response_err.SerializeToString(),
                 )
 
         return message_cb
@@ -168,7 +177,7 @@ class NodeRunner(Runner):
 
         return request_msg
 
-    # new_response_msg creates a KreNatsMessage maintaining the tracking ID and adding the
+    # new_response_msg creates a KreNatsMessage maintaining the tracking ID plus adding the
     # handler result and the tracking information for this node.
     def new_response_msg(
         self, request_msg: KreNatsMessage, payload: any, start, end
@@ -188,35 +197,48 @@ class NodeRunner(Runner):
 
         return res
 
-    async def publish_response(self, subject, response_msg):
+    async def publish_response(self, subject: str, response_msg: KreNatsMessage) -> None:
+
+        """
+        Publish the response message to the output subject.
+
+        Args:
+            subject: The subject to publish the response message.
+            response_msg:  The response message to publish.
+        """
+
         serialized_response_msg = compress_if_needed(
             response_msg.SerializeToString(), logger=self.logger
         )
-        await self.nc.publish(subject, serialized_response_msg)
 
-        self.logger.info(f"published response to NATS subject '{subject}'")
-        await self.nc.flush(timeout=self.config.nats_flush_timeout)
+        try:
+            await self.js.publish(
+                stream=self.config.nats_stream, subject=subject, payload=serialized_response_msg
+            )
+            self.logger.info(
+                f"Published response to NATS subject {subject} "
+                f"from stream {self.config.nats_stream}"
+            )
+        except ConnectionClosedError as err:
+            self.logger.error(f"Connection closed when publishing response: {err}")
+        except TimeoutError as err:
+            self.logger.error(f"Timeout when publishing response: {err}")
+        except Exception as err:
+            self.logger.error(f"Error publishing response: {err}")
 
-    async def early_reply(self, nats_reply_subject: str, response: any):
+    async def early_reply(self, response: any):
         res = KreNatsMessage()
         res.payload.Pack(response)
-        await self.publish_response(nats_reply_subject, res)
+        await self.publish_response(self.config.nats_entrypoint_subject, res)
 
-    def save_elapsed_time(
-        self,
-        req_msg: KreNatsMessage,
-        start: datetime,
-        end: datetime,
-        is_last_node: bool,
-    ) -> None:
+    def save_elapsed_time(self, req_msg: KreNatsMessage, start: datetime, end: datetime) -> None:
         """
-        save_elapsed_time stores in InfluxDB the elapsed time for the current node and the total elapsed time
-        of the complete workflow if it is the last node.
+        save_elapsed_time stores in InfluxDB the elapsed time for the current node and the
+        total elapsed time of the complete workflow if it is the last node.
 
         :param req_msg: the request message.
         :param start: when this node started.
         :param end: when this node ended.
-        :param is_last_node: indicates if this node is the last one.
         :return: None
         """
         # Save the elapsed time for this node
@@ -240,6 +262,8 @@ class NodeRunner(Runner):
         }
 
         self.handler_ctx.measurement.save("node_elapsed_time", fields, tags)
+
+        is_last_node = True if self.config.krt_last_node == "true" else False
 
         if is_last_node:
             # Save the complete workflow elapsed time

@@ -1,0 +1,72 @@
+version: "3"
+services:
+
+  mongo:
+    image: "mongo:5.0.8"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=123456
+      - MONGO_INITDB_DATABASE=admin
+    ports:
+      - "27017:27017"
+    logging:
+      driver: none
+
+  influx:
+    image: "influxdb:1.8-alpine"
+    ports:
+      - "8086:8086"
+    environment:
+      "INFLUXDB_DB": "runtime1"
+      "INFLUXDB_META_DIR": "/var/lib/influxdb/meta2"
+
+  nats:
+    image: "nats:2.8.1"
+    command:
+      - "-js"
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+
+  node-a-py:
+    build:
+      context: "../../kre-py"
+      dockerfile: "./Dockerfile"
+    volumes:
+      - "./nodeA-vol:/tmp"
+    env_file:
+        - env/.env.common
+        - env/.env.nodeA
+
+  node-b-py:
+    build:
+      context: "../../kre-py"
+      dockerfile: "./Dockerfile"
+    volumes:
+      - "./nodeB-vol:/tmp"
+    env_file:
+        - env/.env.common
+        - env/.env.nodeB
+
+  node-c-go:
+    build:
+      context: "../../kre-go"
+      dockerfile: "./Dockerfile"
+    volumes:
+      - "./nodeC-vol:/tmp"
+    env_file:
+      - env/.env.common
+      - env/.env.nodeC
+
+  node-entrypoint:
+    build:
+      context: "../../kre-entrypoint"
+      dockerfile: "./Dockerfile"
+    volumes:
+      - "./entrypoint-vol/src:/src"
+      - "./entrypoint-vol/krt-files:/krt-files"
+    ports:
+      - "9000:9000"
+    env_file:
+      - env/.env.common
+      - env/.env.entrypoint

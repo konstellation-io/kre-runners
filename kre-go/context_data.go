@@ -36,6 +36,7 @@ func (c *contextData) Find(colName string, query QueryData, res interface{}) err
 	return c.mongoM.Find(ctx, colName, criteria, res)
 }
 
+// Save data in a bson struct to mongoDB to a collection of your choice
 func (c *contextData) Save(collection string, data interface{}) error {
 	msg, err := json.Marshal(SaveDataMsg{
 		Coll: collection,

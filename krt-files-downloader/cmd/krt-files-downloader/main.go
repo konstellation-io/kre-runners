@@ -16,7 +16,7 @@ func main() {
 	krtRepository := mongodb.NewMongoKRTRepository(cfg)
 	krtInteractor := usecase.NewKRTInteractor(krtRepository)
 
-	err = krtInteractor.DownloadKRTFiles(cfg.VersionID, cfg.KRTBasePath)
+	err = krtInteractor.DownloadKRTFiles(cfg.RuntimeID, cfg.VersionID, cfg.KRTBasePath)
 	if err != nil {
 		log.Fatalf("Unexpected error: %s", err)
 	}

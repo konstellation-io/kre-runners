@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package main;
+
+option go_package = "./proto";
+
+message Request {
+  string name = 1;
+}
+
+message NodeBRequest {
+  string greeting = 1;
+}
+
+message NodeCRequest {
+  string greeting = 1;
+}
+
+message Response {
+  string greeting = 1;
+}
+
+service Entrypoint {
+  rpc Greet (Request) returns (Response) {
+  };
+};

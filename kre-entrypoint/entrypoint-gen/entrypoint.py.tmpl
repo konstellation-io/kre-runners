@@ -1,27 +1,44 @@
 from grpclib.server import Stream
 
-from kre_grpc import EntrypointKRE
+from kre_entrypoint import EntrypointKRE
 
 from public_input_grpc import EntrypointBase
+from kre_nats_msg_pb2 import KreNatsMessage
 import public_input_pb2
+
+import uuid
 
 
 class Entrypoint(EntrypointBase, EntrypointKRE):
-    def __init__(self, logger, nc, subjects, config):
+    def __init__(self, logger, subjects, config):
         logger.info(f"Entrypoint for '{config.krt_version}' initialized")
-        EntrypointKRE.__init__(self, logger, nc, subjects, config)
+        EntrypointKRE.__init__(self, logger, subjects, config)
 
     {{range .Methods}}
 
     async def {{.Name}}(self, stream: Stream[public_input_pb2.{{.RequestType}}, public_input_pb2.{{.ReturnsType}}]) -> None:
-        return await self.process_message(stream, "{{ .Name }}")
+        request_id = str(uuid.uuid4())
+        await self.process_grpc_message(stream, "{{ .Name }}", request_id)
+
     {{end}}
 
-    def make_response_object(self, subject, kre_nats_msg):
+    def make_response_object(self, workflow: str, kre_nats_msg: KreNatsMessage):
+
+        """
+        Generate response object with the KRE message for a certain workflow
+
+        :param workflow: Workflow object
+        :param kre_nats_msg: KRE message
+
+        :return: Response message
+        """
+
         {{- range .Methods}}
-        if subject == '{{ .Name }}':
-            self.logger.debug(f"Creating a response to {{ .Name }}({{ .RequestType }})"
-                              f" with type: '{{ .ReturnsType }}'")
+        if workflow == '{{ .Name }}':
+            self.logger.debug(
+                f"Creating a response to {{ .Name }}({{ .RequestType }})"
+                f" with type: '{{ .ReturnsType }}'"
+            )
 
             res_msg = public_input_pb2.{{.ReturnsType}}()
             kre_nats_msg.payload.Unpack(res_msg)

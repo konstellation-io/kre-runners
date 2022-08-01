@@ -37,6 +37,7 @@ func TestKRTInteractor_DownloadKRTFiles(t *testing.T) {
 	defer s.ctrl.Finish()
 
 	const (
+		runtimeID   = "runtime1234"
 		versionID   = "version1234"
 		destination = "_test/output"
 		krtFile     = "_test/greeter-v1.krt"
@@ -55,9 +56,9 @@ func TestKRTInteractor_DownloadKRTFiles(t *testing.T) {
 	require.Nil(t, err)
 
 	krtReader := bytes.NewReader(krtBuf)
-	s.krtRepository.EXPECT().DownloadKRT(versionID).Return(krtReader, nil)
+	s.krtRepository.EXPECT().DownloadKRT(runtimeID, versionID).Return(krtReader, nil)
 
-	err = s.krtInteractor.DownloadKRTFiles(versionID, destination)
+	err = s.krtInteractor.DownloadKRTFiles(runtimeID, versionID, destination)
 	require.Nil(t, err)
 
 	for _, f := range expectedFiles {
