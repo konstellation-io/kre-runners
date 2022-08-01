@@ -66,6 +66,7 @@ class NodeRunner(Runner):
             self.mongo_conn,
             self.logger,
             self.early_reply,
+            self.send_output,
         )
 
         if not self.handler_init_fn:

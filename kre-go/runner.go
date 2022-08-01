@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/golang/protobuf/ptypes"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -236,8 +237,9 @@ func (r Runner) sendOutput(subject string, entrypointSubject string, response pr
 	}
 
 	res := &KreNatsMessage{
-		Payload: payload,
-		Reply:   entrypointSubject,
+		Payload:               payload,
+		Reply:                 entrypointSubject,
+		IsIntermediateMessage: true,
 	}
 
 	r.publishResponse(subject, res)

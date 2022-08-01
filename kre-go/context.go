@@ -110,9 +110,7 @@ func (c *HandlerContext) EarlyReply(response proto.Message) error {
 	return c.reply(response)
 }
 
-// Reply sends a reply to the entrypoint. The workflow execution continues.
-// Use this function when you need to reply faster than the workflow execution duration.
+// SendOutput ...
 func (c *HandlerContext) SendOutput(response proto.Message) error {
-
 	return c.sendOutput(c.cfg.NATS.OutputSubject, c.reqMsg.Reply, response)
 }
