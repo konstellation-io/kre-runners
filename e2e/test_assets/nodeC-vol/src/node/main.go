@@ -15,7 +15,7 @@ func handlerInit(ctx *kre.HandlerContext) {
 	ctx.Logger.Info("[worker init]")
 }
 
-func handler(ctx *kre.HandlerContext, data *anypb.Any) (protobuf.Message, error) {
+func handler(ctx *kre.HandlerContext, data *anypb.Any) error {
 	ctx.Logger.Info("[worker handler]")
 
 	req := &proto.NodeCRequest{}
@@ -25,7 +25,7 @@ func handler(ctx *kre.HandlerContext, data *anypb.Any) (protobuf.Message, error)
 
 	err := anypb.UnmarshalTo(data, req, protobuf.UnmarshalOptions{})
 	if err != nil {
-		return res, fmt.Errorf("invalid request: %s", err)
+		return fmt.Errorf("invalid request: %s", err)
 	}
 
 	result := req.Greeting + " and nodeC!"
@@ -34,7 +34,7 @@ func handler(ctx *kre.HandlerContext, data *anypb.Any) (protobuf.Message, error)
 
 	res.Greeting = result
 
-	return res, nil
+	return ctx.SendOutput(res)
 }
 
 func main() {

@@ -6,7 +6,6 @@ import (
 	"syscall"
 
 	"github.com/nats-io/nats.go"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/konstellation-io/kre-runners/kre-go/config"
@@ -18,9 +17,9 @@ import (
 // between handler calls.
 type HandlerInit func(ctx *HandlerContext)
 
-// Handler is the function executed each time a message from NATS arrives. This function must return
-// the protobuf for the next node or the final response if it is the last one.
-type Handler func(ctx *HandlerContext, data *anypb.Any) (proto.Message, error)
+// Handler is the function executed each time a message from NATS arrives.
+// Responses must be sent through the handlerContext's sendOutput func.
+type Handler func(ctx *HandlerContext, data *anypb.Any) error
 
 // Start receives the handler init function and the handler function
 // connects to NATS and MongoDB and processes all incoming messages.

@@ -20,11 +20,13 @@ var (
 )
 
 type EarlyReplyFunc = func(response proto.Message, requestID string) error
+type SendOutputFunc = func(response proto.Message) error
 
 type HandlerContext struct {
 	cfg         config.Config
 	values      map[string]interface{}
 	earlyReply  EarlyReplyFunc
+	sendOutput  SendOutputFunc
 	reqMsg      *KreNatsMessage
 	Logger      *simplelogger.SimpleLogger
 	Prediction  *contextPrediction
@@ -32,11 +34,13 @@ type HandlerContext struct {
 	DB          *contextData
 }
 
-func NewHandlerContext(cfg config.Config, nc *nats.Conn, mongoM mongodb.Manager, logger *simplelogger.SimpleLogger, earlyReply EarlyReplyFunc) *HandlerContext {
+func NewHandlerContext(cfg config.Config, nc *nats.Conn, mongoM mongodb.Manager,
+	logger *simplelogger.SimpleLogger, earlyReply EarlyReplyFunc, sendOutput SendOutputFunc) *HandlerContext {
 	return &HandlerContext{
 		cfg:        cfg,
 		values:     map[string]interface{}{},
 		earlyReply: earlyReply,
+		sendOutput: sendOutput,
 		Logger:     logger,
 		Prediction: &contextPrediction{
 			cfg:    cfg,
@@ -111,4 +115,12 @@ func (c *HandlerContext) EarlyReply(response proto.Message) error {
 // Use this function when you want to halt your workflow execution.
 func (c *HandlerContext) SetEarlyExit() {
 	c.reqMsg.EarlyExit = true
+}
+
+// SendOutput will send a desired payload to the node's output subject.
+// Caution: this function will check if the entrypoint has been replied to previously.
+// Once the entrypoint has been replied, all following replies to the entrypoint will be ignored.
+// Remember: you can only respond to the entrypoint once per request.
+func (c *HandlerContext) SendOutput(response proto.Message) error {
+	return c.sendOutput(response)
 }
