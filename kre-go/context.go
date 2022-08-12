@@ -19,12 +19,12 @@ var (
 	getDataTimeout    = 1 * time.Second
 )
 
-type EarlyReplyFunc = func(response proto.Message) error
+type EarlyReplyFunc = func(response proto.Message, requestID string) error
 
 type HandlerContext struct {
 	cfg         config.Config
 	values      map[string]interface{}
-	reply       EarlyReplyFunc
+	earlyReply  EarlyReplyFunc
 	reqMsg      *KreNatsMessage
 	Logger      *simplelogger.SimpleLogger
 	Prediction  *contextPrediction
@@ -32,12 +32,12 @@ type HandlerContext struct {
 	DB          *contextData
 }
 
-func NewHandlerContext(cfg config.Config, nc *nats.Conn, mongoM mongodb.Manager, logger *simplelogger.SimpleLogger, reply EarlyReplyFunc) *HandlerContext {
+func NewHandlerContext(cfg config.Config, nc *nats.Conn, mongoM mongodb.Manager, logger *simplelogger.SimpleLogger, earlyReply EarlyReplyFunc) *HandlerContext {
 	return &HandlerContext{
-		cfg:    cfg,
-		values: map[string]interface{}{},
-		reply:  reply,
-		Logger: logger,
+		cfg:        cfg,
+		values:     map[string]interface{}{},
+		earlyReply: earlyReply,
+		Logger:     logger,
 		Prediction: &contextPrediction{
 			cfg:    cfg,
 			nc:     nc,
@@ -104,5 +104,11 @@ func (c *HandlerContext) EarlyReply(response proto.Message) error {
 	}
 
 	c.reqMsg.Replied = true
-	return c.reply(response)
+	return c.earlyReply(response, c.reqMsg.Reply)
+}
+
+// SetEarlyExit changes this node's next response recipient to the entrypoint.
+// Use this function when you want to halt your workflow execution.
+func (c *HandlerContext) SetEarlyExit() {
+	c.reqMsg.EarlyExit = true
 }
