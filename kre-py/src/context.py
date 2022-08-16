@@ -6,10 +6,10 @@ from context_data import ContextData
 
 
 class HandlerContext:
-    def __init__(self, config, nc, mongo_conn, logger, reply):
+    def __init__(self, config, nc, mongo_conn, logger, early_reply_func):
         self.__data__ = lambda: None
         self.__config__ = config
-        self.__reply__ = reply
+        self.__early_reply__ = early_reply_func
         self.__request_msg__ = None
         self.logger = logger
         self.prediction = ContextPrediction(config, nc, logger)
@@ -30,4 +30,7 @@ class HandlerContext:
             raise Exception("error the message was replied previously")
 
         self.__request_msg__.replied = True
-        await self.__reply__(response)
+        await self.__early_reply__(response, self.__request_msg__.reply)
+
+    def early_exit(self):
+        self.__request_msg__.early_exit = True
