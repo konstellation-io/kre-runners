@@ -30,7 +30,7 @@ class HandlerContext:
             raise Exception("error the message was replied previously")
 
         self.__request_msg__.replied = True
-        await self.__early_reply__(response, self.__request_msg__.reply)
+        await self.__early_reply__(response, self.__request_msg__.request_id)
 
     def early_exit(self):
         self.__request_msg__.early_exit = True

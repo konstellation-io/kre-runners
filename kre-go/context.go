@@ -108,7 +108,7 @@ func (c *HandlerContext) EarlyReply(response proto.Message) error {
 	}
 
 	c.reqMsg.Replied = true
-	return c.earlyReply(response, c.reqMsg.Reply)
+	return c.earlyReply(response, c.reqMsg.RequestId)
 }
 
 // SetEarlyExit changes this node's next response recipient to the entrypoint.

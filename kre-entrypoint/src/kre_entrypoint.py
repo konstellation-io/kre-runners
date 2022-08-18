@@ -135,13 +135,13 @@ class EntrypointKRE:
                 # prepare the grpc response message
                 kre_nats_message = self._create_grpc_response(msg.data)
 
-                if kre_nats_message.reply == request_id:
+                if kre_nats_message.request_id == request_id:
                     message_recv = True
                     # when we receive the expected message,
                     # we delete the subscription and send the response
                     await sub.unsubscribe()
                     response = self.make_response_object(workflow, kre_nats_message)
-                    await self._respond_to_grpc_stream(response, workflow, kre_nats_message.reply)
+                    await self._respond_to_grpc_stream(response, workflow, kre_nats_message.request_id)
 
                 await msg.ack()
 
@@ -170,7 +170,7 @@ class EntrypointKRE:
         request_msg = KreNatsMessage()
         request_msg.tracking_id = tracking_id
         request_msg.payload.Pack(raw_msg)
-        request_msg.reply = request_id
+        request_msg.request_id = request_id
         t = request_msg.tracking.add()
         t.node_name = self.config.runner_name
         t.start = start

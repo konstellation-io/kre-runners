@@ -26,6 +26,6 @@ build: build-py build-go build-entrypoint ## Build all docker images.
 
 .PHONY: protos
 protos: ## Generate proto files
-	protoc -I=proto --go_out=kre-go --python_out=kre-py/src --python_out=kre-entrypoint/src proto/kre_nats_msg.proto
+	./generate_protobuf_code.sh
 
 		
