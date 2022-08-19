@@ -76,7 +76,7 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 		r.logger.Errorf("Error in message ack: %s", err)
 	}
 	if err != nil {
-		r.stopWorkflowReturningErr(err, r.cfg.NATS.EntrypointSubject, msg)
+		r.stopWorkflowReturningErr(err, r.cfg.NATS.EntrypointSubject)
 		return
 	}
 
@@ -97,7 +97,7 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 	// Generate a KreNatsMessage response.
 	responseMsg, err := r.newResponseMsg(handlerResult, requestMsg, start, end)
 	if err != nil {
-		r.stopWorkflowReturningErr(err, r.cfg.NATS.EntrypointSubject, msg)
+		r.stopWorkflowReturningErr(err, r.cfg.NATS.EntrypointSubject)
 		return
 	}
 
@@ -121,7 +121,7 @@ func (r *Runner) getOutputSubject(earlyExit bool) string {
 // stopWorkflowReturningErr publishes a error message to the final reply subject
 // in order to stop the workflow execution. So the next nodes will be ignored and the
 // gRPC response will be an exception.
-func (r *Runner) stopWorkflowReturningErr(err error, replySubject string, msg *nats.Msg) {
+func (r *Runner) stopWorkflowReturningErr(err error, replySubject string) {
 	r.logger.Errorf("Error executing handler: %s", err)
 
 	errMsg := &KreNatsMessage{
