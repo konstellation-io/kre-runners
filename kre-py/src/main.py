@@ -154,17 +154,21 @@ class NodeRunner(Runner):
                 await msg.ack()
 
             except Exception as err:
+                # Publish an error message to the final reply subject
+                # in order to stop the workflow execution. So the next nodes will be ignored
+                # and the gRPC response will be an exception.
                 tb = traceback.format_exc()
                 self.logger.error(f"error executing handler: {err} \n\n{tb}")
                 response_err = KreNatsMessage()
                 response_err.error = f"error in '{self.config.krt_node_name}': {str(err)}"
-                output_subject = self.config.nats_output
+                output_subject = self.config.nats_entrypoint_subject
 
                 await self.js.publish(
                     stream=self.config.nats_stream,
                     subject=output_subject,
                     payload=response_err.SerializeToString(),
                 )
+                await msg.ack()
 
         return message_cb
 
