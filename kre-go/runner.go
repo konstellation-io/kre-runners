@@ -118,7 +118,7 @@ func (r *Runner) getOutputSubject(earlyExit bool) string {
 	return outputSubject
 }
 
-// stopWorkflowReturningErr publishes a error message to the final reply subject
+// stopWorkflowReturningErr publishes an error message to the final reply subject
 // in order to stop the workflow execution. So the next nodes will be ignored and the
 // gRPC response will be an exception.
 func (r *Runner) stopWorkflowReturningErr(err error, replySubject string) {
