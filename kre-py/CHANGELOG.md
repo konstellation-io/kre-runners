@@ -1,3 +1,10 @@
+# [kre-py-v2.1.2](https://github.com/konstellation-io/kre-runners/compare/kre-py-v2.1.1...kre-py-v2.1.2) (2022-08-19)
+
+
+### Bug Fixes
+
+* **kre-py:** Infinte ack loop when error  ([#106](https://github.com/konstellation-io/kre-runners/issues/106)) ([eb1b1f0](https://github.com/konstellation-io/kre-runners/commit/eb1b1f0f7b8a057d993b585c8d19e19e03d2a18c))
+
 # [kre-py-v2.1.1](https://github.com/konstellation-io/kre-runners/compare/kre-py-v2.1.0...kre-py-v2.1.1) (2022-07-20)
 
 
