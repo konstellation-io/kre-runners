@@ -70,6 +70,11 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 
 	// Execute the handler function sending context and the payload.
 	handlerResult, err := r.handler(hCtx, requestMsg.Payload)
+	// Tell NATS we don't need to receive the message anymore and we are done processing it.
+	ackErr := msg.Ack()
+	if ackErr == nil {
+		r.logger.Errorf("Error in message ack: %s", err)
+	}
 	if err != nil {
 		r.stopWorkflowReturningErr(err, r.cfg.NATS.EntrypointSubject, msg)
 		return
@@ -99,12 +104,6 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 	// Publish the response message to the output subject.
 	outputSubject := r.getOutputSubject(requestMsg.EarlyExit)
 	r.publishResponse(outputSubject, responseMsg)
-
-	// Tell NATS we don't need to receive the message anymore and we are done processing it.
-	err = msg.Ack()
-	if err != nil {
-		r.logger.Errorf("Error in message ack during workflow stop: %s", err)
-	}
 }
 
 // getOutputSubject returns the subject to which we must publish our next response.
@@ -137,11 +136,6 @@ func (r *Runner) stopWorkflowReturningErr(err error, replySubject string, msg *n
 	_, err = r.js.Publish(replySubject, replyErrMsg)
 	if err != nil {
 		r.logger.Errorf("Error publishing output: %s", err)
-	}
-
-	err = msg.Ack()
-	if err != nil {
-		r.logger.Errorf("Error in message ack during workflow stop: %s", err)
 	}
 }
 
