@@ -72,26 +72,23 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 
 	// Execute the handler function sending context and the payload.
 	err = r.handler(hCtx, requestMsg.Payload)
+
 	// Tell NATS we don't need to receive the message anymore and we are done processing it.
 	ackErr := msg.Ack()
 	if ackErr == nil {
 		r.logger.Errorf("Error in message ack: %s", err)
 	}
+
 	if err != nil {
 		r.stopWorkflowReturningErr(err, r.cfg.NATS.EntrypointSubject)
-		return
+	} else if !requestMsg.OutputSent { // If no output has been sent, stop workflow with an error.
+		r.stopWorkflowReturningErr(fmt.Errorf("This node has not sent any output"), r.cfg.NATS.EntrypointSubject)
 	}
 
 	end := time.Now().UTC()
 
 	// Save the elapsed time for this node and for the workflow if it is the last node.
 	r.saveElapsedTime(requestMsg, start, end, r.cfg.IsLastNode)
-
-	// Tell NATS we don't need to receive the message anymore and we are done processing it.
-	err = msg.Ack()
-	if err != nil {
-		return
-	}
 }
 
 // sendOutput will send a desired payload to the node's output subject.
@@ -114,6 +111,9 @@ func (r *Runner) sendOutput(msg proto.Message) error {
 	// Publish the response message to the output subject.
 	outputSubject := r.getOutputSubject(r.reqMsg.EarlyExit)
 	r.publishResponse(outputSubject, responseMsg)
+
+	// At least one reply has been sent
+	r.reqMsg.OutputSent = true
 
 	// Failsafe so users cannot send multiple responses to the entrypoint
 	if r.cfg.IsLastNode {
