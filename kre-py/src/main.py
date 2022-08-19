@@ -130,6 +130,8 @@ class NodeRunner(Runner):
 
                 # Execute the handler function sending context and the payload.
                 handler_result = await self.handler_fn(ctx, request_msg.payload)
+                # Tell NATS we don't need to receive the message anymore and we are done processing it.
+                await msg.ack()
                 end = datetime.utcnow()
 
                 # Save the elapsed time for this node and for the workflow if it is the last node.
@@ -150,15 +152,19 @@ class NodeRunner(Runner):
                 output_subject = self.get_output_subject(request_msg.early_exit)
                 await self.publish_response(output_subject, res)
 
+            except Exception as err:
+                # Publish an error message to the final reply subject
+                # in order to stop the workflow execution. So the next nodes will be ignored
+                # and the gRPC response will be an exception.
+
                 # Tell NATS we don't need to receive the message anymore and we are done processing it.
                 await msg.ack()
-
-            except Exception as err:
+                
                 tb = traceback.format_exc()
                 self.logger.error(f"error executing handler: {err} \n\n{tb}")
                 response_err = KreNatsMessage()
                 response_err.error = f"error in '{self.config.krt_node_name}': {str(err)}"
-                output_subject = self.config.nats_output
+                output_subject = self.config.nats_entrypoint_subject
 
                 await self.js.publish(
                     stream=self.config.nats_stream,
