@@ -124,3 +124,11 @@ func (c *HandlerContext) SetEarlyExit() {
 func (c *HandlerContext) SendOutput(response proto.Message) error {
 	return c.sendOutput(response)
 }
+
+// SendEarlyExit combines both SetEarlyExit and SendOutput functions.
+// As a result when invoquing this function, a response will be sent directly to the entrypoint and
+// the workflow execution will be halted.
+func (c *HandlerContext) SendEarlyExit(response proto.Message) error {
+	c.SetEarlyExit()
+	return c.sendOutput(response)
+}

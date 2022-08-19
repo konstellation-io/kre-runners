@@ -1,3 +1,10 @@
+# [kre-go-v2.1.2](https://github.com/konstellation-io/kre-runners/compare/kre-go-v2.1.1...kre-go-v2.1.2) (2022-08-19)
+
+
+### Bug Fixes
+
+* **kre-go:** Infinte ack loop when error ([#105](https://github.com/konstellation-io/kre-runners/issues/105)) ([1a9a657](https://github.com/konstellation-io/kre-runners/commit/1a9a65734af36dcd56211becd77c9dc9f6777f58))
+
 # [kre-go-v2.1.1](https://github.com/konstellation-io/kre-runners/compare/kre-go-v2.1.0...kre-go-v2.1.1) (2022-07-27)
 
 

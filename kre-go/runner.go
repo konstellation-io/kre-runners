@@ -72,6 +72,11 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 
 	// Execute the handler function sending context and the payload.
 	err = r.handler(hCtx, requestMsg.Payload)
+	// Tell NATS we don't need to receive the message anymore and we are done processing it.
+	ackErr := msg.Ack()
+	if ackErr == nil {
+		r.logger.Errorf("Error in message ack: %s", err)
+	}
 	if err != nil {
 		r.stopWorkflowReturningErr(err, r.cfg.NATS.EntrypointSubject)
 		return
@@ -130,7 +135,7 @@ func (r *Runner) getOutputSubject(earlyExit bool) string {
 	return outputSubject
 }
 
-// stopWorkflowReturningErr publishes a error message to the final reply subject
+// stopWorkflowReturningErr publishes an error message to the final reply subject
 // in order to stop the workflow execution. So the next nodes will be ignored and the
 // gRPC response will be an exception.
 func (r *Runner) stopWorkflowReturningErr(err error, replySubject string) {
@@ -145,7 +150,7 @@ func (r *Runner) stopWorkflowReturningErr(err error, replySubject string) {
 		return
 	}
 
-	err = r.nc.Publish(replySubject, replyErrMsg)
+	_, err = r.js.Publish(replySubject, replyErrMsg)
 	if err != nil {
 		r.logger.Errorf("Error publishing output: %s", err)
 	}
