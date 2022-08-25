@@ -1,3 +1,10 @@
+# [kre-py-v2.1.3](https://github.com/konstellation-io/kre-runners/compare/kre-py-v2.1.2...kre-py-v2.1.3) (2022-08-25)
+
+
+### Bug Fixes
+
+* **entrypoint:** modify log connection info to credentials leaks ([#107](https://github.com/konstellation-io/kre-runners/issues/107)) ([fbe694c](https://github.com/konstellation-io/kre-runners/commit/fbe694c77115ff3d5731aad35c8afa8472384d7c))
+
 # [kre-py-v2.1.2](https://github.com/konstellation-io/kre-runners/compare/kre-py-v2.1.1...kre-py-v2.1.2) (2022-08-19)
 
 
