@@ -56,7 +56,7 @@ class Runner:
         Connect to NATS.
         """
 
-        self.logger.info(f"Connecting to MongoDB {self.config.mongo_uri}...")
+        self.logger.info(f"Connecting to MongoDB...")
         self.mongo_conn = pymongo.MongoClient(
             self.config.mongo_uri, socketTimeoutMS=10000, connectTimeoutMS=10000
         )
