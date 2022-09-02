@@ -72,7 +72,7 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 	handlerResult, err := r.handler(hCtx, requestMsg.Payload)
 	// Tell NATS we don't need to receive the message anymore and we are done processing it.
 	ackErr := msg.Ack()
-	if ackErr == nil {
+	if ackErr != nil {
 		r.logger.Errorf("Error in message ack: %s", err)
 	}
 	if err != nil {
