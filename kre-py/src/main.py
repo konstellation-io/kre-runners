@@ -5,6 +5,7 @@ import inspect
 import os
 import sys
 import traceback
+import gc
 from datetime import datetime
 
 from nats.js.api import DeliverPolicy, ConsumerConfig
@@ -159,7 +160,7 @@ class NodeRunner(Runner):
 
                 # Tell NATS we don't need to receive the message anymore and we are done processing it.
                 await msg.ack()
-                
+
                 tb = traceback.format_exc()
                 self.logger.error(f"error executing handler: {err} \n\n{tb}")
                 response_err = KreNatsMessage()
@@ -171,6 +172,7 @@ class NodeRunner(Runner):
                     subject=output_subject,
                     payload=response_err.SerializeToString(),
                 )
+            gc.collect()
 
         return message_cb
 
@@ -195,7 +197,7 @@ class NodeRunner(Runner):
     # new_response_msg creates a KreNatsMessage maintaining the tracking ID plus adding the
     # handler result and the tracking information for this node.
     def new_response_msg(
-        self, request_msg: KreNatsMessage, payload: any, start, end
+            self, request_msg: KreNatsMessage, payload: any, start, end
     ) -> KreNatsMessage:
         res = KreNatsMessage()
         res.replied = request_msg.replied
