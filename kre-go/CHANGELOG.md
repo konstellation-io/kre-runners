@@ -1,3 +1,10 @@
+# [kre-go-v2.1.3](https://github.com/konstellation-io/kre-runners/compare/kre-go-v2.1.2...kre-go-v2.1.3) (2022-09-02)
+
+
+### Bug Fixes
+
+* **kre-go:** bad written if in ack error check ([#108](https://github.com/konstellation-io/kre-runners/issues/108)) ([45f058b](https://github.com/konstellation-io/kre-runners/commit/45f058b4af5371a6f4081fd437ea21ece6aad459))
+
 # [kre-go-v2.1.2](https://github.com/konstellation-io/kre-runners/compare/kre-go-v2.1.1...kre-go-v2.1.2) (2022-08-19)
 
 
