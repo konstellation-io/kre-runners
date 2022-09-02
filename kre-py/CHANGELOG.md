@@ -1,3 +1,10 @@
+# [kre-py-v2.1.4](https://github.com/konstellation-io/kre-runners/compare/kre-py-v2.1.3...kre-py-v2.1.4) (2022-09-02)
+
+
+### Bug Fixes
+
+* **kre-py:** force garbage collector to diminish memory leaks ([#109](https://github.com/konstellation-io/kre-runners/issues/109)) ([b57a371](https://github.com/konstellation-io/kre-runners/commit/b57a371ed80b02b57b4f5c91bf825f93fd42ebf2))
+
 # [kre-py-v2.1.3](https://github.com/konstellation-io/kre-runners/compare/kre-py-v2.1.2...kre-py-v2.1.3) (2022-08-25)
 
 
