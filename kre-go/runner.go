@@ -73,7 +73,7 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 	// Tell NATS we don't need to receive the message anymore and we are done processing it.
 	ackErr := msg.Ack()
 	if ackErr != nil {
-		r.logger.Errorf("Error in message ack: %s", err)
+		r.logger.Errorf("Error in message ack: %s", ackErr.Error())
 	}
 	if err != nil {
 		r.stopWorkflowReturningErr(err, r.cfg.NATS.EntrypointSubject)
