@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"os"
 
 	"github.com/konstellation-io/kre/libs/simplelogger"
@@ -29,6 +30,7 @@ type ConfigNATS struct {
 	Server             string
 	Stream             string
 	InputSubject       string
+	InputSubjects      []string
 	OutputSubject      string
 	MongoWriterSubject string
 	EntrypointSubject  string
@@ -51,6 +53,7 @@ func NewConfig(logger *simplelogger.SimpleLogger) Config {
 			Server:             getCfgFromEnv(logger, "KRT_NATS_SERVER"),
 			Stream:             getCfgFromEnv(logger, "KRT_NATS_STREAM"),
 			InputSubject:       getCfgFromEnv(logger, "KRT_NATS_INPUT"),
+			InputSubjects:      getSubscriptionsFromEnv(logger, "KRT_NATS_INPUTS"),
 			OutputSubject:      getCfgFromEnv(logger, "KRT_NATS_OUTPUT"),
 			MongoWriterSubject: getCfgFromEnv(logger, "KRT_NATS_MONGO_WRITER"),
 			EntrypointSubject:  getCfgFromEnv(logger, "KRT_NATS_ENTRYPOINT_SUBJECT"),
@@ -81,4 +84,16 @@ func getCfgBoolFromEnv(logger *simplelogger.SimpleLogger, name string) bool {
 		return true
 	}
 	return false
+}
+
+func getSubscriptionsFromEnv(logger *simplelogger.SimpleLogger, name string) []string {
+	subscriptions := make([]string, 0)
+	val, ok := os.LookupEnv(name)
+	if ok {
+		if err := json.Unmarshal([]byte(val), &subscriptions); err != nil {
+			logger.Errorf("Error reading config: cannot unmarshal '%s' env var to array of strings", name)
+			os.Exit(1)
+		}
+	}
+	return subscriptions
 }

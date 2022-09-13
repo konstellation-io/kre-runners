@@ -4,7 +4,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
@@ -56,9 +55,9 @@ func Start(handlerInit HandlerInit, handler Handler) {
 	runner := NewRunner(logger, cfg, nc, js, handler, handlerInit, mongoM)
 	logger.Infof("Listening to '%s' subject...", cfg.NATS.InputSubject)
 
-	s, err := js.QueueSubscribe(cfg.NATS.InputSubject, cfg.NATS.Stream, runner.ProcessMessage, nats.DeliverNew(), nats.Durable(cfg.NodeName), nats.ManualAck(), nats.AckWait(22*time.Hour))
+	subscriptions, err := handleSubscriptions(js, cfg, runner)
 	if err != nil {
-		logger.Errorf("Error subscribing to the NATS subject: %s", err)
+		logger.Errorf("Error subscribing to NATS subjects: %s", err)
 		os.Exit(1)
 	}
 
@@ -69,9 +68,34 @@ func Start(handlerInit HandlerInit, handler Handler) {
 
 	// Handle shutdown
 	logger.Info("Shutdown signal received")
-	err = s.Unsubscribe()
-	if err != nil {
-		logger.Errorf("Error unsubscribing from the NATS subject: %s", err)
-		os.Exit(1)
+	for _, s := range subscriptions {
+		err = s.Unsubscribe()
+		if err != nil {
+			logger.Errorf("Error unsubscribing from the NATS subject: %s", err)
+			os.Exit(1)
+		}
 	}
+}
+
+func handleSubscriptions(js nats.JetStreamContext, cfg config.Config, runner *Runner) ([]*nats.Subscription, error) {
+	var (
+		subscribeTo   []string
+		subscriptions []*nats.Subscription
+	)
+
+	if len(cfg.NATS.InputSubjects) > 0 {
+		subscribeTo = cfg.NATS.InputSubjects
+	} else { //fallback to v1
+		subscribeTo = append(subscribeTo, cfg.NATS.InputSubject)
+	}
+
+	for _, subject := range subscribeTo {
+		s, err := js.QueueSubscribe(subject, cfg.NodeName, runner.ProcessMessage, nats.DeliverNew(), nats.Durable(cfg.NodeName), nats.ManualAck())
+		if err != nil {
+			return nil, err
+		}
+		subscriptions = append(subscriptions, s)
+	}
+
+	return subscriptions, nil
 }
