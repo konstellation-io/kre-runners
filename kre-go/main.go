@@ -71,7 +71,7 @@ func Start(handlerInit HandlerInit, handler Handler) {
 	for _, s := range subscriptions {
 		err = s.Unsubscribe()
 		if err != nil {
-			logger.Errorf("Error unsubscribing from the NATS subject: %s", err)
+			logger.Errorf("Error unsubscribing from the NATS subject %s: %s", s.Subject, err)
 			os.Exit(1)
 		}
 	}
