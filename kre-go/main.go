@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
@@ -55,7 +56,7 @@ func Start(handlerInit HandlerInit, handler Handler) {
 	runner := NewRunner(logger, cfg, nc, js, handler, handlerInit, mongoM)
 	logger.Infof("Listening to '%s' subject...", cfg.NATS.InputSubject)
 
-	s, err := js.QueueSubscribe(cfg.NATS.InputSubject, cfg.NATS.Stream, runner.ProcessMessage, nats.DeliverNew(), nats.Durable(cfg.NodeName), nats.ManualAck())
+	s, err := js.QueueSubscribe(cfg.NATS.InputSubject, cfg.NATS.Stream, runner.ProcessMessage, nats.DeliverNew(), nats.Durable(cfg.NodeName), nats.ManualAck(), nats.AckWait(22*time.Hour))
 	if err != nil {
 		logger.Errorf("Error subscribing to the NATS subject: %s", err)
 		os.Exit(1)
