@@ -113,6 +113,7 @@ class EntrypointKRE:
                 subject=input_subject,
                 config=ConsumerConfig(
                     deliver_policy=DeliverPolicy.NEW,
+                    ack_wait = 22 * 3600,  # 22 hours
                 ),
                 manual_ack=True,
             )
