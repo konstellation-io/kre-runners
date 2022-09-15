@@ -91,6 +91,7 @@ class NodeRunner(Runner):
                 cb=self.create_message_cb(),
                 config=ConsumerConfig(
                     deliver_policy=DeliverPolicy.NEW,
+                    ack_wait = 22 * 3600,  # 22 hours
                 ),
                 manual_ack=True,
             )
