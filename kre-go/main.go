@@ -53,9 +53,7 @@ func Start(handlerInit HandlerInit, handler Handler) {
 
 	// Handle incoming messages from NATS
 	runner := NewRunner(logger, cfg, nc, js, handler, handlerInit, mongoM)
-	logger.Infof("Listening to '%s' subject...", cfg.NATS.InputSubject)
-
-	subscriptions, err := handleSubscriptions(js, cfg, runner)
+	subscriptions, err := handleSubscriptions(logger, js, cfg, runner)
 	if err != nil {
 		logger.Errorf("Error subscribing to NATS subjects: %s", err)
 		os.Exit(1)
@@ -77,7 +75,7 @@ func Start(handlerInit HandlerInit, handler Handler) {
 	}
 }
 
-func handleSubscriptions(js nats.JetStreamContext, cfg config.Config, runner *Runner) ([]*nats.Subscription, error) {
+func handleSubscriptions(logger *simplelogger.SimpleLogger, js nats.JetStreamContext, cfg config.Config, runner *Runner) ([]*nats.Subscription, error) {
 	var (
 		subscribeTo   []string
 		subscriptions []*nats.Subscription
@@ -95,6 +93,7 @@ func handleSubscriptions(js nats.JetStreamContext, cfg config.Config, runner *Ru
 			return nil, err
 		}
 		subscriptions = append(subscriptions, s)
+		logger.Infof("Listening to '%s' subject...", subject)
 	}
 
 	return subscriptions, nil
