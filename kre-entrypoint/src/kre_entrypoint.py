@@ -24,7 +24,7 @@ class EntrypointKRE:
         self.nc = NATS()
         self.js = None
         self.jetstream_data = {}
-        self.output_subjects = subjects
+        self.subscriptions = subjects
         self.config = config
 
     @abc.abstractmethod
@@ -54,13 +54,13 @@ class EntrypointKRE:
         await self.nc.connect(self.config.nats_server, name=self.config.runner_name)
         self.js = self.nc.jetstream()
 
-        for workflow, _ in self.output_subjects.items():
+        for workflow, _ in self.subscriptions.items():
             stream = f"{self.config.krt_runtime_id}-{self.config.krt_version}-{workflow}"
             subjects = [f"{stream}.*"]
 
             self.jetstream_data[workflow] = {
                 "stream": stream,
-                "input_subject": f"{stream}.{self.config.runner_name}",
+                "output_subject": f"{stream}.{self.config.runner_name}", # output to stream.entrypoint
             }
 
             # Create NATS stream
@@ -100,9 +100,12 @@ class EntrypointKRE:
             )
 
             # get the correct subject, subscription and stream depending on the workflow
-            subject = self.output_subjects[workflow]
             stream = self.jetstream_data[workflow]["stream"]
-            input_subject = self.jetstream_data[workflow]["input_subject"]
+            input_subject = self.subscriptions[workflow]
+            output_subject = self.jetstream_data[workflow]["output_subject"]
+
+            self.logger.info(f"Input subject is '{input_subject}'")
+            self.logger.info(f"Output subject is '{output_subject}'")
 
             # creates the msg to be sent to the NATS server
             request_msg = self._create_kre_request_message(grpc_raw_msg, start, request_id)
@@ -119,9 +122,9 @@ class EntrypointKRE:
             )
 
             # publish the msg to the NATS server
-            await self.js.publish(stream=stream, subject=subject, payload=request_msg)
+            await self.js.publish(stream=stream, subject=output_subject, payload=request_msg)
             self.logger.info(
-                f"Message published to NATS subject: '{subject}' from stream: '{stream}'"
+                f"Message published to NATS subject: '{output_subject}' from stream: '{stream}'"
             )
 
             # wait until a message for the request arrives ignoring the rest
