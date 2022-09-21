@@ -80,32 +80,39 @@ class NodeRunner(Runner):
             self.handler_init_fn(self.handler_ctx)
 
     async def process_messages(self) -> None:
-        queue_name = f"queue_{self.config.nats_input}"
 
-        try:
-            self.subscription_sid = await self.js.subscribe(
-                stream=self.config.nats_stream,
-                subject=self.config.nats_input,
-                queue=self.runner_name,
-                durable=self.runner_name,
-                cb=self.create_message_cb(),
-                config=ConsumerConfig(
-                    deliver_policy=DeliverPolicy.NEW,
-                    ack_wait = 22 * 3600,  # 22 hours
-                ),
-                manual_ack=True,
-            )
-        except Exception as err:
-            tb = traceback.format_exc()
-            self.logger.error(
-                f"Error subscribing to stream {self.config.handler_path}: {err}\n\n{tb}"
-            )
-            sys.exit(1)
+        # retrocompatibility
+        if len(self.config.nats_inputs)==0:
+            self.config.nats_inputs.append(self.config.nats_input)
 
-        self.logger.info(
-            f"Listening to '{self.config.nats_input}' subject with queue '{queue_name}' "
-            f"from stream '{self.config.nats_stream}'"
-        )
+        for subject in self.config.nats_inputs:
+            try:
+                sub = await self.js.subscribe(
+                    stream=self.config.nats_stream,
+                    subject=subject,
+                    queue=self.runner_name,
+                    durable=self.runner_name,
+                    cb=self.create_message_cb(),
+                    config=ConsumerConfig(
+                        deliver_policy=DeliverPolicy.NEW,
+                        ack_wait = 22 * 3600,  # 22 hours
+                    ),
+                    manual_ack=True,
+                )
+
+                self.subscription_sids.append(sub)
+
+                self.logger.info(
+                    f"Listening to '{subject}' subject with queue group '{self.runner_name}' "
+                    f"from stream '{self.config.nats_stream}'"
+                 )
+
+            except Exception as err:
+                tb = traceback.format_exc()
+                self.logger.error(
+                    f"Error subscribing to stream {self.config.handler_path}: {err}\n\n{tb}"
+                )
+                sys.exit(1)
 
         await self.execute_handler_init()
 
