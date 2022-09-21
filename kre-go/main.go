@@ -53,12 +53,16 @@ func Start(handlerInit HandlerInit, handler Handler) {
 
 	// Handle incoming messages from NATS
 	runner := NewRunner(logger, cfg, nc, js, handler, handlerInit, mongoM)
-	logger.Infof("Listening to '%s' subject...", cfg.NATS.InputSubject)
 
-	subscriptions, err := handleSubscriptions(js, cfg, runner)
-	if err != nil {
-		logger.Errorf("Error subscribing to NATS subjects: %s", err)
-		os.Exit(1)
+	var subscriptions []*nats.Subscription
+	for _, subject := range cfg.NATS.InputSubjects {
+		s, err := js.QueueSubscribe(subject, cfg.NodeName, runner.ProcessMessage, nats.DeliverNew(), nats.Durable(cfg.NodeName), nats.ManualAck())
+		if err != nil {
+			logger.Errorf("Error subscribing to NATS subject %s: %s", subject, err)
+			os.Exit(1)
+		}
+		subscriptions = append(subscriptions, s)
+		logger.Infof("Listening to '%s' subject...", subject)
 	}
 
 	// Handle sigterm and await termChan signal
@@ -75,27 +79,4 @@ func Start(handlerInit HandlerInit, handler Handler) {
 			os.Exit(1)
 		}
 	}
-}
-
-func handleSubscriptions(js nats.JetStreamContext, cfg config.Config, runner *Runner) ([]*nats.Subscription, error) {
-	var (
-		subscribeTo   []string
-		subscriptions []*nats.Subscription
-	)
-
-	if len(cfg.NATS.InputSubjects) > 0 {
-		subscribeTo = cfg.NATS.InputSubjects
-	} else { //fallback to v1
-		subscribeTo = append(subscribeTo, cfg.NATS.InputSubject)
-	}
-
-	for _, subject := range subscribeTo {
-		s, err := js.QueueSubscribe(subject, cfg.NodeName, runner.ProcessMessage, nats.DeliverNew(), nats.Durable(cfg.NodeName), nats.ManualAck())
-		if err != nil {
-			return nil, err
-		}
-		subscriptions = append(subscriptions, s)
-	}
-
-	return subscriptions, nil
 }
