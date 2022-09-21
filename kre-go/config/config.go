@@ -17,7 +17,7 @@ type Config struct {
 	NATS         ConfigNATS
 	MongoDB      MongoDB
 	InfluxDB     InfluxDB
-	IsLastNode   bool
+	IsExitpoint  bool
 }
 
 type MongoDB struct {
@@ -29,11 +29,10 @@ type MongoDB struct {
 type ConfigNATS struct {
 	Server             string
 	Stream             string
-	InputSubject       string
 	InputSubjects      []string
 	OutputSubject      string
 	MongoWriterSubject string
-	EntrypointSubject  string
+	ExitpointSubject   string
 }
 
 type InfluxDB struct {
@@ -48,15 +47,14 @@ func NewConfig(logger *simplelogger.SimpleLogger) Config {
 		Version:      getCfgFromEnv(logger, "KRT_VERSION"),
 		NodeName:     getCfgFromEnv(logger, "KRT_NODE_NAME"),
 		BasePath:     getCfgFromEnv(logger, "KRT_BASE_PATH"),
-		IsLastNode:   getCfgBoolFromEnv(logger, "KRT_IS_LAST_NODE"),
+		IsExitpoint:  getCfgBoolFromEnv(logger, "KRT_IS_EXITPOINT"),
 		NATS: ConfigNATS{
 			Server:             getCfgFromEnv(logger, "KRT_NATS_SERVER"),
 			Stream:             getCfgFromEnv(logger, "KRT_NATS_STREAM"),
-			InputSubject:       getCfgFromEnv(logger, "KRT_NATS_INPUT"),
 			InputSubjects:      getSubscriptionsFromEnv(logger, "KRT_NATS_INPUTS"),
 			OutputSubject:      getCfgFromEnv(logger, "KRT_NATS_OUTPUT"),
 			MongoWriterSubject: getCfgFromEnv(logger, "KRT_NATS_MONGO_WRITER"),
-			EntrypointSubject:  getCfgFromEnv(logger, "KRT_NATS_ENTRYPOINT_SUBJECT"),
+			ExitpointSubject:   getCfgFromEnv(logger, "KRT_NATS_EXITPOINT_SUBJECT"),
 		},
 		MongoDB: MongoDB{
 			Address:     getCfgFromEnv(logger, "KRT_MONGO_URI"),
@@ -89,11 +87,13 @@ func getCfgBoolFromEnv(logger *simplelogger.SimpleLogger, name string) bool {
 func getSubscriptionsFromEnv(logger *simplelogger.SimpleLogger, name string) []string {
 	subscriptions := make([]string, 0)
 	val, ok := os.LookupEnv(name)
-	if ok {
-		if err := json.Unmarshal([]byte(val), &subscriptions); err != nil {
-			logger.Errorf("Error reading config: cannot unmarshal '%s' env var to array of strings", name)
-			os.Exit(1)
-		}
+	if !ok {
+		logger.Errorf("Error reading config: the '%s' env var is missing", name)
+		os.Exit(1)
+	}
+	if err := json.Unmarshal([]byte(val), &subscriptions); err != nil {
+		logger.Errorf("Error reading config: cannot unmarshal '%s' env var to array of strings", name)
+		os.Exit(1)
 	}
 	return subscriptions
 }

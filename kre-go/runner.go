@@ -76,17 +76,17 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 		r.logger.Errorf("Error in message ack: %s", ackErr.Error())
 	}
 	if err != nil {
-		r.stopWorkflowReturningErr(err, r.cfg.NATS.EntrypointSubject)
+		r.stopWorkflowReturningErr(err, r.cfg.NATS.ExitpointSubject)
 		return
 	}
 
 	end := time.Now().UTC()
 
 	// Save the elapsed time for this node and for the workflow if it is the last node.
-	r.saveElapsedTime(requestMsg, start, end, r.cfg.IsLastNode)
+	r.saveElapsedTime(requestMsg, start, end, r.cfg.IsExitpoint)
 
 	// Ignore send reply if the msg was replied previously.
-	if r.cfg.IsLastNode && requestMsg.Replied {
+	if r.cfg.IsExitpoint && requestMsg.Replied {
 		if handlerResult != nil {
 			r.logger.Info("ignoring the last node response because the message was replied previously")
 		}
@@ -97,7 +97,7 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 	// Generate a KreNatsMessage response.
 	responseMsg, err := r.newResponseMsg(handlerResult, requestMsg, start, end)
 	if err != nil {
-		r.stopWorkflowReturningErr(err, r.cfg.NATS.EntrypointSubject)
+		r.stopWorkflowReturningErr(err, r.cfg.NATS.ExitpointSubject)
 		return
 	}
 
@@ -111,7 +111,7 @@ func (r *Runner) getOutputSubject(earlyExit bool) string {
 	var outputSubject string
 	if earlyExit {
 		r.logger.Info("Early exit recieved, worklow has stopped execution")
-		outputSubject = r.cfg.NATS.EntrypointSubject
+		outputSubject = r.cfg.NATS.ExitpointSubject
 	} else {
 		outputSubject = r.cfg.NATS.OutputSubject
 	}
@@ -236,7 +236,7 @@ func (r Runner) earlyReply(response proto.Message, requestID string) error {
 		Reply:   requestID,
 	}
 
-	r.publishResponse(r.cfg.NATS.EntrypointSubject, res)
+	r.publishResponse(r.cfg.NATS.ExitpointSubject, res)
 
 	return nil
 }
