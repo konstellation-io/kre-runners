@@ -1,3 +1,10 @@
+# [kre-go-v2.1.4](https://github.com/konstellation-io/kre-runners/compare/kre-go-v2.1.3...kre-go-v2.1.4) (2022-09-22)
+
+
+### Bug Fixes
+
+* **kre-go:** Add wait time for ack messages ([56d4392](https://github.com/konstellation-io/kre-runners/commit/56d43925d632c3265923be2e26c8f8824fbea6fb))
+
 # [kre-go-v2.1.3](https://github.com/konstellation-io/kre-runners/compare/kre-go-v2.1.2...kre-go-v2.1.3) (2022-09-02)
 
 
