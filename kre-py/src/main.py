@@ -80,11 +80,6 @@ class NodeRunner(Runner):
             self.handler_init_fn(self.handler_ctx)
 
     async def process_messages(self) -> None:
-
-        # retrocompatibility
-        if len(self.config.nats_inputs)==0:
-            self.config.nats_inputs.append(self.config.nats_input)
-
         for subject in self.config.nats_inputs:
             try:
                 sub = await self.js.subscribe(
