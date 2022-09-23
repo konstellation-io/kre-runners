@@ -13,7 +13,7 @@ class Config:
             self.krt_version = os.environ["KRT_VERSION"]
             self.krt_node_name = os.environ["KRT_NODE_NAME"]
             self.nats_server = os.environ["KRT_NATS_SERVER"]
-            self.nats_inputs = json.loads(os.environ["KRT_NATS_INPUTS"])
+            self.nats_inputs = os.environ["KRT_NATS_INPUTS"].split(",")
             self.nats_output = os.environ["KRT_NATS_OUTPUT"]
             self.nats_stream = os.environ["KRT_NATS_STREAM"]
             self.nats_mongo_writer = os.environ["KRT_NATS_MONGO_WRITER"]
