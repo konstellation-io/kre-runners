@@ -1,3 +1,10 @@
+# [kre-py-v2.1.5](https://github.com/konstellation-io/kre-runners/compare/kre-py-v2.1.4...kre-py-v2.1.5) (2022-09-15)
+
+
+### Bug Fixes
+
+* **kre-py:** add wait time for ack messages ([#110](https://github.com/konstellation-io/kre-runners/issues/110)) ([051d345](https://github.com/konstellation-io/kre-runners/commit/051d3455487317adaa1bdb6a7c3154332b215953))
+
 # [kre-py-v2.1.4](https://github.com/konstellation-io/kre-runners/compare/kre-py-v2.1.3...kre-py-v2.1.4) (2022-09-02)
 
 
