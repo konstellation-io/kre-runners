@@ -63,7 +63,7 @@ func Start(handlerInit HandlerInit, handler Handler) {
 			os.Exit(1)
 		}
 		subscriptions = append(subscriptions, s)
-		logger.Infof("Listening to '%s' subject...", subject)
+		logger.Infof("Listening to '%s' subject with queue %s", subject, cfg.NodeName)
 	}
 
 	// Handle sigterm and await termChan signal
