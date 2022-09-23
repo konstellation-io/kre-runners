@@ -1,8 +1,8 @@
 package config
 
 import (
-	"encoding/json"
 	"os"
+	"strings"
 
 	"github.com/konstellation-io/kre/libs/simplelogger"
 )
@@ -84,16 +84,13 @@ func getCfgBoolFromEnv(logger *simplelogger.SimpleLogger, name string) bool {
 	return false
 }
 
+// getSubscriptionsFromEnv will take the env variable and split it by ","
 func getSubscriptionsFromEnv(logger *simplelogger.SimpleLogger, name string) []string {
-	subscriptions := make([]string, 0)
 	val, ok := os.LookupEnv(name)
 	if !ok {
 		logger.Errorf("Error reading config: the '%s' env var is missing", name)
 		os.Exit(1)
 	}
-	if err := json.Unmarshal([]byte(val), &subscriptions); err != nil {
-		logger.Errorf("Error reading config: cannot unmarshal '%s' env var to array of strings", name)
-		os.Exit(1)
-	}
-	return subscriptions
+
+	return strings.Split(val, ",")
 }
