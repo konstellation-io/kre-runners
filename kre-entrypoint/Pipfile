@@ -17,7 +17,7 @@ grpcio = "==1.46.1"
 grpclib = "==0.4.2"
 grpcio-tools = "==1.46.1"
 influxdb-client = "==1.9.0"
-protobuf = "==3.20.1"
+protobuf = "==3.20.2"
 # This is a sub-dependency, added explicitily here because it fails on v4.0.
 h2 = "==3.2.0"
 
