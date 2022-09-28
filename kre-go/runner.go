@@ -26,19 +26,19 @@ type Runner struct {
 	cfg            config.Config
 	nc             *nats.Conn
 	js             nats.JetStreamContext
-	handler        Handler
 	handlerContext *HandlerContext
+	handlers       map[string]Handler
 }
 
 // NewRunner creates a new Runner instance.
 func NewRunner(logger *simplelogger.SimpleLogger, cfg config.Config, nc *nats.Conn, js nats.JetStreamContext,
-	handler Handler, handlerInit HandlerInit, mongoM *mongodb.MongoDB) *Runner {
+	handlers map[string]Handler, handlerInit HandlerInit, mongoM *mongodb.MongoDB) *Runner {
 	runner := &Runner{
-		logger:  logger,
-		cfg:     cfg,
-		nc:      nc,
-		js:      js,
-		handler: handler,
+		logger:   logger,
+		cfg:      cfg,
+		nc:       nc,
+		js:       js,
+		handlers: handlers,
 	}
 
 	// Create handler context
@@ -69,7 +69,8 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 	hCtx.reqMsg = requestMsg
 
 	// Execute the handler function sending context and the payload.
-	handlerResult, err := r.handler(hCtx, requestMsg.Payload)
+	handler, err := r.getHandler(r.handlers, r.getIncomingRequestNodeName(requestMsg))
+	handlerResult, err := handler(hCtx, requestMsg.Payload)
 	// Tell NATS we don't need to receive the message anymore and we are done processing it.
 	ackErr := msg.Ack()
 	if ackErr != nil {
@@ -104,6 +105,22 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 	// Publish the response message to the output subject.
 	outputSubject := r.getOutputSubject(requestMsg.EarlyExit)
 	r.publishResponse(outputSubject, responseMsg)
+}
+
+func (r *Runner) getIncomingRequestNodeName(msg *KreNatsMessage) string {
+	tracking := msg.GetTracking()
+	return tracking[len(tracking)-1].NodeName
+}
+
+func (r *Runner) getHandler(handlers map[string]Handler, nodeName string) (Handler, error) {
+	value, ok := handlers[nodeName]
+	if !ok {
+		value, ok = handlers["defualt"]
+		if !ok {
+			return nil, fmt.Errorf("could not find handler function for %s node", nodeName)
+		}
+	}
+	return value, nil
 }
 
 // getOutputSubject returns the subject to which we must publish our next response.
