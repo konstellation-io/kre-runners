@@ -24,7 +24,7 @@ type Handler func(ctx *HandlerContext, data *anypb.Any) (proto.Message, error)
 
 // Start receives the handler init function and the handler function
 // connects to NATS and MongoDB and processes all incoming messages.
-func Start(handlerInit HandlerInit, handler Handler) {
+func Start(handlerInit HandlerInit, handler Handler, handlersOpt ...map[string]Handler) {
 	logger := simplelogger.New(simplelogger.LevelInfo)
 	cfg := config.NewConfig(logger)
 
@@ -51,8 +51,13 @@ func Start(handlerInit HandlerInit, handler Handler) {
 		os.Exit(1)
 	}
 
+	if handlersOpt == nil {
+		handlersOpt = make([]map[string]Handler, 1)
+		handlersOpt[0] = map[string]Handler{"default": handler}
+	}
+
 	// Handle incoming messages from NATS
-	runner := NewRunner(logger, cfg, nc, js, handler, handlerInit, mongoM)
+	runner := NewRunner(logger, cfg, nc, js, handlersOpt[0], handlerInit, mongoM)
 
 	var subscriptions []*nats.Subscription
 	for _, subject := range cfg.NATS.InputSubjects {
