@@ -15,8 +15,9 @@ import (
 )
 
 const (
-	ISO8601          = "2006-01-02T15:04:05.000000"
-	MessageThreshold = 1024 * 1024
+	ISO8601           = "2006-01-02T15:04:05.000000"
+	MessageThreshold  = 1024 * 1024
+	DefaultHandlerKey = "default"
 )
 
 var ErrMessageToBig = errors.New("compressed message exceeds maximum size allowed of 1 MB")
@@ -115,7 +116,7 @@ func (r *Runner) getIncomingRequestNodeName(msg *KreNatsMessage) string {
 func (r *Runner) getHandler(handlers map[string]Handler, nodeName string) (Handler, error) {
 	value, ok := handlers[nodeName]
 	if !ok {
-		value, ok = handlers["defualt"]
+		value, ok = handlers[r.cfg.Handlers.DefaultHandlerKey]
 		if !ok {
 			return nil, fmt.Errorf("could not find handler function for %s node", nodeName)
 		}
