@@ -7,7 +7,7 @@ import uuid
 from grpclib.server import Stream
 from grpclib import GRPCError
 from grpclib.const import Status
-from nats.js.api import ConsumerConfig, DeliverPolicy, RetentionPolicy, StreamConfig
+from nats.js.api import ConsumerConfig, DeliverPolicy
 from nats.aio.client import Client as NATS
 
 from kre_nats_msg_pb2 import KreNatsMessage
@@ -19,12 +19,11 @@ GZIP_HEADER = b"\x1f\x8b"
 
 # NOTE: EntrypointKRE will be extended by Entrypoint class auto-generated
 class EntrypointKRE:
-    def __init__(self, logger, subjects, config):
+    def __init__(self, logger, jetstream_data, config):
         self.logger = logger
         self.nc = NATS()
         self.js = None
-        self.jetstream_data = {}
-        self.subscriptions = subjects
+        self.jetstream_data = jetstream_data
         self.config = config
 
     @abc.abstractmethod
@@ -54,25 +53,8 @@ class EntrypointKRE:
         await self.nc.connect(self.config.nats_server, name=self.config.runner_name)
         self.js = self.nc.jetstream()
 
-        for workflow, _ in self.subscriptions.items():
-            stream = f"{self.config.krt_runtime_id}-{self.config.krt_version}-{workflow}"
-            subjects = [f"{stream}.*"]
-
-            self.jetstream_data[workflow] = {
-                "stream": stream,
-                "output_subject": f"{stream}.{self.config.runner_name}", # output to stream.entrypoint
-            }
-
-            # Create NATS stream
-            await self.js.add_stream(
-                name=stream,
-                subjects=subjects,
-                config=StreamConfig(retention=RetentionPolicy.INTEREST),
-            )
-            self.logger.info(f"Created stream {stream} with subjects: {subjects}")
-
     async def process_grpc_message(
-        self, grpc_stream: Stream, workflow: str, request_id: str
+            self, grpc_stream: Stream, workflow: str, request_id: str
     ) -> None:
         """
         This function is called each time a gRPC message is received.
@@ -101,7 +83,7 @@ class EntrypointKRE:
 
             # get the correct subject, subscription and stream depending on the workflow
             stream = self.jetstream_data[workflow]["stream"]
-            input_subject = self.subscriptions[workflow]
+            input_subject = self.jetstream_data[workflow]["input_subject"]
             output_subject = self.jetstream_data[workflow]["output_subject"]
 
             self.logger.info(f"Input subject is '{input_subject}'")
@@ -116,7 +98,7 @@ class EntrypointKRE:
                 subject=input_subject,
                 config=ConsumerConfig(
                     deliver_policy=DeliverPolicy.NEW,
-                    ack_wait = 22 * 3600,  # 22 hours
+                    ack_wait=22 * 3600,  # 22 hours
                 ),
                 manual_ack=True,
             )
@@ -203,7 +185,7 @@ class EntrypointKRE:
         return response_msg
 
     async def _respond_to_grpc_stream(
-        self, response: bytes, workflow: str, request_id: str
+            self, response: bytes, workflow: str, request_id: str
     ) -> None:
         """
         Sends a response to the corresponding gRPC stream based on the request id.
