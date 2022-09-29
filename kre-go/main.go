@@ -28,6 +28,11 @@ func Start(handlerInit HandlerInit, handler Handler, handlersOpt ...map[string]H
 	logger := simplelogger.New(simplelogger.LevelInfo)
 	cfg := config.NewConfig(logger)
 
+	if handler == nil && handlersOpt == nil {
+		logger.Errorf("Error no handlers detected")
+		os.Exit(1)
+	}
+
 	// Connect to NATS
 	nc, err := nats.Connect(cfg.NATS.Server)
 	if err != nil {
@@ -51,9 +56,9 @@ func Start(handlerInit HandlerInit, handler Handler, handlersOpt ...map[string]H
 		os.Exit(1)
 	}
 
-	if handlersOpt == nil {
+	if handler != nil && handlersOpt == nil {
 		handlersOpt = make([]map[string]Handler, 1)
-		handlersOpt[0] = map[string]Handler{"default": handler}
+		handlersOpt[0] = map[string]Handler{cfg.Handlers.DefaultHandlerKey: handler}
 	}
 
 	// Handle incoming messages from NATS
