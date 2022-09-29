@@ -28,6 +28,7 @@ type Runner struct {
 	nc             *nats.Conn
 	js             nats.JetStreamContext
 	handlerContext *HandlerContext
+	reqMsg         *KreNatsMessage
 	handlers       map[string]Handler
 }
 
@@ -43,7 +44,7 @@ func NewRunner(logger *simplelogger.SimpleLogger, cfg config.Config, nc *nats.Co
 	}
 
 	// Create handler context
-	c := NewHandlerContext(cfg, nc, mongoM, logger, runner.earlyReply)
+	c := NewHandlerContext(cfg, nc, mongoM, logger, runner.earlyReply, runner.sendOutput)
 	handlerInit(c)
 
 	runner.handlerContext = c
@@ -65,13 +66,14 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 
 	r.logger.Infof("Received a message on '%s' to be published in '%s' with requestId '%s'", msg.Subject, r.cfg.NATS.OutputSubject, requestMsg.RequestId)
 
-	// Make a shallow copy of the ctx object to set inside the request msg.
+	// Make a shallow copy of the ctx object to set inside the request msg and set it to this runner.
 	hCtx := r.handlerContext
 	hCtx.reqMsg = requestMsg
+	r.reqMsg = requestMsg
 
 	// Execute the handler function sending context and the payload.
 	handler, err := r.getHandler(r.handlers, r.getIncomingRequestNodeName(requestMsg))
-	handlerResult, err := handler(hCtx, requestMsg.Payload)
+	err = handler(hCtx, requestMsg.Payload)
 	// Tell NATS we don't need to receive the message anymore and we are done processing it.
 	ackErr := msg.Ack()
 	if ackErr != nil {
@@ -86,26 +88,22 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 
 	// Save the elapsed time for this node and for the workflow if it is the last node.
 	r.saveElapsedTime(requestMsg, start, end, r.cfg.IsExitpoint)
+}
 
-	// Ignore send reply if the msg was replied previously.
-	if r.cfg.IsExitpoint && requestMsg.Replied {
-		if handlerResult != nil {
-			r.logger.Info("ignoring the last node response because the message was replied previously")
-		}
-
-		return
-	}
-
+// sendOutput will send a desired payload to the node's output subject.
+func (r *Runner) sendOutput(msg proto.Message) error {
 	// Generate a KreNatsMessage response.
-	responseMsg, err := r.newResponseMsg(handlerResult, requestMsg, start, end)
+	end := time.Now().UTC()
+	responseMsg, err := r.newResponseMsg(msg, r.reqMsg, end)
 	if err != nil {
-		r.stopWorkflowReturningErr(err, r.cfg.NATS.ExitpointSubject)
-		return
+		return err
 	}
 
 	// Publish the response message to the output subject.
-	outputSubject := r.getOutputSubject(requestMsg.EarlyExit)
+	outputSubject := r.getOutputSubject(r.reqMsg.EarlyExit)
 	r.publishResponse(outputSubject, responseMsg)
+
+	return nil
 }
 
 func (r *Runner) getIncomingRequestNodeName(msg *KreNatsMessage) string {
@@ -177,15 +175,15 @@ func (r *Runner) newRequestMessage(data []byte) (*KreNatsMessage, error) {
 
 // newResponseMsg creates a KreNatsMessage maintaining the tracking ID and adding the
 // handler result and the tracking information for this node.
-func (r *Runner) newResponseMsg(handlerResult proto.Message, requestMsg *KreNatsMessage, start time.Time, end time.Time) (*KreNatsMessage, error) {
-	payload, err := anypb.New(handlerResult)
+func (r *Runner) newResponseMsg(msg proto.Message, requestMsg *KreNatsMessage, end time.Time) (*KreNatsMessage, error) {
+	payload, err := anypb.New(msg)
 	if err != nil {
 		return nil, fmt.Errorf("the handler result is not a valid protobuf: %w", err)
 	}
 
 	tracking := append(requestMsg.Tracking, &KreNatsMessage_Tracking{
+		// Start time is only needed from the entrypoint node.
 		NodeName: r.cfg.NodeName,
-		Start:    start.Format(ISO8601),
 		End:      end.Format(ISO8601),
 	})
 
