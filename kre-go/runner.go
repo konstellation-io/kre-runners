@@ -28,7 +28,6 @@ type Runner struct {
 	nc             *nats.Conn
 	js             nats.JetStreamContext
 	handlerContext *HandlerContext
-	reqMsg         *KreNatsMessage
 	handlers       map[string]Handler
 }
 
@@ -69,10 +68,9 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 	// Make a shallow copy of the ctx object to set inside the request msg and set it to this runner.
 	hCtx := r.handlerContext
 	hCtx.reqMsg = requestMsg
-	r.reqMsg = requestMsg
 
 	// Execute the handler function sending context and the payload.
-	handler, err := r.getHandler(r.handlers, r.getIncomingRequestNodeName(requestMsg))
+	handler, err := r.getHandler(r.handlers, requestMsg.FromNode)
 	err = handler(hCtx, requestMsg.Payload)
 	// Tell NATS we don't need to receive the message anymore and we are done processing it.
 	ackErr := msg.Ack()
@@ -91,24 +89,19 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 }
 
 // sendOutput will send a desired payload to the node's output subject.
-func (r *Runner) sendOutput(msg proto.Message) error {
+func (r *Runner) sendOutput(msg proto.Message, reqMsg *KreNatsMessage) error {
 	// Generate a KreNatsMessage response.
 	end := time.Now().UTC()
-	responseMsg, err := r.newResponseMsg(msg, r.reqMsg, end)
+	responseMsg, err := r.newResponseMsg(msg, reqMsg, end)
 	if err != nil {
 		return err
 	}
 
 	// Publish the response message to the output subject.
-	outputSubject := r.getOutputSubject(r.reqMsg.EarlyExit)
+	outputSubject := r.getOutputSubject(reqMsg.EarlyExit)
 	r.publishResponse(outputSubject, responseMsg)
 
 	return nil
-}
-
-func (r *Runner) getIncomingRequestNodeName(msg *KreNatsMessage) string {
-	tracking := msg.GetTracking()
-	return tracking[len(tracking)-1].NodeName
 }
 
 func (r *Runner) getHandler(handlers map[string]Handler, nodeName string) (Handler, error) {
@@ -193,6 +186,7 @@ func (r *Runner) newResponseMsg(msg proto.Message, requestMsg *KreNatsMessage, e
 		Tracking:   tracking,
 		Payload:    payload,
 		RequestId:  requestMsg.RequestId,
+		FromNode:   r.cfg.NodeName,
 	}
 
 	return responseMsg, nil

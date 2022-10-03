@@ -17,4 +17,5 @@ message KreNatsMessage {
   string error = 5;
   bool replied = 6;
   bool early_exit = 7;
+  string from_node = 8;
 }

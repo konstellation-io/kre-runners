@@ -1,6 +1,7 @@
 package kre
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -64,8 +65,11 @@ func Start(handlerInit HandlerInit, handler Handler, handlersOpt ...map[string]H
 	runner := NewRunner(logger, cfg, nc, js, handlersOpt[0], handlerInit, mongoM)
 
 	var subscriptions []*nats.Subscription
-	for _, subject := range cfg.NATS.InputSubjects {
-		s, err := js.QueueSubscribe(subject, cfg.NodeName, runner.ProcessMessage, nats.DeliverNew(), nats.Durable(cfg.NodeName), nats.ManualAck())
+	for idx, subject := range cfg.NATS.InputSubjects {
+		consumerName := fmt.Sprintf("%s%d", cfg.NodeName, idx)
+		logger.Infof("Consumer name is '%s'", consumerName)
+
+		s, err := js.QueueSubscribe(subject, cfg.NodeName, runner.ProcessMessage, nats.DeliverNew(), nats.Durable(consumerName), nats.ManualAck())
 		if err != nil {
 			logger.Errorf("Error subscribing to NATS subject %s: %s", subject, err)
 			os.Exit(1)

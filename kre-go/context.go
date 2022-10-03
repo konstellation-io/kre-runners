@@ -20,7 +20,7 @@ var (
 )
 
 type EarlyReplyFunc = func(response proto.Message, requestID string) error
-type SendOutputFunc = func(response proto.Message) error
+type SendOutputFunc = func(response proto.Message, reqMsg *KreNatsMessage) error
 
 type HandlerContext struct {
 	cfg         config.Config
@@ -100,6 +100,10 @@ func (c *HandlerContext) GetFloat(key string) float64 {
 	return -1.0
 }
 
+func (c *HandlerContext) GetRequestID() string {
+	return c.reqMsg.RequestId
+}
+
 // EarlyReply sends a reply to the entrypoint. The workflow execution continues.
 // Use this function when you need to reply faster than the workflow execution duration.
 func (c *HandlerContext) EarlyReply(response proto.Message) error {
@@ -120,7 +124,7 @@ func (c *HandlerContext) SetEarlyExit() {
 // SendOutput will send a desired payload to the node's subject.
 // Once the entrypoint has been replied, all following replies to the entrypoint will be ignored.
 func (c *HandlerContext) SendOutput(response proto.Message) error {
-	return c.sendOutput(response)
+	return c.sendOutput(response, c.reqMsg)
 }
 
 // SendEarlyExit combines both SetEarlyExit and SendOutput functions.
@@ -128,5 +132,5 @@ func (c *HandlerContext) SendOutput(response proto.Message) error {
 // the workflow execution will be halted.
 func (c *HandlerContext) SendEarlyExit(response proto.Message) error {
 	c.SetEarlyExit()
-	return c.sendOutput(response)
+	return c.sendOutput(response, c.reqMsg)
 }
