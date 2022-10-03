@@ -157,6 +157,7 @@ class EntrypointKRE:
         request_msg.tracking_id = tracking_id
         request_msg.payload.Pack(raw_msg)
         request_msg.request_id = request_id
+        request_msg.from_node = self.config.krt_node_name
         t = request_msg.tracking.add()
         t.node_name = self.config.runner_name
         t.start = start
