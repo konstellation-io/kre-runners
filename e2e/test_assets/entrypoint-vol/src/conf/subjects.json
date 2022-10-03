@@ -1,1 +1,7 @@
-{ "Greet": "runtime1-greeter-v1-Greet.nodeC" }
+{
+  "Greet": {
+    "stream": "runtime1-greeter-v1-Greet",
+    "input_subject": "runtime1-greeter-v1-Greet.nodeC",
+    "output_subject": "runtime1-greeter-v1-Greet.entrypoint"
+  }
+}
