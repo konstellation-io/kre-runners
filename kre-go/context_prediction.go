@@ -3,8 +3,9 @@ package kre
 import (
 	"encoding/json"
 	"fmt"
-	nats2 "github.com/nats-io/nats.go"
 	"time"
+
+	nats2 "github.com/nats-io/nats.go"
 
 	"github.com/konstellation-io/kre-runners/kre-go/config"
 	"github.com/konstellation-io/kre/libs/simplelogger"
