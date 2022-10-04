@@ -6,12 +6,12 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/konstellation-io/kre/libs/simplelogger"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/konstellation-io/kre-runners/kre-go/config"
 	"github.com/konstellation-io/kre-runners/kre-go/mongodb"
-	"github.com/konstellation-io/kre/libs/simplelogger"
 )
 
 // HandlerInit is executed once. It is useful to initialize variables that will be constants
@@ -24,14 +24,22 @@ type Handler func(ctx *HandlerContext, data *anypb.Any) error
 
 // Start receives the handler init function and the handler function
 // connects to NATS and MongoDB and processes all incoming messages.
-func Start(handlerInit HandlerInit, handler Handler, handlersOpt ...map[string]Handler) {
+func Start(handlerInit HandlerInit, defaultHandler Handler, handlersOpt ...map[string]Handler) {
 	logger := simplelogger.New(simplelogger.LevelInfo)
 	cfg := config.NewConfig(logger)
 
-	if handler == nil && handlersOpt == nil {
-		logger.Errorf("Error no handlers detected")
+	noHandlersDefined := handlersOpt == nil || len(handlersOpt) < 1
+	if defaultHandler == nil && noHandlersDefined {
+		logger.Errorf("No handlers detected")
 		os.Exit(1)
 	}
+
+	var customHandler map[string]Handler
+	if len(handlersOpt) > 0 {
+		customHandler = handlersOpt[0]
+	}
+
+	handlerManager := NewManager(defaultHandler, customHandler)
 
 	// Connect to NATS
 	nc, err := nats.Connect(cfg.NATS.Server)
@@ -56,13 +64,8 @@ func Start(handlerInit HandlerInit, handler Handler, handlersOpt ...map[string]H
 		os.Exit(1)
 	}
 
-	if handler != nil && handlersOpt == nil {
-		handlersOpt = make([]map[string]Handler, 1)
-		handlersOpt[0] = map[string]Handler{cfg.Handlers.DefaultHandlerKey: handler}
-	}
-
 	// Handle incoming messages from NATS
-	runner := NewRunner(logger, cfg, nc, js, handlersOpt[0], handlerInit, mongoM)
+	runner := NewRunner(logger, cfg, nc, js, handlerManager, handlerInit, mongoM)
 
 	var subscriptions []*nats.Subscription
 	for idx, subject := range cfg.NATS.InputSubjects {

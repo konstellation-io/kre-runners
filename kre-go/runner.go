@@ -5,19 +5,18 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/konstellation-io/kre/libs/simplelogger"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/konstellation-io/kre-runners/kre-go/config"
 	"github.com/konstellation-io/kre-runners/kre-go/mongodb"
-	"github.com/konstellation-io/kre/libs/simplelogger"
 )
 
 const (
-	ISO8601           = "2006-01-02T15:04:05.000000"
-	MessageThreshold  = 1024 * 1024
-	DefaultHandlerKey = "default"
+	ISO8601          = "2006-01-02T15:04:05.000000"
+	MessageThreshold = 1024 * 1024
 )
 
 var ErrMessageToBig = errors.New("compressed message exceeds maximum size allowed of 1 MB")
@@ -28,18 +27,18 @@ type Runner struct {
 	nc             *nats.Conn
 	js             nats.JetStreamContext
 	handlerContext *HandlerContext
-	handlers       map[string]Handler
+	handlerManager *Manager
 }
 
 // NewRunner creates a new Runner instance.
 func NewRunner(logger *simplelogger.SimpleLogger, cfg config.Config, nc *nats.Conn, js nats.JetStreamContext,
-	handlers map[string]Handler, handlerInit HandlerInit, mongoM *mongodb.MongoDB) *Runner {
+	handlerManager *Manager, handlerInit HandlerInit, mongoM *mongodb.MongoDB) *Runner {
 	runner := &Runner{
-		logger:   logger,
-		cfg:      cfg,
-		nc:       nc,
-		js:       js,
-		handlers: handlers,
+		logger:         logger,
+		cfg:            cfg,
+		nc:             nc,
+		js:             js,
+		handlerManager: handlerManager,
 	}
 
 	// Create handler context
@@ -67,10 +66,14 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 
 	// Make a shallow copy of the ctx object to set inside the request msg and set it to this runner.
 	hCtx := r.handlerContext
-	hCtx.reqMsg = requestMsg
+	hCtx.ReqMsg = requestMsg
 
 	// Execute the handler function sending context and the payload.
-	handler, err := r.getHandler(r.handlers, requestMsg.FromNode)
+	handler := r.handlerManager.GetHandler(requestMsg.FromNode)
+	if handler == nil {
+		r.stopWorkflowReturningErr(fmt.Errorf("missing handler for node '%s'", requestMsg.FromNode), r.cfg.NATS.ExitpointSubject)
+		return
+	}
 	err = handler(hCtx, requestMsg.Payload)
 	// Tell NATS we don't need to receive the message anymore and we are done processing it.
 	ackErr := msg.Ack()
@@ -102,17 +105,6 @@ func (r *Runner) sendOutput(msg proto.Message, reqMsg *KreNatsMessage) error {
 	r.publishResponse(outputSubject, responseMsg)
 
 	return nil
-}
-
-func (r *Runner) getHandler(handlers map[string]Handler, nodeName string) (Handler, error) {
-	value, ok := handlers[nodeName]
-	if !ok {
-		value, ok = handlers[r.cfg.Handlers.DefaultHandlerKey]
-		if !ok {
-			return nil, fmt.Errorf("could not find handler function for %s node", nodeName)
-		}
-	}
-	return value, nil
 }
 
 // getOutputSubject returns the subject to which we must publish our next response.
@@ -235,7 +227,7 @@ func (r *Runner) publishResponse(outputSubject string, responseMsg *KreNatsMessa
 	}
 }
 
-func (r Runner) earlyReply(response proto.Message, requestID string) error {
+func (r *Runner) earlyReply(response proto.Message, requestID string) error {
 	payload, err := anypb.New(response)
 	if err != nil {
 		return fmt.Errorf("the handler result is not a valid protobuf: %w", err)
