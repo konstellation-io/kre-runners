@@ -1,7 +1,6 @@
 package kre
 
 import (
-	"errors"
 	"path"
 	"time"
 
@@ -19,15 +18,13 @@ var (
 	getDataTimeout    = 1 * time.Second
 )
 
-type EarlyReplyFunc = func(response proto.Message, requestID string) error
-type SendOutputFunc = func(response proto.Message, reqMsg *KreNatsMessage) error
+type PublishMsgFunc = func(response proto.Message, reqMsg *KreNatsMessage, msgType MessageType) error
 
 type HandlerContext struct {
 	cfg         config.Config
 	values      map[string]interface{}
-	earlyReply  EarlyReplyFunc
-	sendOutput  SendOutputFunc
-	ReqMsg      *KreNatsMessage
+	publishMsg  PublishMsgFunc
+	reqMsg      *KreNatsMessage
 	Logger      *simplelogger.SimpleLogger
 	Prediction  *contextPrediction
 	Measurement *contextMeasurement
@@ -35,12 +32,11 @@ type HandlerContext struct {
 }
 
 func NewHandlerContext(cfg config.Config, nc *nats.Conn, mongoM mongodb.Manager,
-	logger *simplelogger.SimpleLogger, earlyReply EarlyReplyFunc, sendOutput SendOutputFunc) *HandlerContext {
+	logger *simplelogger.SimpleLogger, sendOutput PublishMsgFunc) *HandlerContext {
 	return &HandlerContext{
 		cfg:        cfg,
 		values:     map[string]interface{}{},
-		earlyReply: earlyReply,
-		sendOutput: sendOutput,
+		publishMsg: sendOutput,
 		Logger:     logger,
 		Prediction: &contextPrediction{
 			cfg:    cfg,
@@ -100,37 +96,32 @@ func (c *HandlerContext) GetFloat(key string) float64 {
 	return -1.0
 }
 
+// GetRequestID will return the message's request ID
 func (c *HandlerContext) GetRequestID() string {
-	return c.ReqMsg.RequestId
-}
-
-// EarlyReply sends a reply to the entrypoint. The workflow execution continues.
-// Use this function when you need to reply faster than the workflow execution duration.
-func (c *HandlerContext) EarlyReply(response proto.Message) error {
-	if c.ReqMsg.Replied {
-		return errors.New("error the message was replied previously")
-	}
-
-	c.ReqMsg.Replied = true
-	return c.earlyReply(response, c.ReqMsg.RequestId)
-}
-
-// SetEarlyExit changes this node's next response recipient to the entrypoint.
-// Use this function when you want to halt your workflow execution.
-func (c *HandlerContext) SetEarlyExit() {
-	c.ReqMsg.EarlyExit = true
+	return c.reqMsg.RequestId
 }
 
 // SendOutput will send a desired payload to the node's subject.
 // Once the entrypoint has been replied, all following replies to the entrypoint will be ignored.
 func (c *HandlerContext) SendOutput(response proto.Message) error {
-	return c.sendOutput(response, c.ReqMsg)
+	return c.publishMsg(response, c.reqMsg, MessageType_OK)
 }
 
-// SendEarlyExit combines both SetEarlyExit and SendOutput functions.
-// As a result when invoquing this function, a response will be sent directly to the entrypoint and
-// the workflow execution will be halted.
+// SendEarlyReply publishes the desired response to this node's subject.
+// With the addition of typing this message as an early reply.
+// Use this function when you need to reply faster than the workflow execution duration.
+func (c *HandlerContext) SendEarlyReply(response proto.Message) error {
+	return c.publishMsg(response, c.reqMsg, MessageType_EARLY_REPLY)
+}
+
+// SendEarlyExit publishes the desired response to this node's subject.
+// With the addition of typing this message as an early exit.
+// Use this function when you want to report a custom error in your workflow execution.
 func (c *HandlerContext) SendEarlyExit(response proto.Message) error {
-	c.SetEarlyExit()
-	return c.sendOutput(response, c.ReqMsg)
+	return c.publishMsg(response, c.reqMsg, MessageType_EARLY_EXIT)
+}
+
+// GetRequestMessageType returns the message type of the incoming request
+func (c *HandlerContext) GetRequestMessageType() MessageType {
+	return c.reqMsg.MessageType
 }
