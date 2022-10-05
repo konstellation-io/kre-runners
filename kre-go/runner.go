@@ -42,7 +42,7 @@ func NewRunner(logger *simplelogger.SimpleLogger, cfg config.Config, nc *nats.Co
 	}
 
 	// Create handler context
-	c := NewHandlerContext(cfg, nc, mongoM, logger, runner.earlyReply, runner.sendOutput)
+	c := NewHandlerContext(cfg, nc, mongoM, logger, runner.publishMsg)
 	handlerInit(c)
 
 	runner.handlerContext = c
@@ -64,14 +64,38 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 
 	r.logger.Infof("Received a message on '%s' to be published in '%s' with requestId '%s'", msg.Subject, r.cfg.NATS.OutputSubject, requestMsg.RequestId)
 
+	if requestMsg.MessageType == MessageType_EARLY_REPLY {
+		if !r.cfg.IsExitpoint { // ignore if I am not exitpoint
+			return
+		}
+		// reroute to entrypoint if I am exitpoint
+		err := r.publishMsg(requestMsg.Payload, requestMsg, MessageType_OK)
+		if err != nil {
+			r.logger.Errorf("error publishing early reply message: %s", err.Error())
+		}
+
+		ackErr := msg.Ack()
+		if ackErr != nil {
+			r.logger.Errorf("Error in message ack: %s", ackErr.Error())
+		}
+		return
+	}
+
 	// Make a shallow copy of the ctx object to set inside the request msg and set it to this runner.
 	hCtx := r.handlerContext
-	hCtx.ReqMsg = requestMsg
+	hCtx.reqMsg = requestMsg
 
 	// Execute the handler function sending context and the payload.
 	handler := r.handlerManager.GetHandler(requestMsg.FromNode)
 	if handler == nil {
-		r.stopWorkflowReturningErr(fmt.Errorf("missing handler for node '%s'", requestMsg.FromNode), r.cfg.NATS.ExitpointSubject)
+		errMsg := fmt.Sprintf("Error missing handler for node '%s'", requestMsg.FromNode)
+		r.logger.Errorf(errMsg)
+		r.publishError(requestMsg.RequestId, errMsg)
+
+		ackErr := msg.Ack()
+		if ackErr != nil {
+			r.logger.Errorf("Error in message ack: %s", ackErr.Error())
+		}
 		return
 	}
 	err = handler(hCtx, requestMsg.Payload)
@@ -81,7 +105,9 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 		r.logger.Errorf("Error in message ack: %s", ackErr.Error())
 	}
 	if err != nil {
-		r.stopWorkflowReturningErr(err, r.cfg.NATS.ExitpointSubject)
+		errMsg := fmt.Sprintf("Error in node '%s' executing handler for node '%s': %s", r.cfg.NodeName, requestMsg.FromNode, err)
+		r.logger.Errorf(errMsg)
+		r.publishError(requestMsg.RequestId, errMsg)
 		return
 	}
 
@@ -91,53 +117,33 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 	r.saveElapsedTime(requestMsg, start, end, r.cfg.IsExitpoint)
 }
 
-// sendOutput will send a desired payload to the node's output subject.
-func (r *Runner) sendOutput(msg proto.Message, reqMsg *KreNatsMessage) error {
+// publishMsg will send a desired payload to the node's output subject.
+func (r *Runner) publishMsg(msg proto.Message, reqMsg *KreNatsMessage, msgType MessageType) error {
 	// Generate a KreNatsMessage response.
 	end := time.Now().UTC()
-	responseMsg, err := r.newResponseMsg(msg, reqMsg, end)
+	responseMsg, err := r.newResponseMsg(msg, reqMsg, end, msgType)
 	if err != nil {
 		return err
 	}
 
 	// Publish the response message to the output subject.
-	outputSubject := r.getOutputSubject(reqMsg.EarlyExit)
-	r.publishResponse(outputSubject, responseMsg)
+	r.publishResponse(responseMsg)
 
 	return nil
 }
 
-// getOutputSubject returns the subject to which we must publish our next response.
-func (r *Runner) getOutputSubject(earlyExit bool) string {
-	var outputSubject string
-	if earlyExit {
-		r.logger.Info("Early exit recieved, worklow has stopped execution")
-		outputSubject = r.cfg.NATS.ExitpointSubject
-	} else {
-		outputSubject = r.cfg.NATS.OutputSubject
-	}
-	return outputSubject
-}
-
-// stopWorkflowReturningErr publishes an error message to the final reply subject
-// in order to stop the workflow execution. So the next nodes will be ignored and the
-// gRPC response will be an exception.
-func (r *Runner) stopWorkflowReturningErr(err error, replySubject string) {
-	r.logger.Errorf("Error executing handler: %s", err)
-
-	errMsg := &KreNatsMessage{
-		Error: fmt.Sprintf("error in '%s': %s", r.cfg.NodeName, err),
-	}
-	replyErrMsg, err := proto.Marshal(errMsg)
-	if err != nil {
-		r.logger.Errorf("Error generating error output because it is not a serializable Protobuf: %s", err)
-		return
+// publishError will send a custom error to the node's output subject.
+func (r *Runner) publishError(requestID, errMsg string) {
+	// Generate a KreNatsMessage response.
+	responseMsg := &KreNatsMessage{
+		RequestId:   requestID,
+		Error:       errMsg,
+		MessageType: MessageType_ERROR,
+		FromNode:    r.cfg.NodeName,
 	}
 
-	_, err = r.js.Publish(replySubject, replyErrMsg)
-	if err != nil {
-		r.logger.Errorf("Error publishing output: %s", err)
-	}
+	// Publish the response message to the output subject.
+	r.publishResponse(responseMsg)
 }
 
 // newRequestMessage creates an instance of KreNatsMessage for the input string. decompress if necessary
@@ -160,7 +166,7 @@ func (r *Runner) newRequestMessage(data []byte) (*KreNatsMessage, error) {
 
 // newResponseMsg creates a KreNatsMessage maintaining the tracking ID and adding the
 // handler result and the tracking information for this node.
-func (r *Runner) newResponseMsg(msg proto.Message, requestMsg *KreNatsMessage, end time.Time) (*KreNatsMessage, error) {
+func (r *Runner) newResponseMsg(msg proto.Message, requestMsg *KreNatsMessage, end time.Time, msgType MessageType) (*KreNatsMessage, error) {
 	payload, err := anypb.New(msg)
 	if err != nil {
 		return nil, fmt.Errorf("the handler result is not a valid protobuf: %w", err)
@@ -173,12 +179,13 @@ func (r *Runner) newResponseMsg(msg proto.Message, requestMsg *KreNatsMessage, e
 	})
 
 	responseMsg := &KreNatsMessage{
-		Replied:    requestMsg.Replied,
-		TrackingId: requestMsg.TrackingId,
-		Tracking:   tracking,
-		Payload:    payload,
-		RequestId:  requestMsg.RequestId,
-		FromNode:   r.cfg.NodeName,
+		Replied:     requestMsg.Replied,
+		TrackingId:  requestMsg.TrackingId,
+		Tracking:    tracking,
+		Payload:     payload,
+		RequestId:   requestMsg.RequestId,
+		FromNode:    r.cfg.NodeName,
+		MessageType: msgType,
 	}
 
 	return responseMsg, nil
@@ -206,7 +213,9 @@ func (r *Runner) prepareOutputMessage(msg []byte) ([]byte, error) {
 }
 
 // publishResponse publishes the response in the NATS output subject.
-func (r *Runner) publishResponse(outputSubject string, responseMsg *KreNatsMessage) {
+func (r *Runner) publishResponse(responseMsg *KreNatsMessage) {
+	outputSubject := r.cfg.NATS.OutputSubject
+
 	outputMsg, err := proto.Marshal(responseMsg)
 	if err != nil {
 		r.logger.Errorf("Error generating output result because handler result is not a serializable Protobuf: %s", err)
@@ -227,25 +236,9 @@ func (r *Runner) publishResponse(outputSubject string, responseMsg *KreNatsMessa
 	}
 }
 
-func (r *Runner) earlyReply(response proto.Message, requestID string) error {
-	payload, err := anypb.New(response)
-	if err != nil {
-		return fmt.Errorf("the handler result is not a valid protobuf: %w", err)
-	}
-
-	res := &KreNatsMessage{
-		Payload:   payload,
-		RequestId: requestID,
-	}
-
-	r.publishResponse(r.cfg.NATS.ExitpointSubject, res)
-
-	return nil
-}
-
 // saveElapsedTime stores in InfluxDB the elapsed time for the current node and the total elapsed time of the
 // complete workflow if it is the last node.
-func (r *Runner) saveElapsedTime(reqMsg *KreNatsMessage, start time.Time, end time.Time, isLastNode bool) {
+func (r *Runner) saveElapsedTime(reqMsg *KreNatsMessage, start time.Time, end time.Time, isExitpoint bool) {
 	prev := reqMsg.Tracking[len(reqMsg.Tracking)-1]
 	prevEnd, err := time.Parse(ISO8601, prev.End)
 	if err != nil {
@@ -270,7 +263,7 @@ func (r *Runner) saveElapsedTime(reqMsg *KreNatsMessage, start time.Time, end ti
 
 	r.handlerContext.Measurement.Save("node_elapsed_time", fields, tags)
 
-	if isLastNode {
+	if isExitpoint {
 		entrypoint := reqMsg.Tracking[0]
 		entrypointStart, err := time.Parse(ISO8601, entrypoint.Start)
 		if err != nil {
