@@ -6,4 +6,5 @@ use (
 	./kre-entrypoint/entrypoint-gen
 	./kre-go
 	./krt-files-downloader
+	./kre-exitpoint
 )
