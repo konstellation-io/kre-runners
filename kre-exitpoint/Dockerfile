@@ -1,3 +1,14 @@
+FROM golang:1.18.1-alpine3.15 as builder
+
+# Build the binary statically.
+ENV CGO_ENABLED=0
+
+WORKDIR /app
+COPY go.* ./
+RUN go mod download
+COPY . .
+RUN go build -o exitpoint .
+
 FROM ubuntu:20.04
 
 # Create kre user.
@@ -19,9 +30,8 @@ RUN adduser \
   "${USER}"
 
 WORKDIR /app
-RUN mkdir -p /var/log/app
 
-COPY bin/exitpoint exitpoint
+COPY --from=builder /app/exitpoint .
 
 RUN chown -R kre:0 /app \
   && chmod -R g+w /app \
