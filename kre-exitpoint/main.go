@@ -14,7 +14,7 @@ func handlerInit(ctx *kre.HandlerContext) {
 
 // defaultHandler will redirect only early reply and early exit messages to the entrypoint
 func defaultHandler(ctx *kre.HandlerContext, data *anypb.Any) error {
-	ctx.Logger.Info("[exitpoint handler invoked]")
+	ctx.Logger.Info("[exitpoint default handler invoked]")
 
 	msgType := ctx.GetRequestMessageType()
 	if msgType == kre.MessageType_EARLY_REPLY || msgType == kre.MessageType_EARLY_EXIT {
@@ -30,7 +30,7 @@ func defaultHandler(ctx *kre.HandlerContext, data *anypb.Any) error {
 func lastNodeHandler(ctx *kre.HandlerContext, data *anypb.Any) error {
 	ctx.Logger.Info("[exitpoint handler invoked]")
 
-	ctx.SendOutput(data)
+	ctx.SendAny(data)
 
 	saveExitpointMetrics(ctx)
 
