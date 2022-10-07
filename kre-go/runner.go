@@ -42,7 +42,7 @@ func NewRunner(logger *simplelogger.SimpleLogger, cfg config.Config, nc *nats.Co
 	}
 
 	// Create handler context
-	c := NewHandlerContext(cfg, nc, mongoM, logger, runner.publishMsg)
+	c := NewHandlerContext(cfg, nc, mongoM, logger, runner.publishMsg, runner.publishAny)
 	handlerInit(c)
 
 	runner.handlerContext = c
@@ -120,8 +120,28 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 // publishMsg will send a desired payload to the node's output subject.
 func (r *Runner) publishMsg(msg proto.Message, reqMsg *KreNatsMessage, msgType MessageType) error {
 	// Generate a KreNatsMessage response.
+	payload, err := anypb.New(msg)
+	if err != nil {
+		return fmt.Errorf("the handler result is not a valid protobuf: %w", err)
+	}
+
 	end := time.Now().UTC()
-	responseMsg, err := r.newResponseMsg(msg, reqMsg, end, msgType)
+	responseMsg, err := r.newResponseMsg(payload, reqMsg, end, msgType)
+	if err != nil {
+		return err
+	}
+
+	// Publish the response message to the output subject.
+	r.publishResponse(responseMsg)
+
+	return nil
+}
+
+// publishAny will send a desired payload of any type to the node's output subject.
+func (r *Runner) publishAny(payload *anypb.Any, reqMsg *KreNatsMessage, msgType MessageType) error {
+	// Generate a KreNatsMessage response.
+	end := time.Now().UTC()
+	responseMsg, err := r.newResponseMsg(payload, reqMsg, end, msgType)
 	if err != nil {
 		return err
 	}
@@ -166,12 +186,7 @@ func (r *Runner) newRequestMessage(data []byte) (*KreNatsMessage, error) {
 
 // newResponseMsg creates a KreNatsMessage maintaining the tracking ID and adding the
 // handler result and the tracking information for this node.
-func (r *Runner) newResponseMsg(msg proto.Message, requestMsg *KreNatsMessage, end time.Time, msgType MessageType) (*KreNatsMessage, error) {
-	payload, err := anypb.New(msg)
-	if err != nil {
-		return nil, fmt.Errorf("the handler result is not a valid protobuf: %w", err)
-	}
-
+func (r *Runner) newResponseMsg(payload *anypb.Any, requestMsg *KreNatsMessage, end time.Time, msgType MessageType) (*KreNatsMessage, error) {
 	tracking := append(requestMsg.Tracking, &KreNatsMessage_Tracking{
 		// Start time is only needed from the entrypoint node.
 		NodeName: r.cfg.NodeName,
