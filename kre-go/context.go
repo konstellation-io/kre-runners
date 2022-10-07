@@ -6,6 +6,7 @@ import (
 
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/konstellation-io/kre-runners/kre-go/config"
 	"github.com/konstellation-io/kre-runners/kre-go/mongodb"
@@ -19,11 +20,13 @@ var (
 )
 
 type PublishMsgFunc = func(response proto.Message, reqMsg *KreNatsMessage, msgType MessageType) error
+type PublishAnyFunc = func(response *anypb.Any, reqMsg *KreNatsMessage, msgType MessageType) error
 
 type HandlerContext struct {
 	cfg         config.Config
 	values      map[string]interface{}
 	publishMsg  PublishMsgFunc
+	publishAny  PublishAnyFunc
 	reqMsg      *KreNatsMessage
 	Logger      *simplelogger.SimpleLogger
 	Prediction  *contextPrediction
@@ -32,11 +35,12 @@ type HandlerContext struct {
 }
 
 func NewHandlerContext(cfg config.Config, nc *nats.Conn, mongoM mongodb.Manager,
-	logger *simplelogger.SimpleLogger, sendOutput PublishMsgFunc) *HandlerContext {
+	logger *simplelogger.SimpleLogger, publishMsg PublishMsgFunc, publishAny PublishAnyFunc) *HandlerContext {
 	return &HandlerContext{
 		cfg:        cfg,
 		values:     map[string]interface{}{},
-		publishMsg: sendOutput,
+		publishMsg: publishMsg,
+		publishAny: publishAny,
 		Logger:     logger,
 		Prediction: &contextPrediction{
 			cfg:    cfg,
@@ -124,4 +128,8 @@ func (c *HandlerContext) SendEarlyExit(response proto.Message) error {
 // GetRequestMessageType returns the message type of the incoming request
 func (c *HandlerContext) GetRequestMessageType() MessageType {
 	return c.reqMsg.MessageType
+}
+
+func (c *HandlerContext) SendAny(response *anypb.Any) error {
+	return c.publishAny(response, c.reqMsg, MessageType_OK)
 }
