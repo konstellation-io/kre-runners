@@ -19,8 +19,12 @@ var (
 	getDataTimeout    = 1 * time.Second
 )
 
-type PublishMsgFunc = func(response proto.Message, reqMsg *KreNatsMessage, msgType MessageType) error
-type PublishAnyFunc = func(response *anypb.Any, reqMsg *KreNatsMessage, msgType MessageType) error
+const (
+	defaultChannel = ""
+)
+
+type PublishMsgFunc = func(response proto.Message, reqMsg *KreNatsMessage, msgType MessageType, channel string) error
+type PublishAnyFunc = func(response *anypb.Any, reqMsg *KreNatsMessage, msgType MessageType, channel string) error
 
 type HandlerContext struct {
 	cfg         config.Config
@@ -107,22 +111,26 @@ func (c *HandlerContext) GetRequestID() string {
 
 // SendOutput will send a desired payload to the node's subject.
 // Once the entrypoint has been replied, all following replies to the entrypoint will be ignored.
-func (c *HandlerContext) SendOutput(response proto.Message) error {
-	return c.publishMsg(response, c.reqMsg, MessageType_OK)
+func (c *HandlerContext) SendOutput(response proto.Message, channelOpt ...string) error {
+	channel := defaultChannel
+	if len(channelOpt) > 0 {
+		channel = channelOpt[0]
+	}
+	return c.publishMsg(response, c.reqMsg, MessageType_OK, channel)
 }
 
 // SendEarlyReply publishes the desired response to this node's subject.
 // With the addition of typing this message as an early reply.
 // Use this function when you need to reply faster than the workflow execution duration.
 func (c *HandlerContext) SendEarlyReply(response proto.Message) error {
-	return c.publishMsg(response, c.reqMsg, MessageType_EARLY_REPLY)
+	return c.publishMsg(response, c.reqMsg, MessageType_EARLY_REPLY, defaultChannel)
 }
 
 // SendEarlyExit publishes the desired response to this node's subject.
 // With the addition of typing this message as an early exit.
 // Use this function when you want to report a custom error in your workflow execution.
 func (c *HandlerContext) SendEarlyExit(response proto.Message) error {
-	return c.publishMsg(response, c.reqMsg, MessageType_EARLY_EXIT)
+	return c.publishMsg(response, c.reqMsg, MessageType_EARLY_EXIT, defaultChannel)
 }
 
 // GetRequestMessageType returns the message type of the incoming request
@@ -130,6 +138,10 @@ func (c *HandlerContext) GetRequestMessageType() MessageType {
 	return c.reqMsg.MessageType
 }
 
-func (c *HandlerContext) SendAny(response *anypb.Any) error {
-	return c.publishAny(response, c.reqMsg, MessageType_OK)
+func (c *HandlerContext) SendAny(response *anypb.Any, channelOpt ...string) error {
+	channel := defaultChannel
+	if len(channelOpt) > 0 {
+		channel = channelOpt[0]
+	}
+	return c.publishAny(response, c.reqMsg, MessageType_OK, channel)
 }

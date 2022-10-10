@@ -64,23 +64,6 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 
 	r.logger.Infof("Received a message on '%s' to be published in '%s' with requestId '%s'", msg.Subject, r.cfg.NATS.OutputSubject, requestMsg.RequestId)
 
-	if requestMsg.MessageType == MessageType_EARLY_REPLY {
-		if !r.cfg.IsExitpoint { // ignore if I am not exitpoint
-			return
-		}
-		// reroute to entrypoint if I am exitpoint
-		err := r.publishMsg(requestMsg.Payload, requestMsg, MessageType_OK)
-		if err != nil {
-			r.logger.Errorf("error publishing early reply message: %s", err.Error())
-		}
-
-		ackErr := msg.Ack()
-		if ackErr != nil {
-			r.logger.Errorf("Error in message ack: %s", ackErr.Error())
-		}
-		return
-	}
-
 	// Make a shallow copy of the ctx object to set inside the request msg and set it to this runner.
 	hCtx := r.handlerContext
 	hCtx.reqMsg = requestMsg
@@ -118,7 +101,7 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 }
 
 // publishMsg will send a desired payload to the node's output subject.
-func (r *Runner) publishMsg(msg proto.Message, reqMsg *KreNatsMessage, msgType MessageType) error {
+func (r *Runner) publishMsg(msg proto.Message, reqMsg *KreNatsMessage, msgType MessageType, channel string) error {
 	// Generate a KreNatsMessage response.
 	payload, err := anypb.New(msg)
 	if err != nil {
@@ -132,13 +115,13 @@ func (r *Runner) publishMsg(msg proto.Message, reqMsg *KreNatsMessage, msgType M
 	}
 
 	// Publish the response message to the output subject.
-	r.publishResponse(responseMsg)
+	r.publishResponse(responseMsg, channel)
 
 	return nil
 }
 
 // publishAny will send a desired payload of any type to the node's output subject.
-func (r *Runner) publishAny(payload *anypb.Any, reqMsg *KreNatsMessage, msgType MessageType) error {
+func (r *Runner) publishAny(payload *anypb.Any, reqMsg *KreNatsMessage, msgType MessageType, channel string) error {
 	// Generate a KreNatsMessage response.
 	end := time.Now().UTC()
 	responseMsg, err := r.newResponseMsg(payload, reqMsg, end, msgType)
@@ -147,7 +130,7 @@ func (r *Runner) publishAny(payload *anypb.Any, reqMsg *KreNatsMessage, msgType 
 	}
 
 	// Publish the response message to the output subject.
-	r.publishResponse(responseMsg)
+	r.publishResponse(responseMsg, channel)
 
 	return nil
 }
@@ -163,7 +146,7 @@ func (r *Runner) publishError(requestID, errMsg string) {
 	}
 
 	// Publish the response message to the output subject.
-	r.publishResponse(responseMsg)
+	r.publishResponse(responseMsg, "")
 }
 
 // newRequestMessage creates an instance of KreNatsMessage for the input string. decompress if necessary
@@ -228,8 +211,8 @@ func (r *Runner) prepareOutputMessage(msg []byte) ([]byte, error) {
 }
 
 // publishResponse publishes the response in the NATS output subject.
-func (r *Runner) publishResponse(responseMsg *KreNatsMessage) {
-	outputSubject := r.cfg.NATS.OutputSubject
+func (r *Runner) publishResponse(responseMsg *KreNatsMessage, channel string) {
+	outputSubject := r.getOutputSubject(channel)
 
 	outputMsg, err := proto.Marshal(responseMsg)
 	if err != nil {
@@ -249,6 +232,14 @@ func (r *Runner) publishResponse(responseMsg *KreNatsMessage) {
 	if err != nil {
 		r.logger.Errorf("Error publishing output: %s", err)
 	}
+}
+
+func (r *Runner) getOutputSubject(channel string) string {
+	outputSubject := r.cfg.NATS.OutputSubject
+	if channel != "" {
+		return fmt.Sprintf("%s.%s", outputSubject, channel)
+	}
+	return outputSubject
 }
 
 // saveElapsedTime stores in InfluxDB the elapsed time for the current node and the total elapsed time of the
