@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
+	"time"
 
 	"github.com/konstellation-io/kre/libs/simplelogger"
 	"github.com/nats-io/nats.go"
@@ -68,17 +70,17 @@ func Start(handlerInit HandlerInit, defaultHandler Handler, handlersOpt ...map[s
 	runner := NewRunner(logger, cfg, nc, js, handlerManager, handlerInit, mongoM)
 
 	var subscriptions []*nats.Subscription
-	for idx, subject := range cfg.NATS.InputSubjects {
-		consumerName := fmt.Sprintf("%s%d", cfg.NodeName, idx)
-		logger.Infof("Consumer name is '%s'", consumerName)
+	for _, subject := range cfg.NATS.InputSubjects {
+		consumerName := fmt.Sprintf("%s-%s", strings.ReplaceAll(subject, ".", "-"), cfg.NodeName)
 
-		s, err := js.QueueSubscribe(subject, cfg.NodeName, runner.ProcessMessage, nats.DeliverNew(), nats.Durable(consumerName), nats.ManualAck())
+		s, err := js.QueueSubscribe(subject, consumerName, runner.ProcessMessage,
+			nats.DeliverNew(), nats.Durable(consumerName), nats.ManualAck(), nats.AckWait(22*time.Hour))
 		if err != nil {
 			logger.Errorf("Error subscribing to NATS subject %s: %s", subject, err)
 			os.Exit(1)
 		}
 		subscriptions = append(subscriptions, s)
-		logger.Infof("Listening to '%s' subject with queue %s", subject, cfg.NodeName)
+		logger.Infof("Listening to '%s' subject with queue group %s", subject, consumerName)
 	}
 
 	// Handle sigterm and await termChan signal
