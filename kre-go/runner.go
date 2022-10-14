@@ -81,8 +81,9 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 		}
 		return
 	}
+
 	err = handler(hCtx, requestMsg.Payload)
-	// Tell NATS we don't need to receive the message anymore and we are done processing it.
+	// Tell NATS we don't need to receive the message anymore and we are done processing it
 	ackErr := msg.Ack()
 	if ackErr != nil {
 		r.logger.Errorf("Error in message ack: %s", ackErr.Error())
@@ -96,57 +97,8 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 
 	end := time.Now().UTC()
 
-	// Save the elapsed time for this node and for the workflow if it is the last node.
-	r.saveElapsedTime(requestMsg, start, end, r.cfg.IsExitpoint)
-}
-
-// publishMsg will send a desired payload to the node's output subject.
-func (r *Runner) publishMsg(msg proto.Message, reqMsg *KreNatsMessage, msgType MessageType, channel string) error {
-	// Generate a KreNatsMessage response.
-	payload, err := anypb.New(msg)
-	if err != nil {
-		return fmt.Errorf("the handler result is not a valid protobuf: %w", err)
-	}
-
-	end := time.Now().UTC()
-	responseMsg, err := r.newResponseMsg(payload, reqMsg, end, msgType)
-	if err != nil {
-		return err
-	}
-
-	// Publish the response message to the output subject.
-	r.publishResponse(responseMsg, channel)
-
-	return nil
-}
-
-// publishAny will send a desired payload of any type to the node's output subject.
-func (r *Runner) publishAny(payload *anypb.Any, reqMsg *KreNatsMessage, msgType MessageType, channel string) error {
-	// Generate a KreNatsMessage response.
-	end := time.Now().UTC()
-	responseMsg, err := r.newResponseMsg(payload, reqMsg, end, msgType)
-	if err != nil {
-		return err
-	}
-
-	// Publish the response message to the output subject.
-	r.publishResponse(responseMsg, channel)
-
-	return nil
-}
-
-// publishError will send a custom error to the node's output subject.
-func (r *Runner) publishError(requestID, errMsg string) {
-	// Generate a KreNatsMessage response.
-	responseMsg := &KreNatsMessage{
-		RequestId:   requestID,
-		Error:       errMsg,
-		MessageType: MessageType_ERROR,
-		FromNode:    r.cfg.NodeName,
-	}
-
-	// Publish the response message to the output subject.
-	r.publishResponse(responseMsg, "")
+	// Save the elapsed time for this node
+	r.saveElapsedTime(start, end)
 }
 
 // newRequestMessage creates an instance of KreNatsMessage for the input string. decompress if necessary
@@ -167,47 +119,54 @@ func (r *Runner) newRequestMessage(data []byte) (*KreNatsMessage, error) {
 	return requestMsg, err
 }
 
-// newResponseMsg creates a KreNatsMessage maintaining the tracking ID and adding the
-// handler result and the tracking information for this node.
-func (r *Runner) newResponseMsg(payload *anypb.Any, requestMsg *KreNatsMessage, end time.Time, msgType MessageType) (*KreNatsMessage, error) {
-	tracking := append(requestMsg.Tracking, &KreNatsMessage_Tracking{
-		// Start time is only needed from the entrypoint node.
-		NodeName: r.cfg.NodeName,
-		End:      end.Format(ISO8601),
-	})
+// publishMsg will send a desired payload to the node's output subject.
+func (r *Runner) publishMsg(msg proto.Message, reqMsg *KreNatsMessage, msgType MessageType, channel string) error {
+	// Generate a KreNatsMessage response.
+	payload, err := anypb.New(msg)
+	if err != nil {
+		return fmt.Errorf("the handler result is not a valid protobuf: %w", err)
+	}
 
+	responseMsg := r.newResponseMsg(payload, reqMsg, msgType)
+
+	// Publish the response message to the output subject.
+	r.publishResponse(responseMsg, channel)
+
+	return nil
+}
+
+// publishAny will send a desired payload of any type to the node's output subject.
+func (r *Runner) publishAny(payload *anypb.Any, reqMsg *KreNatsMessage, msgType MessageType, channel string) {
+	// Generate a KreNatsMessage response.
+	responseMsg := r.newResponseMsg(payload, reqMsg, msgType)
+
+	// Publish the response message to the output subject.
+	r.publishResponse(responseMsg, channel)
+}
+
+// publishError will send a custom error to the node's output subject.
+func (r *Runner) publishError(requestID, errMsg string) {
+	// Generate a KreNatsMessage response.
 	responseMsg := &KreNatsMessage{
-		Replied:     requestMsg.Replied,
-		TrackingId:  requestMsg.TrackingId,
-		Tracking:    tracking,
-		Payload:     payload,
+		RequestId:   requestID,
+		Error:       errMsg,
+		FromNode:    r.cfg.NodeName,
+		MessageType: MessageType_ERROR,
+	}
+
+	// Publish the response message to the output subject.
+	r.publishResponse(responseMsg, "")
+}
+
+// newResponseMsg creates a KreNatsMessage that keeps previous tracking information plus adding
+// the payload we wish to send
+func (r *Runner) newResponseMsg(payload *anypb.Any, requestMsg *KreNatsMessage, msgType MessageType) *KreNatsMessage {
+	return &KreNatsMessage{
 		RequestId:   requestMsg.RequestId,
+		Payload:     payload,
 		FromNode:    r.cfg.NodeName,
 		MessageType: msgType,
 	}
-
-	return responseMsg, nil
-}
-
-// prepareOutputMessage check the length of the message and compress if necessary.
-// fails on compressed messages bigger than the threshold.
-func (r *Runner) prepareOutputMessage(msg []byte) ([]byte, error) {
-	if len(msg) <= MessageThreshold {
-		return msg, nil
-	}
-
-	outMsg, err := r.compressData(msg)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(outMsg) > MessageThreshold {
-		return nil, ErrMessageToBig
-	}
-
-	r.logger.Infof("Original message size: %s. Compressed: %s", sizeInKB(msg), sizeInKB(outMsg))
-
-	return outMsg, nil
 }
 
 // publishResponse publishes the response in the NATS output subject.
@@ -242,53 +201,42 @@ func (r *Runner) getOutputSubject(channel string) string {
 	return outputSubject
 }
 
-// saveElapsedTime stores in InfluxDB the elapsed time for the current node and the total elapsed time of the
-// complete workflow if it is the last node.
-func (r *Runner) saveElapsedTime(reqMsg *KreNatsMessage, start time.Time, end time.Time, isExitpoint bool) {
-	prev := reqMsg.Tracking[len(reqMsg.Tracking)-1]
-	prevEnd, err := time.Parse(ISO8601, prev.End)
-	if err != nil {
-		r.logger.Errorf("Error parsing previous node end time = \"%s\"", prev.End)
+// prepareOutputMessage check the length of the message and compresses it if necessary.
+// fails on compressed messages bigger than the threshold.
+func (r *Runner) prepareOutputMessage(msg []byte) ([]byte, error) {
+	if len(msg) <= MessageThreshold {
+		return msg, nil
 	}
 
-	elapsed := end.Sub(start)
-	waiting := start.Sub(prevEnd)
+	outMsg, err := r.compressData(msg)
+	if err != nil {
+		return nil, err
+	}
 
+	if len(outMsg) > MessageThreshold {
+		return nil, ErrMessageToBig
+	}
+
+	r.logger.Infof("Original message size: %s. Compressed: %s", sizeInKB(msg), sizeInKB(outMsg))
+
+	return outMsg, nil
+}
+
+// saveElapsedTime stores in InfluxDB how much time did it take the node to run the handler
+func (r *Runner) saveElapsedTime(start time.Time, end time.Time) {
+	elapsed := end.Sub(start)
 	tags := map[string]string{
-		"workflow": r.cfg.WorkflowName,
+		"runtime":  r.cfg.RuntimeID,
 		"version":  r.cfg.Version,
+		"workflow": r.cfg.WorkflowName,
 		"node":     r.cfg.NodeName,
 	}
 
 	fields := map[string]interface{}{
-		"tracking_id": reqMsg.TrackingId,
-		"node_from":   prev.NodeName,
-		"elapsed_ms":  elapsed.Seconds() * 1000,
-		"waiting_ms":  waiting.Seconds() * 1000,
+		"elapsed_ms": elapsed.Seconds() * 1000,
 	}
 
 	r.handlerContext.Measurement.Save("node_elapsed_time", fields, tags)
-
-	if isExitpoint {
-		entrypoint := reqMsg.Tracking[0]
-		entrypointStart, err := time.Parse(ISO8601, entrypoint.Start)
-		if err != nil {
-			r.logger.Errorf("Error parsing entrypoint start time = \"%s\"", entrypoint.Start)
-		}
-		elapsed = end.Sub(entrypointStart)
-
-		tags = map[string]string{
-			"workflow": r.cfg.WorkflowName,
-			"version":  r.cfg.Version,
-		}
-
-		fields = map[string]interface{}{
-			"tracking_id": reqMsg.TrackingId,
-			"elapsed_ms":  elapsed.Seconds() * 1000,
-		}
-
-		r.handlerContext.Measurement.Save("workflow_elapsed_time", fields, tags)
-	}
 }
 
 func sizeInKB(s []byte) string {

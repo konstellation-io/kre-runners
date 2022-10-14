@@ -24,7 +24,7 @@ const (
 )
 
 type PublishMsgFunc = func(response proto.Message, reqMsg *KreNatsMessage, msgType MessageType, channel string) error
-type PublishAnyFunc = func(response *anypb.Any, reqMsg *KreNatsMessage, msgType MessageType, channel string) error
+type PublishAnyFunc = func(response *anypb.Any, reqMsg *KreNatsMessage, msgType MessageType, channel string)
 
 type HandlerContext struct {
 	cfg         config.Config
@@ -109,14 +109,24 @@ func (c *HandlerContext) GetRequestID() string {
 	return c.reqMsg.RequestId
 }
 
-// SendOutput will send a desired payload to the node's subject.
+// SendOutput will send a desired typed proto payload to the node's subject.
 // Once the entrypoint has been replied, all following replies to the entrypoint will be ignored.
 func (c *HandlerContext) SendOutput(response proto.Message, channelOpt ...string) error {
-	channel := defaultChannel
-	if len(channelOpt) > 0 {
-		channel = channelOpt[0]
+	return c.publishMsg(response, c.reqMsg, MessageType_OK, c.getChannel(channelOpt))
+}
+
+// SendOutput will send a any type of proto payload to the node's subject.
+// Use this function when you wish to simply redirect your node's payload without unpackaging.
+// Once the entrypoint has been replied, all following replies to the entrypoint will be ignored.
+func (c *HandlerContext) SendAny(response *anypb.Any, channelOpt ...string) {
+	c.publishAny(response, c.reqMsg, MessageType_OK, c.getChannel(channelOpt))
+}
+
+func (c *HandlerContext) getChannel(channels []string) string {
+	if len(channels) > 0 {
+		return channels[0]
 	}
-	return c.publishMsg(response, c.reqMsg, MessageType_OK, channel)
+	return defaultChannel
 }
 
 // SendEarlyReply publishes the desired response to this node's subject.
@@ -133,15 +143,22 @@ func (c *HandlerContext) SendEarlyExit(response proto.Message) error {
 	return c.publishMsg(response, c.reqMsg, MessageType_EARLY_EXIT, defaultChannel)
 }
 
-// GetRequestMessageType returns the message type of the incoming request
-func (c *HandlerContext) GetRequestMessageType() MessageType {
-	return c.reqMsg.MessageType
+// IsIncomingPayloadOK returns true if incoming payload is of message type OK
+func (c *HandlerContext) IsIncomingPayloadOK() bool {
+	return c.reqMsg.MessageType == MessageType_OK
 }
 
-func (c *HandlerContext) SendAny(response *anypb.Any, channelOpt ...string) error {
-	channel := defaultChannel
-	if len(channelOpt) > 0 {
-		channel = channelOpt[0]
-	}
-	return c.publishAny(response, c.reqMsg, MessageType_OK, channel)
+// IsIncomingPayloadError returns true if incoming payload is of message type ERROR
+func (c *HandlerContext) IsIncomingPayloadError() bool {
+	return c.reqMsg.MessageType == MessageType_ERROR
+}
+
+// IsIncomingPayloadEarlyReply returns true if incoming payload is of message type EARLY REPLY
+func (c *HandlerContext) IsIncomingPayloadEarlyReply() bool {
+	return c.reqMsg.MessageType == MessageType_EARLY_REPLY
+}
+
+// IsIncomingPayloadEarlyExit returns true if incoming payload is of message type EARLY EXIT
+func (c *HandlerContext) IsIncomingPayloadEarlyExit() bool {
+	return c.reqMsg.MessageType == MessageType_EARLY_EXIT
 }
