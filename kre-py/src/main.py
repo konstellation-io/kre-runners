@@ -137,29 +137,28 @@ class NodeRunner(Runner):
                 await handler(ctx, request_msg.payload)
                 # Tell NATS we don't need to receive the message anymore and we are done processing it.
                 await msg.ack()
-                end = datetime.utcnow()
 
-                # Save the elapsed time for this node and for the workflow if it is the last node.
-                self.save_elapsed_time(request_msg, start, end)
+                # Save the elapsed time for this node
+                end = datetime.utcnow()
+                success = True
+                self.save_elapsed_time(request_msg, start, end, success)
 
             except Exception as err:
                 # Publish an error message to the final reply subject
                 # in order to stop the workflow execution. So the next nodes will be ignored
                 # and the gRPC response will be an exception.
+                tb = traceback.format_exc()
+                self.logger.error(f"Error executing handler: {err} \n\n{tb}")
+                error_message = f"Error in '{self.config.krt_node_name}': {str(err)}"
+                await self.__publish_error__(request_msg.request_id, error_message)
 
                 # Tell NATS we don't need to receive the message anymore and we are done processing it.
                 await msg.ack()
 
-                tb = traceback.format_exc()
-                self.logger.error(f"Error executing handler: {err} \n\n{tb}")
-                # response_err = KreNatsMessage()
-                error_message = f"Error in '{self.config.krt_node_name}': {str(err)}"
-                await self.__publish_error__(request_msg.request_id, error_message)
-                # await self.js.publish(
-                #     stream=self.config.nats_stream,
-                #     subject=subject,
-                #     payload=response_err.SerializeToString(),
-                # )
+                # Save the elapsed time for this node
+                end = datetime.utcnow()
+                success = False
+                self.save_elapsed_time(request_msg, start, end, success)
             gc.collect()
 
         return message_cb
@@ -237,12 +236,14 @@ class NodeRunner(Runner):
             return output_subject
         return f'{output_subject}.{channel}'
 
-    def save_elapsed_time(self, start: datetime, end: datetime) -> None:
+    def save_elapsed_time(self, start: datetime, end: datetime, success: bool) -> None:
         """
         save_elapsed_time stores in InfluxDB how much time did it take the node to run the handler
+        also saves if the request was succesfully processed
 
         :param start: when this node started.
         :param end: when this node ended.
+        :param success: was the request processed succesfully.
         :return: None
         """
 
@@ -256,6 +257,7 @@ class NodeRunner(Runner):
 
         fields = {
             "elapsed_ms": elapsed.total_seconds() * 1000,
+            "success": success,
         }
 
         self.handler_ctx.measurement.save("node_elapsed_time", fields, tags)
