@@ -125,7 +125,7 @@ class NodeRunner(Runner):
             # Parse incoming message
             request_msg = self.new_request_msg(msg.data)
 
-            self.logger.info(f"Received a message from {msg.subject} with requestID {msg.request_id}")
+            self.logger.info(f"Received a message from {msg.subject} with requestID {request_msg.request_id}")
 
             try:
                 # Make a shallow copy of the ctx object to set inside the request msg.
@@ -135,13 +135,12 @@ class NodeRunner(Runner):
                 # Execute the handler function sending context and the payload.
                 handler = self.handler_manager.get_handler(request_msg.from_node)
                 await handler(ctx, request_msg.payload)
-                # Tell NATS we don't need to receive the message anymore and we are done processing it.
-                await msg.ack()
+
 
                 # Save the elapsed time for this node
                 end = datetime.utcnow()
                 success = True
-                self.save_elapsed_time(request_msg, start, end, success)
+                self.save_elapsed_time(start, end, success)
 
             except Exception as err:
                 # Publish an error message to the final reply subject
@@ -152,13 +151,13 @@ class NodeRunner(Runner):
                 error_message = f"Error in '{self.config.krt_node_name}': {str(err)}"
                 await self.__publish_error__(request_msg.request_id, error_message)
 
-                # Tell NATS we don't need to receive the message anymore and we are done processing it.
-                await msg.ack()
-
                 # Save the elapsed time for this node
                 end = datetime.utcnow()
                 success = False
-                self.save_elapsed_time(request_msg, start, end, success)
+                self.save_elapsed_time(start, end, success)
+
+            # Tell NATS we don't need to receive the message anymore and we are done processing it.
+            await msg.ack()
             gc.collect()
 
         return message_cb
@@ -174,14 +173,12 @@ class NodeRunner(Runner):
         return request_msg
 
     async def __publish_msg__(self, response_payload: Message, request_msg: KreNatsMessage, msg_type: MessageType, channel: str):
-        end = datetime.utcnow()
-        response_msg = self.new_response_msg(request_msg, end, msg_type)
+        response_msg = self.new_response_msg(request_msg, msg_type)
         response_msg.payload.Pack(response_payload)
         await self.publish_response(response_msg, channel)
 
     async def __publish_any__(self, response_payload, request_msg: KreNatsMessage, msg_type: MessageType, channel: str):
-        end = datetime.utcnow()
-        response_msg = self.new_response_msg(request_msg, end, msg_type)
+        response_msg = self.new_response_msg(request_msg, msg_type)
         response_msg.payload.CopyFrom(response_payload)
         await self.publish_response(response_msg, channel)
 
