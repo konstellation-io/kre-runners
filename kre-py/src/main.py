@@ -100,18 +100,13 @@ class NodeRunner(Runner):
                     ),
                     manual_ack=True,
                 )
-
                 self.subscription_sids.append(sub)
-
-                self.logger.info(
-                    f"Listening to '{subject}' subject with queue group '{self.runner_name}' "
-                    f"from stream '{self.config.nats_stream}'"
-                )
+                self.logger.info( f"Listening to '{subject}' subject with queue group '{queue}'"                )
 
             except Exception as err:
                 tb = traceback.format_exc()
                 self.logger.error(
-                    f"Error subscribing to stream {self.config.handler_path}: {err}\n\n{tb}"
+                    f"Error subscribing to NATS subject {subject}: {err}\n\n{tb}"
                 )
                 sys.exit(1)
 
@@ -119,7 +114,6 @@ class NodeRunner(Runner):
 
     def create_message_cb(self) -> callable:
         async def message_cb(msg) -> None:
-
             """
             Callback for processing a message.
 
@@ -131,7 +125,7 @@ class NodeRunner(Runner):
             # Parse incoming message
             request_msg = self.new_request_msg(msg.data)
 
-            self.logger.info(f"Received new request message from NATS subject {msg.subject}")
+            self.logger.info(f"Received a message from {msg.subject} with requestID {msg.request_id}")
 
             try:
                 # Make a shallow copy of the ctx object to set inside the request msg.
@@ -157,9 +151,9 @@ class NodeRunner(Runner):
                 await msg.ack()
 
                 tb = traceback.format_exc()
-                self.logger.error(f"error executing handler: {err} \n\n{tb}")
+                self.logger.error(f"Error executing handler: {err} \n\n{tb}")
                 # response_err = KreNatsMessage()
-                error_message = f"error in '{self.config.krt_node_name}': {str(err)}"
+                error_message = f"Error in '{self.config.krt_node_name}': {str(err)}"
                 await self.__publish_error__(request_msg.request_id, error_message)
                 # await self.js.publish(
                 #     stream=self.config.nats_stream,
@@ -180,109 +174,6 @@ class NodeRunner(Runner):
 
         return request_msg
 
-    # new_response_msg creates a KreNatsMessage maintaining the tracking ID plus adding the
-    # handler result and the tracking information for this node.
-    def new_response_msg(
-            self,
-            request_msg: KreNatsMessage,
-            end: datetime,
-            msg_type: MessageType,
-    ) -> KreNatsMessage:
-        res = KreNatsMessage()
-        res.request_id = request_msg.request_id
-        res.tracking_id = request_msg.tracking_id
-        res.tracking.extend(request_msg.tracking)
-        res.message_type = msg_type
-        res.from_node = self.config.krt_node_name
-
-        # add tracking info
-        t = res.tracking.add()
-        t.node_name = self.config.krt_node_name
-        t.end = end.isoformat()
-
-        return res
-
-    async def publish_response(self, response_msg: KreNatsMessage, channel: str) -> None:
-
-        """
-        Publish the response message to the output subject.
-
-        :param  response_msg:  The response message to publish.
-        :param channel:  The subject channel where message will be published.
-        """
-
-        serialized_response_msg = compress_if_needed(
-            response_msg.SerializeToString(), logger=self.logger
-        )
-
-        subject = self.__get_output_subject__(channel)
-
-        try:
-            await self.js.publish(
-                stream=self.config.nats_stream, subject=subject, payload=serialized_response_msg
-            )
-            self.logger.info(
-                f"Published response to NATS subject {subject} "
-                f"from stream {self.config.nats_stream}"
-            )
-        except ConnectionClosedError as err:
-            self.logger.error(f"Connection closed when publishing response: {err}")
-        except TimeoutError as err:
-            self.logger.error(f"Timeout when publishing response: {err}")
-        except Exception as err:
-            self.logger.error(f"Error publishing response: {err}")
-
-    def save_elapsed_time(self, req_msg: KreNatsMessage, start: datetime, end: datetime) -> None:
-        """
-        save_elapsed_time stores in InfluxDB the elapsed time for the current node and the
-        total elapsed time of the complete workflow if it is the last node.
-
-        :param req_msg: the request message.
-        :param start: when this node started.
-        :param end: when this node ended.
-        :return: None
-        """
-        # Save the elapsed time for this node
-        prev = req_msg.tracking[-1]
-        prev_end = datetime.fromisoformat(prev.end)
-
-        elapsed = end - start
-        waiting = start - prev_end
-
-        tags = {
-            "workflow": self.config.krt_workflow_name,
-            "version": self.config.krt_version,
-            "node": self.config.krt_node_name,
-        }
-
-        fields = {
-            "tracking_id": req_msg.tracking_id,
-            "node_from": prev.node_name,
-            "elapsed_ms": elapsed.total_seconds() * 1000,
-            "waiting_ms": waiting.total_seconds() * 1000,
-        }
-
-        self.handler_ctx.measurement.save("node_elapsed_time", fields, tags)
-
-        if self.config.is_exitpoint:
-            # Save the complete workflow elapsed time
-            entrypoint = req_msg.tracking[0]
-            entrypoint_start = datetime.fromisoformat(entrypoint.start)
-            elapsed = (end - entrypoint_start).total_seconds() * 1000
-
-            tags = {
-                "workflow": self.config.krt_workflow_name,
-                "version": self.config.krt_version,
-            }
-            fields = {"elapsed_ms": elapsed, "tracking_id": req_msg.tracking_id}
-            self.handler_ctx.measurement.save("workflow_elapsed_time", fields, tags)
-
-    def __get_output_subject__(self, channel: str = ""):
-        output_subject = self.config.nats_output
-        if channel == "":
-            return output_subject
-        return f'{output_subject}.{channel}'
-
     async def __publish_msg__(self, response_payload: Message, request_msg: KreNatsMessage, msg_type: MessageType, channel: str):
         end = datetime.utcnow()
         response_msg = self.new_response_msg(request_msg, end, msg_type)
@@ -299,10 +190,75 @@ class NodeRunner(Runner):
         msg = KreNatsMessage()
         msg.request_id = request_id
         msg.error = error_message
-        msg.message_type = ERROR
         msg.from_node = self.config.krt_node_name
+        msg.message_type = ERROR
 
         await self.publish_response(msg, channel)
+
+    # new_response_msg creates a KreNatsMessage that keeps previous tracking information 
+    def new_response_msg(self, request_msg: KreNatsMessage, msg_type: MessageType) -> KreNatsMessage:
+        res = KreNatsMessage()
+        res.request_id = request_msg.request_id
+        res.from_node = self.config.krt_node_name
+        res.message_type = msg_type
+
+        return res
+
+    async def publish_response(self, response_msg: KreNatsMessage, channel: str) -> None:
+        """
+        Publish the response message to the output subject.
+
+        :param  response_msg:  The response message to publish.
+        :param channel:  The subject channel where the message will be published.
+        """
+
+        serialized_response_msg = compress_if_needed(
+            response_msg.SerializeToString(), logger=self.logger
+        )
+
+        subject = self.__get_output_subject__(channel)
+
+        try:
+            await self.js.publish(
+                stream=self.config.nats_stream, subject=subject, payload=serialized_response_msg
+            )
+            self.logger.info(f"Publishing response to {subject} subject")
+
+        except ConnectionClosedError as err:
+            self.logger.error(f"Connection closed when publishing response: {err}")
+        except TimeoutError as err:
+            self.logger.error(f"Timeout when publishing response: {err}")
+        except Exception as err:
+            self.logger.error(f"Error publishing response: {err}")
+
+    def __get_output_subject__(self, channel: str = ""):
+        output_subject = self.config.nats_output
+        if channel == "":
+            return output_subject
+        return f'{output_subject}.{channel}'
+
+    def save_elapsed_time(self, start: datetime, end: datetime) -> None:
+        """
+        save_elapsed_time stores in InfluxDB how much time did it take the node to run the handler
+
+        :param start: when this node started.
+        :param end: when this node ended.
+        :return: None
+        """
+
+        elapsed = end - start
+        tags = {
+            "runtime": self.config.krt_runtime_id,
+            "version": self.config.krt_version,
+            "workflow": self.config.krt_workflow_name,
+            "node": self.config.krt_node_name,
+        }
+
+        fields = {
+            "elapsed_ms": elapsed.total_seconds() * 1000,
+        }
+
+        self.handler_ctx.measurement.save("node_elapsed_time", fields, tags)
 
 
 if __name__ == "__main__":
