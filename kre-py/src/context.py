@@ -6,7 +6,7 @@ from google.protobuf.message import Message
 from context_measurement import ContextMeasurement
 from context_prediction import ContextPrediction
 from context_data import ContextData
-from kre_nats_msg_pb2 import OK, MessageType, EARLY_REPLY, EARLY_EXIT
+from kre_nats_msg_pb2 import ERROR, OK, MessageType, EARLY_REPLY, EARLY_EXIT
 
 PublishMsgFunc = Callable[[Message, Any, MessageType, str], Awaitable]
 PublishAnyFunc = Callable[[Message, Any, MessageType, str], Awaitable]
@@ -35,20 +35,68 @@ class HandlerContext:
     def get(self, key: str) -> any:
         return getattr(self.__data__, key)
 
-    async def early_reply(self, response):
-        await self.__publish_msg__(response, self.__request_msg__, EARLY_REPLY, DEFAULT_CHANNEL)
-
-    def early_exit(self, message):
-        self.__publish_msg__(message, self.__request_msg__, EARLY_EXIT, DEFAULT_CHANNEL)
-
     def set_request_msg(self, request_msg):
         self.__request_msg__ = request_msg
 
+    def get_request_id(self) -> str:
+        """get_request_id will return the payload's original request ID."""
+        return self.__request_msg__.request_id
+
     async def send_output(self, message: Message, channel: str = DEFAULT_CHANNEL):
+        """
+        send_output will send a desired typed proto payload to the node's subject.
+        Once the entrypoint has been replied, all following replies to the entrypoint will be ignored.
+
+        :param  message:  The message to publish.
+        :param channel (optional):  The subsubject channel where the message will be published.
+        """
         await self.__publish_msg__(message, self.__request_msg__, OK, channel)
 
     async def send_any(self, message, channel: str = DEFAULT_CHANNEL):
+        """
+        send_any will send a any type of proto payload to the node's subject.
+        Use this function when you wish to simply redirect your node's payload without unpackaging.
+        Once the entrypoint has been replied, all following replies to the entrypoint will be ignored.
+
+        :param  message:  The message to publish.
+        :param channel (optional):  The subsubject channel where the message will be published.
+        """
         await self.__publish_any__(message, self.__request_msg__, OK, channel)
 
-    def is_request_early_reply(self):
+    async def send_early_reply(self, message, channel: str = DEFAULT_CHANNEL):
+        """
+        send_early_reply publishes the desired response to this node's subject.
+        With the addition of typing this message as an early reply.
+        Use this function when you need to reply faster than the workflow execution duration.
+
+        :param  message:  The message to publish.
+        :param channel (optional):  The subsubject channel where the message will be published.
+        """
+        await self.__publish_msg__(message, self.__request_msg__, EARLY_REPLY, channel)
+
+    async def send_early_exit(self, message, channel: str = DEFAULT_CHANNEL):
+        """
+        send_early_exit publishes the desired response to this node's subject.
+        With the addition of typing this message as an early exit.
+        Use this function when you want to report a custom error in your workflow execution.
+
+        :param  message:  The message to publish.
+        :param channel (optional):  The subsubject channel where the message will be published.
+        """
+        await self.__publish_msg__(message, self.__request_msg__, EARLY_EXIT, channel)
+
+    def is_message_ok(self) -> bool:
+        """is_message_ok returns true if incoming message is of message type OK."""
+        return self.__request_msg__.message_type == OK
+
+    def is_message_error(self) -> bool:
+        """is_message_error returns true if incoming message is of message type ERROR."""
+        return self.__request_msg__.message_type == ERROR
+
+    def is_message_early_reply(self) -> bool:
+        """is_message_early_reply returns true if incoming message is of message type EARLY_REPLY."""
         return self.__request_msg__.message_type == EARLY_REPLY
+
+    def is_message_early_exit(self) -> bool:
+        """is_message_early_exit returns true if incoming message is of message type EARLY_EXIT."""
+        return self.__request_msg__.message_type == EARLY_EXIT
