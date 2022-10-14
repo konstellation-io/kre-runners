@@ -53,12 +53,23 @@ func NewRunner(logger *simplelogger.SimpleLogger, cfg config.Config, nc *nats.Co
 // ProcessMessage parses the incoming NATS message, executes the handler function and publishes
 // the handler result to the output subject.
 func (r *Runner) ProcessMessage(msg *nats.Msg) {
+	var (
+		end     time.Time
+		success = false
+	)
 	start := time.Now().UTC()
 
 	// Parse incoming message
 	requestMsg, err := r.newRequestMessage(msg.Data)
 	if err != nil {
 		r.logger.Errorf("Error parsing msg.data because is not a valid protobuf: %s", err)
+		ackErr := msg.Ack()
+		if ackErr != nil {
+			r.logger.Errorf("Error in message ack: %s", ackErr.Error())
+		}
+		// Save the elapsed time for this node
+		end = time.Now().UTC()
+		r.saveElapsedTime(start, end, success)
 		return
 	}
 
@@ -79,6 +90,9 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 		if ackErr != nil {
 			r.logger.Errorf("Error in message ack: %s", ackErr.Error())
 		}
+		// Save the elapsed time for this node
+		end = time.Now().UTC()
+		r.saveElapsedTime(start, end, success)
 		return
 	}
 
@@ -92,13 +106,16 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 		errMsg := fmt.Sprintf("Error in node '%s' executing handler for node '%s': %s", r.cfg.NodeName, requestMsg.FromNode, err)
 		r.logger.Errorf(errMsg)
 		r.publishError(requestMsg.RequestId, errMsg)
+		// Save the elapsed time for this node
+		end = time.Now().UTC()
+		r.saveElapsedTime(start, end, success)
 		return
 	}
 
-	end := time.Now().UTC()
-
 	// Save the elapsed time for this node
-	r.saveElapsedTime(start, end)
+	success = true
+	end = time.Now().UTC()
+	r.saveElapsedTime(start, end, success)
 }
 
 // newRequestMessage creates an instance of KreNatsMessage for the input string. decompress if necessary
@@ -223,7 +240,8 @@ func (r *Runner) prepareOutputMessage(msg []byte) ([]byte, error) {
 }
 
 // saveElapsedTime stores in InfluxDB how much time did it take the node to run the handler
-func (r *Runner) saveElapsedTime(start time.Time, end time.Time) {
+// also saves if the request was succesfully processed
+func (r *Runner) saveElapsedTime(start time.Time, end time.Time, success bool) {
 	elapsed := end.Sub(start)
 	tags := map[string]string{
 		"runtime":  r.cfg.RuntimeID,
@@ -234,6 +252,7 @@ func (r *Runner) saveElapsedTime(start time.Time, end time.Time) {
 
 	fields := map[string]interface{}{
 		"elapsed_ms": elapsed.Seconds() * 1000,
+		"success":    success,
 	}
 
 	r.handlerContext.Measurement.Save("node_elapsed_time", fields, tags)
