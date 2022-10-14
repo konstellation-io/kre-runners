@@ -104,7 +104,7 @@ func (c *HandlerContext) GetFloat(key string) float64 {
 	return -1.0
 }
 
-// GetRequestID will return the message's request ID
+// GetRequestID will return the payload's original request ID.
 func (c *HandlerContext) GetRequestID() string {
 	return c.reqMsg.RequestId
 }
@@ -122,6 +122,20 @@ func (c *HandlerContext) SendAny(response *anypb.Any, channelOpt ...string) {
 	c.publishAny(response, c.reqMsg, MessageType_OK, c.getChannel(channelOpt))
 }
 
+// SendEarlyReply publishes the desired response to this node's subject.
+// With the addition of typing this message as an early reply.
+// Use this function when you need to reply faster than the workflow execution duration.
+func (c *HandlerContext) SendEarlyReply(response proto.Message, channelOpt ...string) error {
+	return c.publishMsg(response, c.reqMsg, MessageType_EARLY_REPLY, c.getChannel(channelOpt))
+}
+
+// SendEarlyExit publishes the desired response to this node's subject.
+// With the addition of typing this message as an early exit.
+// Use this function when you want to report a custom error in your workflow execution.
+func (c *HandlerContext) SendEarlyExit(response proto.Message, channelOpt ...string) error {
+	return c.publishMsg(response, c.reqMsg, MessageType_EARLY_EXIT, c.getChannel(channelOpt))
+}
+
 func (c *HandlerContext) getChannel(channels []string) string {
 	if len(channels) > 0 {
 		return channels[0]
@@ -129,36 +143,22 @@ func (c *HandlerContext) getChannel(channels []string) string {
 	return defaultChannel
 }
 
-// SendEarlyReply publishes the desired response to this node's subject.
-// With the addition of typing this message as an early reply.
-// Use this function when you need to reply faster than the workflow execution duration.
-func (c *HandlerContext) SendEarlyReply(response proto.Message) error {
-	return c.publishMsg(response, c.reqMsg, MessageType_EARLY_REPLY, defaultChannel)
-}
-
-// SendEarlyExit publishes the desired response to this node's subject.
-// With the addition of typing this message as an early exit.
-// Use this function when you want to report a custom error in your workflow execution.
-func (c *HandlerContext) SendEarlyExit(response proto.Message) error {
-	return c.publishMsg(response, c.reqMsg, MessageType_EARLY_EXIT, defaultChannel)
-}
-
-// IsIncomingPayloadOK returns true if incoming payload is of message type OK
-func (c *HandlerContext) IsIncomingPayloadOK() bool {
+// IsMessageOK returns true if the incoming message is of message type OK.
+func (c *HandlerContext) IsMessageOK() bool {
 	return c.reqMsg.MessageType == MessageType_OK
 }
 
-// IsIncomingPayloadError returns true if incoming payload is of message type ERROR
-func (c *HandlerContext) IsIncomingPayloadError() bool {
+// IsMessageError returns true if the incoming message is of message type ERROR.
+func (c *HandlerContext) IsMessageError() bool {
 	return c.reqMsg.MessageType == MessageType_ERROR
 }
 
-// IsIncomingPayloadEarlyReply returns true if incoming payload is of message type EARLY REPLY
-func (c *HandlerContext) IsIncomingPayloadEarlyReply() bool {
+// IsMessageEarlyReply returns true if the incoming message is of message type EARLY REPLY.
+func (c *HandlerContext) IsMessageEarlyReply() bool {
 	return c.reqMsg.MessageType == MessageType_EARLY_REPLY
 }
 
-// IsIncomingPayloadEarlyExit returns true if incoming payload is of message type EARLY EXIT
-func (c *HandlerContext) IsIncomingPayloadEarlyExit() bool {
+// IsMessageEarlyExit returns true if the incoming message is of message type EARLY EXIT.
+func (c *HandlerContext) IsMessageEarlyExit() bool {
 	return c.reqMsg.MessageType == MessageType_EARLY_EXIT
 }
