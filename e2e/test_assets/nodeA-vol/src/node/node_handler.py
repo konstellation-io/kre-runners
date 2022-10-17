@@ -8,7 +8,7 @@ def init(ctx):
     ctx.set("greeting", "Hello")
 
 
-async def handler(ctx, data: Any) -> NodeBRequest:
+async def default_handler(ctx, data: Any) -> NodeBRequest:
 
     """
     This is the entrypoint handler for the nodeA workflow.
@@ -30,4 +30,4 @@ async def handler(ctx, data: Any) -> NodeBRequest:
     output = NodeBRequest()
     output.greeting = result
 
-    return output
+    await ctx.send_output(output)

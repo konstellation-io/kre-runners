@@ -28,6 +28,14 @@ services:
       - "4222:4222"
       - "8222:8222"
 
+  nats_init:
+    build:
+      context: "nats_init"
+      dockerfile: "./Dockerfile"
+    env_file:
+      - env/.env.common
+    depends_on:
+      - nats
   node-a-py:
     build:
       context: "../../kre-py"
@@ -35,8 +43,10 @@ services:
     volumes:
       - "./nodeA-vol:/tmp"
     env_file:
-        - env/.env.common
-        - env/.env.nodeA
+      - env/.env.common
+      - env/.env.nodeA
+    depends_on:
+      - nats_init
 
   node-b-py:
     build:
@@ -45,8 +55,10 @@ services:
     volumes:
       - "./nodeB-vol:/tmp"
     env_file:
-        - env/.env.common
-        - env/.env.nodeB
+      - env/.env.common
+      - env/.env.nodeB
+    depends_on:
+      - nats_init
 
   node-c-go:
     build:
@@ -57,6 +69,8 @@ services:
     env_file:
       - env/.env.common
       - env/.env.nodeC
+    depends_on:
+      - nats_init
 
   node-entrypoint:
     build:
@@ -70,3 +84,5 @@ services:
     env_file:
       - env/.env.common
       - env/.env.entrypoint
+    depends_on:
+      - nats_init

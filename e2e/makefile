@@ -2,7 +2,7 @@
 
 # build go binary then build all docker images
 build: build_go
-	docker-compose -f test_assets/docker-compose.yml up --build
+	docker-compose -f test_assets/docker-compose.yml up --build --force-recreate
 	
 # build go binary
 build_go:
