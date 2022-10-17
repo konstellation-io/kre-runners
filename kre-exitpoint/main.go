@@ -16,7 +16,7 @@ func handlerInit(ctx *kre.HandlerContext) {
 func defaultHandler(ctx *kre.HandlerContext, data *anypb.Any) error {
 	ctx.Logger.Info("[exitpoint default handler invoked]")
 
-	if ctx.IsIncomingPayloadEarlyReply() || ctx.IsIncomingPayloadEarlyExit() {
+	if ctx.IsMessageEarlyReply() || ctx.IsMessageEarlyExit() {
 		ctx.SendOutput(data)
 	}
 
