@@ -33,7 +33,6 @@ type ConfigNATS struct {
 	InputSubjects      []string
 	OutputSubject      string
 	MongoWriterSubject string
-	ExitpointSubject   string
 }
 
 type InfluxDB struct {
@@ -59,7 +58,6 @@ func NewConfig(logger *simplelogger.SimpleLogger) Config {
 			InputSubjects:      getSubscriptionsFromEnv(logger, "KRT_NATS_INPUTS"),
 			OutputSubject:      getCfgFromEnv(logger, "KRT_NATS_OUTPUT"),
 			MongoWriterSubject: getCfgFromEnv(logger, "KRT_NATS_MONGO_WRITER"),
-			ExitpointSubject:   getCfgFromEnv(logger, "KRT_NATS_EXITPOINT_SUBJECT"),
 		},
 		MongoDB: MongoDB{
 			Address:     getCfgFromEnv(logger, "KRT_MONGO_URI"),
