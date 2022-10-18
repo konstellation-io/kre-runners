@@ -1,12 +1,15 @@
 name: kre-entrypoint Tests
 
 on:
-  push:
-    branches:
-      - "*"
+  pull_request:
     paths:
       - "kre-entrypoint/**/*"
       - ".github/workflows/kre-entrypoint*"
+  push:
+    paths:
+      - "kre-entrypoint/**/*"
+
+      
 
 jobs:
   test:

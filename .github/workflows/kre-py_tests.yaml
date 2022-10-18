@@ -2,17 +2,12 @@ name: kre-py Tests
 
 on:
   pull_request:
-    branches:
-      - "*"
     paths:
       - "kre-py/**/*"
       - ".github/workflows/kre-py*"
   push:
-    branches:
-      - "*"
     paths:
       - "kre-py/**/*"
-      - ".github/workflows/kre-py*"
 
 jobs:
   test:

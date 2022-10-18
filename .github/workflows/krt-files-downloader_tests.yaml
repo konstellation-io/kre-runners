@@ -1,10 +1,13 @@
 name: krt-files-downloader Tests
 
 on:
-  push:
+  pull_request:
     paths:
       - "krt-files-downloader/**/*"
       - ".github/workflows/krt-files-downloader*"
+  push:
+    paths:
+      - "krt-files-downloader/**/*"
 
 jobs:
   test:
