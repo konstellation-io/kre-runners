@@ -86,9 +86,6 @@ class EntrypointKRE:
             input_subject = self.jetstream_data[workflow]["input_subject"]
             output_subject = self.jetstream_data[workflow]["output_subject"]
 
-            self.logger.info(f"Input subject is '{input_subject}'")
-            self.logger.info(f"Output subject is '{output_subject}'")
-
             # creates the msg to be sent to the NATS server
             request_msg = self._create_kre_request_message(grpc_raw_msg, start, request_id)
 
