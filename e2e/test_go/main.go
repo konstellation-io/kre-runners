@@ -17,12 +17,19 @@ import (
 var wg sync.WaitGroup
 var counterMutex sync.Mutex
 var totalRequests int = 0
+var totalFails int = 0
 var numberOfClients int = 5
-var numberOfRequestsPerClient = 100
+var numberOfRequestsPerClient = 100 // try different loads!
 
-func increaseCounter() {
+func increaseTotalRequestCounter() {
 	counterMutex.Lock()
 	totalRequests++
+	counterMutex.Unlock()
+}
+
+func increaseTotalFailCounter() {
+	counterMutex.Lock()
+	totalFails++
 	counterMutex.Unlock()
 }
 
@@ -38,6 +45,7 @@ func main() {
 	wg.Wait()
 
 	fmt.Printf("Total number of requests: %d\n", totalRequests)
+	fmt.Printf("Total number of fails: %d\n", totalFails)
 	fmt.Println("Program finished")
 }
 
@@ -57,10 +65,9 @@ func sendRequests(numberOfRequests int) {
 	myCounter := 0
 
 	for i := 0; i < numberOfRequests; i++ {
-		generatedName := fmt.Sprintf("Alex-%d", (rand.Intn(10000)))
-		expectedResponse := fmt.Sprintf("Hello %s! greetings from nodeA, nodeB and nodeC!", generatedName)
+		generatedRequest, expectedResponse := generateRequest()
 
-		resp, err := client.Greet(context.Background(), &proto.Request{Name: generatedName})
+		resp, err := client.Greet(context.Background(), &proto.Request{Name: generatedRequest})
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -68,9 +75,10 @@ func sendRequests(numberOfRequests int) {
 		if expectedResponse != resp.Greeting {
 			fmt.Println(expectedResponse, "---", resp.Greeting)
 			fails++
+			increaseTotalFailCounter()
 		}
 
-		increaseCounter()
+		increaseTotalRequestCounter()
 		myCounter++
 		myPercentage := float64(myCounter) / float64(numberOfRequests) * 100
 		if math.Mod(myPercentage, 10) == 0 {
@@ -82,4 +90,24 @@ func sendRequests(numberOfRequests int) {
 	time.Sleep(100 * time.Millisecond)
 	fmt.Printf("Sent %d messages with execution time %s with %d fails\n", numberOfRequests, elapsed, fails)
 	wg.Done()
+}
+
+func generateRequest() (string, string) {
+	var (
+		generatedRequest = ""
+		expectedResponse = ""
+	)
+
+	if randomInt := rand.Intn(20); randomInt == 0 {
+		generatedRequest = "early exit"
+		expectedResponse = "early exit"
+	} else if randomInt == 1 {
+		generatedRequest = "early reply"
+		expectedResponse = "early reply"
+	} else {
+		generatedRequest = fmt.Sprintf("Alex-%d", (rand.Intn(10000)))
+		expectedResponse = fmt.Sprintf("Hello %s! greetings from nodeA, nodeB and nodeC!", generatedRequest)
+	}
+
+	return generatedRequest, expectedResponse
 }

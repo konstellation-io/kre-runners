@@ -17,8 +17,11 @@ async def default_handler(ctx, data: Any) -> NodeCRequest:
 
     :return: The response message to be sent to the next node.
     """
-
     ctx.logger.info("[worker handler]")
+
+    if ctx.is_message_early_reply() or ctx.is_message_early_exit():
+        ctx.logger.info("ignoring request")
+        return
 
     req = NodeBRequest()
     data.Unpack(req)

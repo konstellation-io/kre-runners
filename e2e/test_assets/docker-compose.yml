@@ -72,6 +72,18 @@ services:
     depends_on:
       - nats_init
 
+  exitpoint:
+    build:
+      context: "../../kre-go"
+      dockerfile: "./Dockerfile"
+    volumes:
+      - "./exitpoint-vol:/tmp"
+    env_file:
+      - env/.env.common
+      - env/.env.exitpoint
+    depends_on:
+      - nats_init
+
   node-entrypoint:
     build:
       context: "../../kre-entrypoint"
