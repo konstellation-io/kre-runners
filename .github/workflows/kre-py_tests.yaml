@@ -2,17 +2,12 @@ name: kre-py Tests
 
 on:
   pull_request:
-    branches:
-      - "*"
     paths:
       - "kre-py/**/*"
       - ".github/workflows/kre-py*"
   push:
-    branches:
-      - "*"
     paths:
       - "kre-py/**/*"
-      - ".github/workflows/kre-py*"
 
 jobs:
   test:
@@ -23,7 +18,7 @@ jobs:
     - uses: actions/checkout@v3
 
     - name: Set up Python
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v4
       with:
         python-version: "3.9"
         cache: 'pipenv'
@@ -47,7 +42,7 @@ jobs:
       working-directory: ./kre-py
 
     - name: Archive code coverage results
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: coverage-report
         path: kre-py/coverage.xml
@@ -61,11 +56,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
       - name: Download code coverage results
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: coverage-report
           path: kre-py

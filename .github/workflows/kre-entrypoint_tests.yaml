@@ -1,12 +1,15 @@
 name: kre-entrypoint Tests
 
 on:
-  push:
-    branches:
-      - "*"
+  pull_request:
     paths:
       - "kre-entrypoint/**/*"
       - ".github/workflows/kre-entrypoint*"
+  push:
+    paths:
+      - "kre-entrypoint/**/*"
+
+      
 
 jobs:
   test:
@@ -14,10 +17,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Install Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: 1.14.x
       - name: Test
@@ -25,7 +28,7 @@ jobs:
         run: touch coverage.out
         working-directory: ./kre-entrypoint
       - name: Archive code coverage results
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: coverage-report
           path: kre-entrypoint/coverage.out
@@ -35,11 +38,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
       - name: Download code coverage results
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: coverage-report
           path: kre-entrypoint

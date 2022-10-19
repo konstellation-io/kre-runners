@@ -1,10 +1,13 @@
 name: krt-files-downloader Tests
 
 on:
-  push:
+  pull_request:
     paths:
       - "krt-files-downloader/**/*"
       - ".github/workflows/krt-files-downloader*"
+  push:
+    paths:
+      - "krt-files-downloader/**/*"
 
 jobs:
   test:
@@ -12,10 +15,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Install Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: 1.15.x
       - name: Test
@@ -23,7 +26,7 @@ jobs:
           go test -cover -v -coverprofile=coverage.out -covermode=atomic -coverpkg=./... ./...
         working-directory: ./krt-files-downloader
       - name: Archive code coverage results
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: coverage-report
           path: krt-files-downloader/coverage.out
@@ -33,11 +36,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
       - name: Download code coverage results
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: coverage-report
           path: krt-files-downloader
