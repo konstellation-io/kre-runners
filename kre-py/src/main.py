@@ -140,7 +140,7 @@ class NodeRunner(Runner):
                 # Save the elapsed time for this node
                 end = datetime.utcnow()
                 success = True
-                self.save_elapsed_time(start, end, success)
+                self.save_elapsed_time(start, end, request_msg.from_node, success)
 
             except Exception as err:
                 # Publish an error message to the final reply subject
@@ -154,7 +154,7 @@ class NodeRunner(Runner):
                 # Save the elapsed time for this node
                 end = datetime.utcnow()
                 success = False
-                self.save_elapsed_time(start, end, success)
+                self.save_elapsed_time(start, end, request_msg.from_node, success)
 
             # Tell NATS we don't need to receive the message anymore and we are done processing it.
             await msg.ack()
@@ -233,7 +233,7 @@ class NodeRunner(Runner):
             return output_subject
         return f'{output_subject}.{channel}'
 
-    def save_elapsed_time(self, start: datetime, end: datetime, success: bool) -> None:
+    def save_elapsed_time(self, start: datetime, end: datetime, from_node: str, success: bool) -> None:
         """
         save_elapsed_time stores in InfluxDB how much time did it take the node to run the handler
         also saves if the request was succesfully processed
@@ -246,10 +246,7 @@ class NodeRunner(Runner):
 
         elapsed = end - start
         tags = {
-            "runtime": self.config.krt_runtime_id,
-            "version": self.config.krt_version,
-            "workflow": self.config.krt_workflow_name,
-            "node": self.config.krt_node_name,
+            "from_node": from_node,
         }
 
         fields = {
