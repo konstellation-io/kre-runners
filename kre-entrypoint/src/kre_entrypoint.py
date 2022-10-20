@@ -87,7 +87,7 @@ class EntrypointKRE:
             output_subject = self.jetstream_data[workflow]["output_subject"]
 
             # creates the msg to be sent to the NATS server
-            request_msg = self._create_kre_request_message(grpc_raw_msg, start, request_id)
+            request_msg = self._create_kre_request_message(grpc_raw_msg, request_id)
 
             # create an ephemeral subscription for the request
             sub = await self.js.subscribe(
@@ -136,30 +136,21 @@ class EntrypointKRE:
             if isinstance(err, GRPCError):
                 raise err
 
-    def _create_kre_request_message(self, raw_msg: bytes, start: str, request_id: str) -> bytes:
+    def _create_kre_request_message(self, raw_msg: bytes, request_id: str) -> bytes:
         """
         Creates a KreNatsMessage that packages the grpc request (raw_msg) and adds the required
         info needed to send the request to the NATS server.
         It returns the message in bytes, so it can be directly sent to the NATS server.
 
         :param raw_msg: the raw grpc request message
-        :param start: the start time of the request
         :param request_id: the id of the gRPC that should be responded.
 
         :return: the message in bytes
         """
-        tracking_id = str(uuid.uuid4())
-
         request_msg = KreNatsMessage()
-        request_msg.tracking_id = tracking_id
         request_msg.payload.Pack(raw_msg)
         request_msg.request_id = request_id
         request_msg.from_node = self.config.krt_node_name
-        t = request_msg.tracking.add()
-        t.node_name = self.config.runner_name
-        t.start = start
-        t.end = datetime.utcnow().isoformat()
-
         return self._prepare_nats_request(request_msg.SerializeToString())
 
     def _create_grpc_response(self, message_data: bytes) -> KreNatsMessage:
