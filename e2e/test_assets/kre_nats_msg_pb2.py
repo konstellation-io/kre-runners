@@ -8,7 +8,6 @@ from google.protobuf import descriptor_pool as _descriptor_pool
 from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
-
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
@@ -17,11 +16,9 @@ _sym_db = _symbol_database.Default()
 from google.protobuf import any_pb2 as google_dot_protobuf_dot_any__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
-    b'\n\x12kre_nats_msg.proto\x1a\x19google/protobuf/any.proto"\xb2\x02\n\x0eKreNatsMessage\x12\x13\n\x0btracking_id\x18\x01 \x01(\t\x12*\n\x08tracking\x18\x02 \x03(\x0b\x32\x18.KreNatsMessage.Tracking\x12\x12\n\nrequest_id\x18\x03 \x01(\t\x12%\n\x07payload\x18\x04 \x01(\x0b\x32\x14.google.protobuf.Any\x12\r\n\x05\x65rror\x18\x05 \x01(\t\x12\x0f\n\x07replied\x18\x06 \x01(\x08\x12\x12\n\nearly_exit\x18\x07 \x01(\x08\x12\x11\n\tfrom_node\x18\x08 \x01(\t\x12"\n\x0cmessage_type\x18\t \x01(\x0e\x32\x0c.MessageType\x1a\x39\n\x08Tracking\x12\x11\n\tnode_name\x18\x01 \x01(\t\x12\r\n\x05start\x18\x02 \x01(\t\x12\x0b\n\x03\x65nd\x18\x03 \x01(\t*A\n\x0bMessageType\x12\x06\n\x02OK\x10\x00\x12\t\n\x05\x45RROR\x10\x01\x12\x0f\n\x0b\x45\x41RLY_REPLY\x10\x02\x12\x0e\n\nEARLY_EXIT\x10\x03\x42\x07Z\x05./kreb\x06proto3'
-)
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12kre_nats_msg.proto\x1a\x19google/protobuf/any.proto\"\x91\x01\n\x0eKreNatsMessage\x12\x12\n\nrequest_id\x18\x01 \x01(\t\x12%\n\x07payload\x18\x02 \x01(\x0b\x32\x14.google.protobuf.Any\x12\r\n\x05\x65rror\x18\x03 \x01(\t\x12\x11\n\tfrom_node\x18\x04 \x01(\t\x12\"\n\x0cmessage_type\x18\x05 \x01(\x0e\x32\x0c.MessageType*A\n\x0bMessageType\x12\x06\n\x02OK\x10\x00\x12\t\n\x05\x45RROR\x10\x01\x12\x0f\n\x0b\x45\x41RLY_REPLY\x10\x02\x12\x0e\n\nEARLY_EXIT\x10\x03\x42\x07Z\x05./kreb\x06proto3')
 
-_MESSAGETYPE = DESCRIPTOR.enum_types_by_name["MessageType"]
+_MESSAGETYPE = DESCRIPTOR.enum_types_by_name['MessageType']
 MessageType = enum_type_wrapper.EnumTypeWrapper(_MESSAGETYPE)
 OK = 0
 ERROR = 1
@@ -29,37 +26,20 @@ EARLY_REPLY = 2
 EARLY_EXIT = 3
 
 
-_KRENATSMESSAGE = DESCRIPTOR.message_types_by_name["KreNatsMessage"]
-_KRENATSMESSAGE_TRACKING = _KRENATSMESSAGE.nested_types_by_name["Tracking"]
-KreNatsMessage = _reflection.GeneratedProtocolMessageType(
-    "KreNatsMessage",
-    (_message.Message,),
-    {
-        "Tracking": _reflection.GeneratedProtocolMessageType(
-            "Tracking",
-            (_message.Message,),
-            {
-                "DESCRIPTOR": _KRENATSMESSAGE_TRACKING,
-                "__module__": "kre_nats_msg_pb2"
-                # @@protoc_insertion_point(class_scope:KreNatsMessage.Tracking)
-            },
-        ),
-        "DESCRIPTOR": _KRENATSMESSAGE,
-        "__module__": "kre_nats_msg_pb2"
-        # @@protoc_insertion_point(class_scope:KreNatsMessage)
-    },
-)
+_KRENATSMESSAGE = DESCRIPTOR.message_types_by_name['KreNatsMessage']
+KreNatsMessage = _reflection.GeneratedProtocolMessageType('KreNatsMessage', (_message.Message,), {
+  'DESCRIPTOR' : _KRENATSMESSAGE,
+  '__module__' : 'kre_nats_msg_pb2'
+  # @@protoc_insertion_point(class_scope:KreNatsMessage)
+  })
 _sym_db.RegisterMessage(KreNatsMessage)
-_sym_db.RegisterMessage(KreNatsMessage.Tracking)
 
 if _descriptor._USE_C_DESCRIPTORS == False:
 
-    DESCRIPTOR._options = None
-    DESCRIPTOR._serialized_options = b"Z\005./kre"
-    _MESSAGETYPE._serialized_start = 358
-    _MESSAGETYPE._serialized_end = 423
-    _KRENATSMESSAGE._serialized_start = 50
-    _KRENATSMESSAGE._serialized_end = 356
-    _KRENATSMESSAGE_TRACKING._serialized_start = 299
-    _KRENATSMESSAGE_TRACKING._serialized_end = 356
+  DESCRIPTOR._options = None
+  DESCRIPTOR._serialized_options = b'Z\005./kre'
+  _MESSAGETYPE._serialized_start=197
+  _MESSAGETYPE._serialized_end=262
+  _KRENATSMESSAGE._serialized_start=50
+  _KRENATSMESSAGE._serialized_end=195
 # @@protoc_insertion_point(module_scope)
