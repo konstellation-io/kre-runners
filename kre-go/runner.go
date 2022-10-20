@@ -175,8 +175,7 @@ func (r *Runner) publishError(requestID, errMsg string) {
 	r.publishResponse(responseMsg, "")
 }
 
-// newResponseMsg creates a KreNatsMessage that keeps previous tracking information plus adding
-// the payload we wish to send
+// newResponseMsg creates a KreNatsMessage that keeps previous request ID plus adding the payload we wish to send
 func (r *Runner) newResponseMsg(payload *anypb.Any, requestMsg *KreNatsMessage, msgType MessageType) *KreNatsMessage {
 	return &KreNatsMessage{
 		RequestId:   requestMsg.RequestId,
