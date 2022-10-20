@@ -34,6 +34,16 @@ class ContextMeasurement:
         time: datetime = None,
         precision=PRECISION_NS,
     ):
+        """
+        Save will save a metric into this runtime's influx bucket.
+        Default tags will be added:
+
+        'version' - The version's name
+
+        'workflow' - The workflow's name
+
+        'node' - This node's name
+        """
         point = Point(measurement)
 
         for key in fields:
@@ -43,6 +53,8 @@ class ContextMeasurement:
             point.tag(key, tags[key])
 
         point.tag("version", self.__config__.krt_version)
+        point.tag("workflow", self.__config__.krt_workflow_name)
+        point.tag("node", self.__config__.krt_node_name)
 
         if time is None:
             time = datetime.utcnow()
