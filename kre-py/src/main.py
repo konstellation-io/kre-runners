@@ -191,7 +191,7 @@ class NodeRunner(Runner):
 
         await self.publish_response(msg, channel)
 
-    # new_response_msg creates a KreNatsMessage that keeps previous tracking information 
+    # new_response_msg creates a KreNatsMessage keeping previous requestID
     def new_response_msg(self, request_msg: KreNatsMessage, msg_type: MessageType) -> KreNatsMessage:
         res = KreNatsMessage()
         res.request_id = request_msg.request_id
