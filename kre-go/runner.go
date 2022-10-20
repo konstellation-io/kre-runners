@@ -69,7 +69,7 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 		}
 		// Save the elapsed time for this node
 		end = time.Now().UTC()
-		r.saveElapsedTime(start, end, success)
+		r.saveElapsedTime(start, end, requestMsg.FromNode, success)
 		return
 	}
 
@@ -92,7 +92,7 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 		}
 		// Save the elapsed time for this node
 		end = time.Now().UTC()
-		r.saveElapsedTime(start, end, success)
+		r.saveElapsedTime(start, end, requestMsg.FromNode, success)
 		return
 	}
 
@@ -108,14 +108,14 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 		r.publishError(requestMsg.RequestId, errMsg)
 		// Save the elapsed time for this node
 		end = time.Now().UTC()
-		r.saveElapsedTime(start, end, success)
+		r.saveElapsedTime(start, end, requestMsg.FromNode, success)
 		return
 	}
 
 	// Save the elapsed time for this node
 	success = true
 	end = time.Now().UTC()
-	r.saveElapsedTime(start, end, success)
+	r.saveElapsedTime(start, end, requestMsg.FromNode, success)
 }
 
 // newRequestMessage creates an instance of KreNatsMessage for the input string. decompress if necessary
@@ -241,13 +241,10 @@ func (r *Runner) prepareOutputMessage(msg []byte) ([]byte, error) {
 
 // saveElapsedTime stores in InfluxDB how much time did it take the node to run the handler
 // also saves if the request was succesfully processed
-func (r *Runner) saveElapsedTime(start time.Time, end time.Time, success bool) {
+func (r *Runner) saveElapsedTime(start time.Time, end time.Time, fromNode string, success bool) {
 	elapsed := end.Sub(start)
 	tags := map[string]string{
-		"runtime":  r.cfg.RuntimeID,
-		"version":  r.cfg.Version,
-		"workflow": r.cfg.WorkflowName,
-		"node":     r.cfg.NodeName,
+		"from_node": fromNode,
 	}
 
 	fields := map[string]interface{}{
