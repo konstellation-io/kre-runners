@@ -30,7 +30,9 @@ func (suite *ContextMeasurementTestSuite) SetupSuite() {
 
 	suite.ctxMeasurement = &contextMeasurement{
 		config.Config{
-			Version: "test_version",
+			Version:      "test_version",
+			WorkflowName: "test_workflow",
+			NodeName:     "test_node",
 		},
 		suite.logger,
 		suite.mockWriteAPI,
@@ -57,6 +59,8 @@ func (suite *ContextMeasurementTestSuite) TestSave() {
 	testPoint.AddField("field", "test")
 	testPoint.AddTag("tag", "test")
 	testPoint.AddTag("version", suite.ctxMeasurement.cfg.Version)
+	testPoint.AddTag("workflow", suite.ctxMeasurement.cfg.WorkflowName)
+	testPoint.AddTag("node", suite.ctxMeasurement.cfg.NodeName)
 	testPoint.SetTime(time.Now())
 
 	suite.mockWriteAPI.EXPECT().WritePoint(testPoint).Return()
