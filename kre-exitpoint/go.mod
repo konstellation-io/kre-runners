@@ -38,6 +38,6 @@ require (
 	gopkg.in/yaml.v2 v2.2.8 // indirect
 )
 
-replace github.com/konstellation-io/kre-runners/kre-go => /home/alex.rodriguez/go/repos/runners/kre-go
+replace github.com/konstellation-io/kre-runners/kre-go => ../kre-go
 
 replace github.com/konstellation-io/kre-runners/exitpoint => ./
