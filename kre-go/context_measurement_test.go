@@ -43,7 +43,7 @@ func TestContextMeasurementTestSuite(t *testing.T) {
 	suite.Run(t, new(ContextMeasurementTestSuite))
 }
 
-func (suite *ContextMeasurementTestSuite) TestSave() {
+func (suite *ContextMeasurementTestSuite) TestMeasurementSave() {
 	measurement := "test_measurement"
 	fields := map[string]interface{}{"field": "test"}
 	tags := map[string]string{"tag": "test"}
