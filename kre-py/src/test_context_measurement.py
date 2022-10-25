@@ -10,6 +10,8 @@ from influxdb_client import Point
 
 from context_measurement import ContextMeasurement
 
+DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
+
 
 @pytest.fixture
 def simple_logger():
@@ -41,7 +43,7 @@ def test_measurement_save_with_custom_timestamp_expect_ok(context_measurement, c
     measurement = "test_measurement"
     fields = {"field1": "test1", "field2": "test2"}
     tags = {"tag1": "test1", "tag2": "test2"}
-    timestamp = datetime.strptime('2018-06-29 08:15:27.243860', '%Y-%m-%d %H:%M:%S.%f')
+    timestamp = datetime.strptime('2018-06-29 08:15:27.243860', DATETIME_FORMAT)
 
     point = Point(measurement)
     point.field("field", "test")
@@ -91,7 +93,7 @@ def test_measurement_save_with_custom_timestamp_precision_expect_ok(context_meas
     args = context_measurement.__write_api__.write.call_args.args
     assert len(args) == 3
     assert args[2]._name == measurement
-    assert args[2]._time == datetime.strptime("2020-01-01 01:02:03.000004", '%Y-%m-%d %H:%M:%S.%f')
+    assert args[2]._time == datetime.strptime("2020-01-01 01:02:03.000004", DATETIME_FORMAT)
     assert args[2]._write_precision == ContextMeasurement.PRECISION_S
     assert args[2]._tags['tag1'] == 'test1'
     assert args[2]._tags['tag2'] == 'test2'
@@ -124,7 +126,7 @@ def test_measurement_save_with_default_timestamp_expect_ok(context_measurement, 
     args = context_measurement.__write_api__.write.call_args.args
     assert len(args) == 3
     assert args[2]._name == measurement
-    assert args[2]._time == datetime.strptime("2020-01-01 00:00:00.000000", '%Y-%m-%d %H:%M:%S.%f')
+    assert args[2]._time == datetime.strptime("2020-01-01 00:00:00.000000", DATETIME_FORMAT)
     assert args[2]._write_precision == ContextMeasurement.PRECISION_NS
     assert args[2]._tags['tag1'] == 'test1'
     assert args[2]._tags['tag2'] == 'test2'
