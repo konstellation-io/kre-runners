@@ -39,12 +39,12 @@ jobs:
 
     - name: Run unit tests with pytest
       run: |
-        pipenv run -m unittest pytest --cov --cov-report=xml
+        pipenv run pytest -m unittest --cov --cov-report=xml
       working-directory: ./kre-py
 
     - name: Run integration tests with pytest
       run: |
-        pipenv run -m integration pytest --cov --cov-report=xml
+        pipenv run pytest -m integration --cov --cov-report=xml
       working-directory: ./kre-py
 
     - name: Archive code coverage results
