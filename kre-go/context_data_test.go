@@ -151,6 +151,6 @@ func (suite *ContextDataTestSuite) TestContextDataSave() {
 
 	receivedDoc := receivedMsg.Doc.(map[string]interface{})
 
-	suite.Assert().Equal(sentMsg.TicketID, receivedDoc["TicketID"])
-	suite.Assert().Equal(sentMsg.Asset, receivedDoc["Asset"])
+	suite.Equal(sentMsg.TicketID, receivedDoc["TicketID"])
+	suite.Equal(sentMsg.Asset, receivedDoc["Asset"])
 }
