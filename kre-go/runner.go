@@ -20,6 +20,7 @@ const (
 )
 
 var ErrMessageToBig = errors.New("compressed message exceeds maximum size allowed of 1 MB")
+var ErrMsgAck = "Error in message ack: %s"
 
 type Runner struct {
 	logger         *simplelogger.SimpleLogger
@@ -65,7 +66,7 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 		r.logger.Errorf("Error parsing msg.data because is not a valid protobuf: %s", err)
 		ackErr := msg.Ack()
 		if ackErr != nil {
-			r.logger.Errorf("Error in message ack: %s", ackErr.Error())
+			r.logger.Errorf(ErrMsgAck, ackErr.Error())
 		}
 		// Save the elapsed time for this node
 		end = time.Now().UTC()
@@ -88,7 +89,7 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 
 		ackErr := msg.Ack()
 		if ackErr != nil {
-			r.logger.Errorf("Error in message ack: %s", ackErr.Error())
+			r.logger.Errorf(ErrMsgAck, ackErr.Error())
 		}
 		// Save the elapsed time for this node
 		end = time.Now().UTC()
@@ -100,7 +101,7 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 	// Tell NATS we don't need to receive the message anymore and we are done processing it
 	ackErr := msg.Ack()
 	if ackErr != nil {
-		r.logger.Errorf("Error in message ack: %s", ackErr.Error())
+		r.logger.Errorf(ErrMsgAck, ackErr.Error())
 	}
 	if err != nil {
 		errMsg := fmt.Sprintf("Error in node '%s' executing handler for node '%s': %s", r.cfg.NodeName, requestMsg.FromNode, err)
