@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/konstellation-io/kre/libs/simplelogger"
 	"github.com/nats-io/nats.go"
+
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/konstellation-io/kre-runners/kre-go/config"
 	"github.com/konstellation-io/kre-runners/kre-go/mongodb"
+	"github.com/konstellation-io/kre/libs/simplelogger"
 )
 
 type SaveDataMsg struct {
@@ -24,7 +25,17 @@ type contextData struct {
 	logger *simplelogger.SimpleLogger
 }
 
-func (c *contextData) Find(colName string, query QueryData, res interface{}) error {
+func NewContextData(cfg config.Config, nc *nats.Conn, mongoM mongodb.Manager, logger *simplelogger.SimpleLogger) *contextData {
+	return &contextData{
+		cfg:    cfg,
+		nc:     nc,
+		mongoM: mongoM,
+		logger: logger,
+	}
+}
+
+// Find data from a collection of mongoDB
+func (c *contextData) Find(collection string, query QueryData, res interface{}) error {
 	ctx, cancel := context.WithTimeout(context.Background(), getDataTimeout)
 	defer cancel()
 
@@ -33,10 +44,10 @@ func (c *contextData) Find(colName string, query QueryData, res interface{}) err
 		criteria[k] = v
 	}
 
-	return c.mongoM.Find(ctx, colName, criteria, res)
+	return c.mongoM.Find(ctx, collection, criteria, res)
 }
 
-// Save data in a bson struct to mongoDB to a collection of your choice
+// Save data inside a bson struct to a collection of your choice in mongoDB
 func (c *contextData) Save(collection string, data interface{}) error {
 	msg, err := json.Marshal(SaveDataMsg{
 		Coll: collection,

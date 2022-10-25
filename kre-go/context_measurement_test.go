@@ -17,33 +17,31 @@ import (
 
 type ContextMeasurementTestSuite struct {
 	suite.Suite
-	logger         *simplelogger.SimpleLogger
-	mockController *gomock.Controller
 	mockWriteAPI   *mocks.MockWriteAPI
 	ctxMeasurement *contextMeasurement
-}
-
-func (suite *ContextMeasurementTestSuite) SetupSuite() {
-	suite.logger = simplelogger.New(simplelogger.LevelInfo)
-	suite.mockController = gomock.NewController(suite.T())
-	suite.mockWriteAPI = mocks.NewMockWriteAPI(suite.mockController)
-
-	suite.ctxMeasurement = &contextMeasurement{
-		config.Config{
-			Version:      "test_version",
-			WorkflowName: "test_workflow",
-			NodeName:     "test_node",
-		},
-		suite.logger,
-		suite.mockWriteAPI,
-	}
 }
 
 func TestContextMeasurementTestSuite(t *testing.T) {
 	suite.Run(t, new(ContextMeasurementTestSuite))
 }
 
-func (suite *ContextMeasurementTestSuite) TestMeasurementSave() {
+func (suite *ContextMeasurementTestSuite) SetupSuite() {
+	logger := simplelogger.New(simplelogger.LevelInfo)
+	mockController := gomock.NewController(suite.T())
+	suite.mockWriteAPI = mocks.NewMockWriteAPI(mockController)
+
+	suite.ctxMeasurement = &contextMeasurement{ // cannot use NewContextMeasurement as it initializes its own writeAPI
+		config.Config{
+			Version:      "test_version",
+			WorkflowName: "test_workflow",
+			NodeName:     "test_node",
+		},
+		logger,
+		suite.mockWriteAPI,
+	}
+}
+
+func (suite *ContextMeasurementTestSuite) TestContextMeasurementSave() {
 	measurement := "test_measurement"
 	fields := map[string]interface{}{"field": "test"}
 	tags := map[string]string{"tag": "test"}
@@ -63,8 +61,8 @@ func (suite *ContextMeasurementTestSuite) TestMeasurementSave() {
 	testPoint.AddTag("node", suite.ctxMeasurement.cfg.NodeName)
 	testPoint.SetTime(time.Now())
 
-	suite.mockWriteAPI.EXPECT().WritePoint(testPoint).Return()
-	suite.mockWriteAPI.EXPECT().Flush().Return()
+	suite.mockWriteAPI.EXPECT().WritePoint(testPoint).Times(1).Return()
+	suite.mockWriteAPI.EXPECT().Flush().Times(1).Return()
 
 	suite.ctxMeasurement.Save(measurement, fields, tags)
 }

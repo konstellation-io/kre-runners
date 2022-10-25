@@ -41,23 +41,14 @@ type HandlerContext struct {
 func NewHandlerContext(cfg config.Config, nc *nats.Conn, mongoM mongodb.Manager,
 	logger *simplelogger.SimpleLogger, publishMsg PublishMsgFunc, publishAny PublishAnyFunc) *HandlerContext {
 	return &HandlerContext{
-		cfg:        cfg,
-		values:     map[string]interface{}{},
-		publishMsg: publishMsg,
-		publishAny: publishAny,
-		Logger:     logger,
-		Prediction: &contextPrediction{
-			cfg:    cfg,
-			nc:     nc,
-			logger: logger,
-		},
+		cfg:         cfg,
+		values:      map[string]interface{}{},
+		publishMsg:  publishMsg,
+		publishAny:  publishAny,
+		Logger:      logger,
+		Prediction:  NewContextPrediction(cfg, nc, logger),
 		Measurement: NewContextMeasurement(cfg, logger),
-		DB: &contextData{
-			cfg:    cfg,
-			nc:     nc,
-			mongoM: mongoM,
-			logger: logger,
-		},
+		DB:          NewContextData(cfg, nc, mongoM, logger),
 	}
 }
 

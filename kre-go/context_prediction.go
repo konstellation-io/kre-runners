@@ -47,6 +47,14 @@ type contextPrediction struct {
 	logger *simplelogger.SimpleLogger
 }
 
+func NewContextPrediction(cfg config.Config, nc *nats2.Conn, logger *simplelogger.SimpleLogger) *contextPrediction {
+	return &contextPrediction{
+		cfg:    cfg,
+		nc:     nc,
+		logger: logger,
+	}
+}
+
 func (c *contextPrediction) Save(date time.Time, predictedValue, trueValue string) {
 	msg, err := json.Marshal(SaveMetricMsg{
 		Coll: classificationMetricsColl,
