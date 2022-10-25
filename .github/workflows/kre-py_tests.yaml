@@ -37,9 +37,14 @@ jobs:
         pipenv install --deploy --dev
       working-directory: ./kre-py
 
-    - name: Test with pytest
+    - name: Run unit tests with pytest
       run: |
-        pipenv run pytest --cov --cov-report=xml -k "test_create_message_cb"
+        pipenv run -m unittest pytest --cov --cov-report=xml
+      working-directory: ./kre-py
+
+    - name: Run integration tests with pytest
+      run: |
+        pipenv run -m integration pytest --cov --cov-report=xml
       working-directory: ./kre-py
 
     - name: Archive code coverage results
