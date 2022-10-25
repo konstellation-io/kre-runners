@@ -3,7 +3,6 @@ from datetime import datetime
 from influxdb_client import InfluxDBClient, Point, WritePrecision
 from influxdb_client.client.write_api import WriteOptions, WriteType
 
-
 # We are using influxdb-client-python that is compatible with 1.8+ versions:
 # https://github.com/influxdata/influxdb-client-python#influxdb-1-8-api-compatibility
 INFLUX_ORG = ""  # not used
