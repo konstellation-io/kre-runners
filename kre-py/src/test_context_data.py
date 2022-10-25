@@ -1,5 +1,4 @@
 import json
-import logging
 from unittest import mock
 
 import pytest
@@ -30,21 +29,6 @@ def mongodb_mock():
     mongodb_mock = MagicMock(MongoClient)
 
     return mongodb_mock
-
-
-@pytest.fixture
-def simple_logger():
-    logging.basicConfig(level=logging.DEBUG)
-    logging.getLogger().setLevel(logging.DEBUG)
-    return logging.getLogger("Tests")
-
-
-@pytest.fixture
-def config():
-    config = MagicMock()
-    config.nats_mongo_writer = "mongo_writer"
-    config.mongo_data_db_name = "test_db_name"
-    return config
 
 
 @pytest.fixture

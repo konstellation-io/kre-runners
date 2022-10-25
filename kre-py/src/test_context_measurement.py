@@ -1,4 +1,3 @@
-import logging
 import time
 import pytest
 
@@ -14,22 +13,6 @@ DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
 
 
 @pytest.fixture
-def simple_logger():
-    return logging.getLogger("Tests")
-
-
-@pytest.fixture
-def config():
-    config = MagicMock()
-    config.krt_version = "test_version"
-    config.krt_runtime_id = "test"
-    config.krt_workflow_name = "test_workflow"
-    config.krt_node_name = "test_node"
-    config.influx_uri = "influx"
-    return config
-
-
-@pytest.fixture
 def context_measurement(simple_logger, config):
     context_measurement = ContextMeasurement(config, simple_logger)
     context_measurement.__write_api__ = MagicMock()
@@ -39,7 +22,6 @@ def context_measurement(simple_logger, config):
 
 @pytest.mark.unittest
 def test_measurement_save_with_custom_timestamp_expect_ok(context_measurement, config):
-    # Create new test Point
     measurement = "test_measurement"
     fields = {"field1": "test1", "field2": "test2"}
     tags = {"tag1": "test1", "tag2": "test2"}
@@ -74,7 +56,6 @@ def test_measurement_save_with_custom_timestamp_expect_ok(context_measurement, c
 @pytest.mark.unittest
 @freeze_time("2020-01-01 01:02:03.000004")
 def test_measurement_save_with_custom_timestamp_precision_expect_ok(context_measurement, config):
-    # Create new test Point
     measurement = "test_measurement"
     fields = {"field1": "test1", "field2": "test2"}
     tags = {"tag1": "test1", "tag2": "test2"}
@@ -107,7 +88,6 @@ def test_measurement_save_with_custom_timestamp_precision_expect_ok(context_meas
 @pytest.mark.unittest
 @freeze_time("2020-01-01 00:00:00.000000")
 def test_measurement_save_with_default_timestamp_expect_ok(context_measurement, config):
-    # Create new test Point
     measurement = "test_measurement"
     fields = {"field1": "test1", "field2": "test2"}
     tags = {"tag1": "test1", "tag2": "test2"}
