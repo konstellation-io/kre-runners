@@ -13,17 +13,6 @@ from context_measurement import ContextMeasurement
 
 @pytest.fixture
 def simple_logger():
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s.%(msecs)03dZ %(levelname)s %(message)s",
-        datefmt="%Y-%m-%dT%H:%M:%S",
-    )
-    logging.Formatter.converter = time.gmtime
-    logging.addLevelName(logging.DEBUG, "DEBUG")
-    logging.addLevelName(logging.WARNING, "WARN")
-    logging.addLevelName(logging.FATAL, "ERROR")
-    logging.addLevelName(logging.CRITICAL, "ERROR")
-
     return logging.getLogger("Tests")
 
 
