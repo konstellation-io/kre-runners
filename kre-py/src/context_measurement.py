@@ -31,7 +31,7 @@ class ContextMeasurement:
         fields: dict,
         tags: dict,
         time: datetime = None,
-        precision=PRECISION_NS,
+        precision: str = PRECISION_NS,
     ):
         """
         Save will save a metric into this runtime's influx bucket.
