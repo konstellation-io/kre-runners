@@ -32,10 +32,6 @@ jobs:
       run: |
         pipx install pipenv
 
-    - name: Build the docker-compose stack
-      working-directory: ./kre-py/test_assets
-      run: docker-compose up -d --build
-
     - name: Install dependencies
       run: |
         pipenv install --deploy --dev
@@ -51,10 +47,6 @@ jobs:
       with:
         name: coverage-report
         path: kre-py/coverage.xml
-  
-    - name: Stop the docker-compose stack
-      working-directory: ./kre-py/test_assets
-      run: docker-compose down
 
   sonarcloud:
     name: SonarCloud
