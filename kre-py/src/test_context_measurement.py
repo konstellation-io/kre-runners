@@ -56,6 +56,7 @@ def test_measurement_save_with_custom_timestamp_expect_ok(context_measurement, c
 @pytest.mark.unittest
 @freeze_time("2020-01-01 01:02:03.000004")
 def test_measurement_save_with_custom_timestamp_precision_expect_ok(context_measurement, config):
+    # GIVEN A test point
     measurement = "test_measurement"
     fields = {"field1": "test1", "field2": "test2"}
     tags = {"tag1": "test1", "tag2": "test2"}
@@ -67,10 +68,14 @@ def test_measurement_save_with_custom_timestamp_precision_expect_ok(context_meas
     point.tag("workflow", config.krt_workflow_name)
     point.tag("node", config.krt_node_name)
 
+    # WHEN we call the save method to store the new measurement point specifying the timestamp precision
     context_measurement.save(measurement, fields, tags, precision=ContextMeasurement.PRECISION_S)
 
+    # THEN expect the write method from the influx client is called once
     context_measurement.__write_api__.write.assert_called_once()
+    # AND expect the writer api is called with the given parameters
     context_measurement.__write_api__.write.assert_called_with(config.krt_runtime_id, "", ANY)
+    # AND expect the response of the write method call matches the fake point fields
     args = context_measurement.__write_api__.write.call_args.args
     assert len(args) == 3
     assert args[2]._name == measurement
@@ -88,6 +93,7 @@ def test_measurement_save_with_custom_timestamp_precision_expect_ok(context_meas
 @pytest.mark.unittest
 @freeze_time("2020-01-01 00:00:00.000000")
 def test_measurement_save_with_default_timestamp_expect_ok(context_measurement, config):
+    # GIVEN A test point
     measurement = "test_measurement"
     fields = {"field1": "test1", "field2": "test2"}
     tags = {"tag1": "test1", "tag2": "test2"}
@@ -99,10 +105,15 @@ def test_measurement_save_with_default_timestamp_expect_ok(context_measurement, 
     point.tag("workflow", config.krt_workflow_name)
     point.tag("node", config.krt_node_name)
 
+    # WHEN we call the save method to store the new measurement point without specifying the timestamp precision
     context_measurement.save(measurement, fields, tags)
 
+    # THEN expect the write method from the influx client is called once
     context_measurement.__write_api__.write.assert_called_once()
+    # AND expect the writer api is called with the given parameters
     context_measurement.__write_api__.write.assert_called_with(config.krt_runtime_id, "", ANY)
+    # AND expect the response of the write method call matches the fake point fields, and expect the timestamp precision
+    # to be the default one (NS)
     args = context_measurement.__write_api__.write.call_args.args
     assert len(args) == 3
     assert args[2]._name == measurement
