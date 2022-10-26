@@ -22,6 +22,7 @@ def context_measurement(simple_logger, config):
 
 @pytest.mark.unittest
 def test_measurement_save_with_custom_timestamp_expect_ok(context_measurement, config):
+    # GIVEN A test point
     measurement = "test_measurement"
     fields = {"field1": "test1", "field2": "test2"}
     tags = {"tag1": "test1", "tag2": "test2"}
@@ -35,10 +36,14 @@ def test_measurement_save_with_custom_timestamp_expect_ok(context_measurement, c
     point.tag("node", config.krt_node_name)
     point.time(time, timestamp)
 
+    # WHEN we call the save method to store the new measurement with a custom timestamp
     context_measurement.save(measurement, fields, tags, timestamp)
 
+    # THEN expect the write method from the influx client is called once
     context_measurement.__write_api__.write.assert_called_once()
+    # AND expect the writer api is called with the given parameters
     context_measurement.__write_api__.write.assert_called_with(config.krt_runtime_id, "", ANY)
+    # AND expect the response of the write method call matches the fake point fields and the custom timestamp
     args = context_measurement.__write_api__.write.call_args.args
     assert len(args) == 3
     assert args[2]._name == measurement
