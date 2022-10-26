@@ -25,6 +25,8 @@ func TestContextMeasurementTestSuite(t *testing.T) {
 	suite.Run(t, new(ContextMeasurementTestSuite))
 }
 
+// SetupSuite will create a mock controller and mock write api for influx.
+// These will be also attached to a custom generated context measurement object
 func (suite *ContextMeasurementTestSuite) SetupSuite() {
 	logger := simplelogger.New(simplelogger.LevelInfo)
 	mockController := gomock.NewController(suite.T())
@@ -42,6 +44,7 @@ func (suite *ContextMeasurementTestSuite) SetupSuite() {
 }
 
 func (suite *ContextMeasurementTestSuite) TestContextMeasurementSave() {
+	// GIVEN a new created metric
 	measurement := "test_measurement"
 	fields := map[string]interface{}{"field": "test"}
 	tags := map[string]string{"tag": "test"}
@@ -52,7 +55,7 @@ func (suite *ContextMeasurementTestSuite) TestContextMeasurementSave() {
 	patch := monkey.Patch(time.Now, func() time.Time { return mockNow })
 	defer patch.Unpatch()
 
-	// make our own influx point, the one we are expecting will be written by the save function
+	// GIVEN the metric we are expecting will be written by the save function
 	testPoint := influxdb2.NewPointWithMeasurement(measurement)
 	testPoint.AddField("field", "test")
 	testPoint.AddTag("tag", "test")
@@ -61,6 +64,8 @@ func (suite *ContextMeasurementTestSuite) TestContextMeasurementSave() {
 	testPoint.AddTag("node", suite.ctxMeasurement.cfg.NodeName)
 	testPoint.SetTime(time.Now())
 
+	// WHEN the metric is saved
+	// THEN the save method will be called once, with a measurement exact to our test point
 	suite.mockWriteAPI.EXPECT().WritePoint(testPoint).Times(1).Return()
 	suite.mockWriteAPI.EXPECT().Flush().Times(1).Return()
 
