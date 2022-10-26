@@ -65,7 +65,6 @@ class EntrypointKRE:
         :param workflow: the workflow name
         :param request_id: the gRPC request id
         """
-        datetime.utcnow().isoformat()
 
         try:
             # as multiple requests can be sent to the same workflow, we need to track each open gRPC stream to
