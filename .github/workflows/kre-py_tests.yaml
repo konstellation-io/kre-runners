@@ -27,18 +27,20 @@ jobs:
       run: |
         pipx install pipenv
 
-    - name: Build the docker-compose stack
-      working-directory: ./kre-py/test_assets
-      run: docker-compose up -d --build
-
     - name: Install dependencies
       run: |
         pipenv install --deploy --dev
       working-directory: ./kre-py
 
-    - name: Test with pytest
+    - name: Run unit tests with pytest
       run: |
-        pipenv run pytest --cov --cov-report=xml -k "test_create_message_cb"
+        pipenv run pytest -m unittest --cov --cov-report=xml
+      working-directory: ./kre-py
+
+    - name: Run integration tests with pytest
+      if: ${{ false }} # Disable for now
+      run: |
+        pipenv run pytest -m integration --cov --cov-report=xml
       working-directory: ./kre-py
 
     - name: Archive code coverage results
@@ -46,10 +48,6 @@ jobs:
       with:
         name: coverage-report
         path: kre-py/coverage.xml
-  
-    - name: Stop the docker-compose stack
-      working-directory: ./kre-py/test_assets
-      run: docker-compose down
 
   sonarcloud:
     name: SonarCloud
