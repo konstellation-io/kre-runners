@@ -18,7 +18,6 @@ type Config struct {
 	NATS         ConfigNATS
 	MongoDB      MongoDB
 	InfluxDB     InfluxDB
-	Handlers     Handlers
 }
 
 type MongoDB struct {
@@ -37,10 +36,6 @@ type ConfigNATS struct {
 
 type InfluxDB struct {
 	URI string
-}
-
-type Handlers struct {
-	DefaultHandlerKey string
 }
 
 func NewConfig(logger *simplelogger.SimpleLogger) Config {
@@ -66,9 +61,6 @@ func NewConfig(logger *simplelogger.SimpleLogger) Config {
 		},
 		InfluxDB: InfluxDB{
 			URI: getCfgFromEnv(logger, "KRT_INFLUX_URI"),
-		},
-		Handlers: Handlers{
-			DefaultHandlerKey: "default",
 		},
 	}
 }

@@ -38,8 +38,13 @@ type HandlerContext struct {
 	DB          *contextData
 }
 
-func NewHandlerContext(cfg config.Config, nc *nats.Conn, mongoM mongodb.Manager,
-	logger *simplelogger.SimpleLogger, publishMsg PublishMsgFunc, publishAny PublishAnyFunc) *HandlerContext {
+func NewHandlerContext(
+	cfg config.Config,
+	nc *nats.Conn,
+	mongoM mongodb.Manager,
+	logger *simplelogger.SimpleLogger,
+	publishMsg PublishMsgFunc,
+	publishAny PublishAnyFunc) *HandlerContext {
 	return &HandlerContext{
 		cfg:         cfg,
 		values:      map[string]interface{}{},

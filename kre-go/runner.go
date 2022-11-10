@@ -139,15 +139,12 @@ func (r *Runner) newRequestMessage(data []byte) (*KreNatsMessage, error) {
 
 // publishMsg will send a desired payload to the node's output subject.
 func (r *Runner) publishMsg(msg proto.Message, reqMsg *KreNatsMessage, msgType MessageType, channel string) error {
-	// Generate a KreNatsMessage response.
 	payload, err := anypb.New(msg)
 	if err != nil {
 		return fmt.Errorf("the handler result is not a valid protobuf: %w", err)
 	}
-
 	responseMsg := r.newResponseMsg(payload, reqMsg, msgType)
 
-	// Publish the response message to the output subject.
 	r.publishResponse(responseMsg, channel)
 
 	return nil
@@ -155,24 +152,18 @@ func (r *Runner) publishMsg(msg proto.Message, reqMsg *KreNatsMessage, msgType M
 
 // publishAny will send a desired payload of any type to the node's output subject.
 func (r *Runner) publishAny(payload *anypb.Any, reqMsg *KreNatsMessage, msgType MessageType, channel string) {
-	// Generate a KreNatsMessage response.
 	responseMsg := r.newResponseMsg(payload, reqMsg, msgType)
-
-	// Publish the response message to the output subject.
 	r.publishResponse(responseMsg, channel)
 }
 
 // publishError will send a custom error to the node's output subject.
 func (r *Runner) publishError(requestID, errMsg string) {
-	// Generate a KreNatsMessage response.
 	responseMsg := &KreNatsMessage{
 		RequestId:   requestID,
 		Error:       errMsg,
 		FromNode:    r.cfg.NodeName,
 		MessageType: MessageType_ERROR,
 	}
-
-	// Publish the response message to the output subject.
 	r.publishResponse(responseMsg, "")
 }
 
