@@ -202,7 +202,7 @@ class NodeRunner(Runner):
     ) -> KreNatsMessage:
         res = KreNatsMessage()
         res.replied = request_msg.replied
-        res.request_id = request_msg.request_id
+        res.reply = request_msg.reply
         res.tracking_id = request_msg.tracking_id
         res.tracking.extend(request_msg.tracking)
         res.payload.Pack(payload)
@@ -247,7 +247,7 @@ class NodeRunner(Runner):
     async def early_reply(self, response: any, request_id: str):
         res = KreNatsMessage()
         res.payload.Pack(response)
-        res.request_id = request_id
+        res.reply = request_id
         await self.publish_response(self.config.nats_entrypoint_subject, res)
 
     def save_elapsed_time(self, req_msg: KreNatsMessage, start: datetime, end: datetime) -> None:
