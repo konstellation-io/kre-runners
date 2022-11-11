@@ -47,7 +47,11 @@ type contextPrediction struct {
 	logger *simplelogger.SimpleLogger
 }
 
-func NewContextPrediction(cfg config.Config, nc *nats2.Conn, logger *simplelogger.SimpleLogger) *contextPrediction {
+func NewContextPrediction(
+	cfg config.Config,
+	nc *nats2.Conn,
+	logger *simplelogger.SimpleLogger,
+) *contextPrediction {
 	return &contextPrediction{
 		cfg:    cfg,
 		nc:     nc,

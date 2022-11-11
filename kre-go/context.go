@@ -35,7 +35,7 @@ type HandlerContext struct {
 	Logger      *simplelogger.SimpleLogger
 	Prediction  *contextPrediction
 	Measurement *contextMeasurement
-	DB          *contextData
+	DB          *contextDatabase
 }
 
 func NewHandlerContext(
@@ -54,7 +54,7 @@ func NewHandlerContext(
 		Logger:      logger,
 		Prediction:  NewContextPrediction(cfg, nc, logger),
 		Measurement: NewContextMeasurement(cfg, logger),
-		DB:          NewContextData(cfg, nc, mongoM, logger),
+		DB:          NewContextDatabase(cfg, nc, mongoM, logger),
 	}
 }
 
