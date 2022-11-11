@@ -82,7 +82,6 @@ func getCfgBoolFromEnv(logger *simplelogger.SimpleLogger, name string) bool {
 	return false
 }
 
-// getSubscriptionsFromEnv will take the env variable and split it by ","
 func getSubscriptionsFromEnv(logger *simplelogger.SimpleLogger, name string) []string {
 	val, ok := os.LookupEnv(name)
 	if !ok {
