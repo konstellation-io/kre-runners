@@ -21,7 +21,8 @@ import (
 type HandlerInit func(ctx *HandlerContext)
 
 // Handler is the function executed each time a message from NATS arrives.
-// Responses must be sent through the handlerContext's sendOutput func.
+//
+// Responses, if desired, must be sent through the handlerContext's sendOutput func.
 type Handler func(ctx *HandlerContext, data *anypb.Any) error
 
 // Start receives the handler init function and the handler function
@@ -73,8 +74,15 @@ func Start(handlerInit HandlerInit, defaultHandler Handler, handlersOpt ...map[s
 	for _, subject := range cfg.NATS.InputSubjects {
 		consumerName := fmt.Sprintf("%s-%s", strings.ReplaceAll(subject, ".", "-"), cfg.NodeName)
 
-		s, err := js.QueueSubscribe(subject, consumerName, runner.ProcessMessage,
-			nats.DeliverNew(), nats.Durable(consumerName), nats.ManualAck(), nats.AckWait(22*time.Hour))
+		s, err := js.QueueSubscribe(
+			subject,
+			consumerName,
+			runner.ProcessMessage,
+			nats.DeliverNew(),
+			nats.Durable(consumerName),
+			nats.ManualAck(),
+			nats.AckWait(22*time.Hour),
+		)
 		if err != nil {
 			logger.Errorf("Error subscribing to NATS subject %s: %s", subject, err)
 			os.Exit(1)

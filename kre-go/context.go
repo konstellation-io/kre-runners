@@ -44,7 +44,8 @@ func NewHandlerContext(
 	mongoM mongodb.Manager,
 	logger *simplelogger.SimpleLogger,
 	publishMsg PublishMsgFunc,
-	publishAny PublishAnyFunc) *HandlerContext {
+	publishAny PublishAnyFunc,
+) *HandlerContext {
 	return &HandlerContext{
 		cfg:         cfg,
 		values:      map[string]interface{}{},
@@ -106,28 +107,36 @@ func (c *HandlerContext) GetRequestID() string {
 }
 
 // SendOutput will send a desired typed proto payload to the node's subject.
-// Once the entrypoint has been replied, all following replies to the entrypoint will be ignored.
+// By specifying a channel, the message will be sent to that subject's subtopic.
+//
+// SendOutput converts the proto message into an any type. This means the following node will recieve
+// an any type protobuf.
+//
+// GRPC requests can only be answered once. So once the entrypoint has been replied by the exitpoint,
+// all following replies to the entrypoint from the same request will be ignored.
 func (c *HandlerContext) SendOutput(response proto.Message, channelOpt ...string) error {
 	return c.publishMsg(response, c.reqMsg, MessageType_OK, c.getChannel(channelOpt))
 }
 
-// SendOutput will send a any type of proto payload to the node's subject.
+// SendAny will send any type of proto payload to the node's subject.
+// By specifying a channel, the message will be sent to that subject's subtopic.
+//
+// As a difference from SendOutput, SendAny will not convert your proto structure.
+//
 // Use this function when you wish to simply redirect your node's payload without unpackaging.
 // Once the entrypoint has been replied, all following replies to the entrypoint will be ignored.
 func (c *HandlerContext) SendAny(response *anypb.Any, channelOpt ...string) {
 	c.publishAny(response, c.reqMsg, MessageType_OK, c.getChannel(channelOpt))
 }
 
-// SendEarlyReply publishes the desired response to this node's subject.
-// With the addition of typing this message as an early reply.
-// Use this function when you need to reply faster than the workflow execution duration.
+// SendEarlyReply works as the SendOutput functionality
+// with the addition of typing this message as an early reply.
 func (c *HandlerContext) SendEarlyReply(response proto.Message, channelOpt ...string) error {
 	return c.publishMsg(response, c.reqMsg, MessageType_EARLY_REPLY, c.getChannel(channelOpt))
 }
 
-// SendEarlyExit publishes the desired response to this node's subject.
-// With the addition of typing this message as an early exit.
-// Use this function when you want to report a custom error in your workflow execution.
+// SendEarlyExit works as the SendOutput functionality
+// with the addition of typing this message as an early exit.
 func (c *HandlerContext) SendEarlyExit(response proto.Message, channelOpt ...string) error {
 	return c.publishMsg(response, c.reqMsg, MessageType_EARLY_EXIT, c.getChannel(channelOpt))
 }

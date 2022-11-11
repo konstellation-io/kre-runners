@@ -33,8 +33,15 @@ type Runner struct {
 
 // NewRunner creates a new Runner instance, initializing a new handler context within and runs
 // the given handler init func.
-func NewRunner(logger *simplelogger.SimpleLogger, cfg config.Config, nc *nats.Conn, js nats.JetStreamContext,
-	handlerManager *Manager, handlerInit HandlerInit, mongoM *mongodb.MongoDB) *Runner {
+func NewRunner(
+	logger *simplelogger.SimpleLogger,
+	cfg config.Config,
+	nc *nats.Conn,
+	js nats.JetStreamContext,
+	handlerManager *Manager,
+	handlerInit HandlerInit,
+	mongoM *mongodb.MongoDB,
+) *Runner {
 	runner := &Runner{
 		logger:         logger,
 		cfg:            cfg,
