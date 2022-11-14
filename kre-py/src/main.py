@@ -128,35 +128,26 @@ class NodeRunner(Runner):
             self.logger.info(f"Received a message from {msg.subject} with requestID {request_msg.request_id}")
 
             try:
-                # Make a shallow copy of the ctx object to set inside the request msg.
+                # Make a shallow copy of the ctx object to set inside the request msg
                 ctx = copy.copy(self.handler_ctx)
                 ctx.set_request_msg(request_msg)
 
-                # Execute the handler function sending context and the payload.
                 handler = self.handler_manager.get_handler(request_msg.from_node)
                 await handler(ctx, request_msg.payload)
 
-
-                # Save the elapsed time for this node
                 end = datetime.utcnow()
-                success = True
-                self.save_elapsed_time(start, end, request_msg.from_node, success)
+                self.save_elapsed_time(start, end, request_msg.from_node, True)
 
             except Exception as err:
-                # Publish an error message to the final reply subject
-                # in order to stop the workflow execution. So the next nodes will be ignored
-                # and the gRPC response will be an exception.
                 tb = traceback.format_exc()
                 self.logger.error(f"Error executing handler: {err} \n\n{tb}")
-                error_message = f"Error in '{self.config.krt_node_name}': {str(err)}"
+                error_message = f"Error in node '{self.config.krt_node_name}' executing handler for node '{request_msg.from_node}': {str(err)}"
                 await self.__publish_error__(request_msg.request_id, error_message)
 
-                # Save the elapsed time for this node
                 end = datetime.utcnow()
-                success = False
-                self.save_elapsed_time(start, end, request_msg.from_node, success)
+                self.save_elapsed_time(start, end, request_msg.from_node, False)
 
-            # Tell NATS we don't need to receive the message anymore and we are done processing it.
+            # Tell NATS we don't need to receive the message anymore and we are done processing it
             await msg.ack()
             gc.collect()
 
@@ -191,8 +182,15 @@ class NodeRunner(Runner):
 
         await self.publish_response(msg, channel)
 
-    # new_response_msg creates a KreNatsMessage keeping previous requestID
     def new_response_msg(self, request_msg: KreNatsMessage, msg_type: MessageType) -> KreNatsMessage:
+        """
+        Creates a KreNatsMessage that keeps previous request ID plus adding the payload we wish to send.
+
+        :param  request_msg:  The KreNatsMessage request message from which this new msg will originate.
+        :param msg_type:  The new KreNatsMessage MessageType.
+        :return: KreNatsMessage.
+        """
+
         res = KreNatsMessage()
         res.request_id = request_msg.request_id
         res.from_node = self.config.krt_node_name
@@ -206,6 +204,7 @@ class NodeRunner(Runner):
 
         :param  response_msg:  The response message to publish.
         :param channel:  The subject channel where the message will be published.
+        :return: None.
         """
 
         serialized_response_msg = compress_if_needed(
@@ -235,13 +234,13 @@ class NodeRunner(Runner):
 
     def save_elapsed_time(self, start: datetime, end: datetime, from_node: str, success: bool) -> None:
         """
-        save_elapsed_time stores in InfluxDB how much time did it take the node to run the handler
-        also saves if the request was succesfully processed
+        Stores in InfluxDB how much time did it take the node to run the handler
+        also saves if the request was succesfully processed.
 
         :param start: when this node started.
         :param end: when this node ended.
         :param success: was the request processed succesfully.
-        :return: None
+        :return: None.
         """
 
         elapsed = end - start
