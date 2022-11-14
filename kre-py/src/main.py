@@ -101,7 +101,7 @@ class NodeRunner(Runner):
                     manual_ack=True,
                 )
                 self.subscription_sids.append(sub)
-                self.logger.info( f"Listening to '{subject}' subject with queue group '{queue}'"                )
+                self.logger.info( f"Listening to '{subject}' subject with queue group '{queue}'")
 
             except Exception as err:
                 tb = traceback.format_exc()
@@ -122,7 +122,6 @@ class NodeRunner(Runner):
 
             start = datetime.utcnow()
 
-            # Parse incoming message
             request_msg = self.new_request_msg(msg.data)
 
             self.logger.info(f"Received a message from {msg.subject} with requestID {request_msg.request_id}")

@@ -45,7 +45,13 @@ class HandlerContext:
     async def send_output(self, message: Message, channel: str = DEFAULT_CHANNEL):
         """
         send_output will send a desired typed proto payload to the node's subject.
-        Once the entrypoint has been replied, all following replies to the entrypoint will be ignored.
+        By specifying a channel, the message will be sent to that subject's subtopic.
+
+        send_output converts the proto message into an any type. This means the following node will recieve
+        an any type protobuf.
+
+        GRPC requests can only be answered once. So once the entrypoint has been replied by the exitpoint,
+        all following replies to the entrypoint from the same request will be ignored.
 
         :param  message:  The message to publish.
         :param channel (optional):  The subsubject channel where the message will be published.
@@ -54,7 +60,11 @@ class HandlerContext:
 
     async def send_any(self, message, channel: str = DEFAULT_CHANNEL):
         """
-        send_any will send a any type of proto payload to the node's subject.
+        send_any will send any type of proto payload to the node's subject.
+        By specifying a channel, the message will be sent to that subject's subtopic.
+
+        As a difference from SendOutput, send_any will not convert your proto structure.
+
         Use this function when you wish to simply redirect your node's payload without unpackaging.
         Once the entrypoint has been replied, all following replies to the entrypoint will be ignored.
 
@@ -65,9 +75,8 @@ class HandlerContext:
 
     async def send_early_reply(self, message, channel: str = DEFAULT_CHANNEL):
         """
-        send_early_reply publishes the desired response to this node's subject.
-        With the addition of typing this message as an early reply.
-        Use this function when you need to reply faster than the workflow execution duration.
+        send_early_reply works as the SendOutput functionality
+        with the addition of typing this message as an early reply.
 
         :param  message:  The message to publish.
         :param channel (optional):  The subsubject channel where the message will be published.
@@ -76,9 +85,8 @@ class HandlerContext:
 
     async def send_early_exit(self, message, channel: str = DEFAULT_CHANNEL):
         """
-        send_early_exit publishes the desired response to this node's subject.
-        With the addition of typing this message as an early exit.
-        Use this function when you want to report a custom error in your workflow execution.
+        send_early_exit works as the SendOutput functionality
+        with the addition of typing this message as an early exit.
 
         :param  message:  The message to publish.
         :param channel (optional):  The subsubject channel where the message will be published.
