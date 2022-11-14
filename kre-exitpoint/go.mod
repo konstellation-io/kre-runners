@@ -37,7 +37,3 @@ require (
 	golang.org/x/text v0.3.6 // indirect
 	gopkg.in/yaml.v2 v2.2.8 // indirect
 )
-
-replace github.com/konstellation-io/kre-runners/kre-go => ../kre-go
-
-replace github.com/konstellation-io/kre-runners/exitpoint => ./
