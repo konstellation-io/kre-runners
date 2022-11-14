@@ -74,7 +74,7 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 
 	r.logger.Infof("Received a message from '%s' with requestId '%s'", msg.Subject, requestMsg.RequestId)
 
-	// Make a shallow copy of the ctx object to set inside the request msg and set it to this runner
+	// Make a shallow copy of the ctx object to set inside the request msg.
 	hCtx := r.handlerContext
 	hCtx.reqMsg = requestMsg
 
