@@ -8,13 +8,15 @@ import traceback
 import gc
 from datetime import datetime
 
+from google.protobuf.message import Message
 from nats.js.api import DeliverPolicy, ConsumerConfig
 
 from compression import compress_if_needed, is_compressed, uncompress
 from config import Config
 from context import HandlerContext
-from kre_nats_msg_pb2 import KreNatsMessage
+from kre_nats_msg_pb2 import KreNatsMessage, MessageType, ERROR
 from kre_runner import Runner
+from handlers import HandlerManager
 
 from nats.errors import ConnectionClosedError, TimeoutError
 
@@ -26,7 +28,7 @@ class NodeRunner(Runner):
         Runner.__init__(self, name, config)
         self.handler_ctx = None
         self.handler_init_fn = None
-        self.handler_fn = None
+        self.handler_manager = None
         self.load_handler()
 
     def load_handler(self) -> None:
@@ -47,16 +49,18 @@ class NodeRunner(Runner):
             )
             sys.exit(1)
 
-        if not hasattr(handler_module, "handler"):
-            raise Exception(
-                f"Handler module '{handler_full_path}' must "
-                f"implement a function 'handler(ctx, data)'"
-            )
+        default_handler = None
+        if hasattr(handler_module, "default_handler"):
+            default_handler = handler_module.default_handler
+
+        custom_handlers = None
+        if hasattr(handler_module, "custom_handlers"):
+            custom_handlers = handler_module.custom_handlers
 
         if hasattr(handler_module, "init"):
             self.handler_init_fn = handler_module.init
 
-        self.handler_fn = handler_module.handler
+        self.handler_manager = HandlerManager(default_handler, custom_handlers)
         self.logger.info(f"Handler script was loaded from '{handler_full_path}'")
 
     async def execute_handler_init(self) -> None:
@@ -66,7 +70,8 @@ class NodeRunner(Runner):
             self.nc,
             self.mongo_conn,
             self.logger,
-            self.early_reply,
+            self.__publish_msg__,
+            self.__publish_any__,
         )
 
         if not self.handler_init_fn:
@@ -80,38 +85,35 @@ class NodeRunner(Runner):
             self.handler_init_fn(self.handler_ctx)
 
     async def process_messages(self) -> None:
-        queue_name = f"queue_{self.config.nats_input}"
+        for subject in self.config.nats_inputs:
+            queue = f'{subject.replace(".", "-")}-{self.config.krt_node_name}'
+            try:
+                sub = await self.js.subscribe(
+                    stream=self.config.nats_stream,
+                    subject=subject,
+                    queue=queue,
+                    durable=queue,
+                    cb=self.create_message_cb(),
+                    config=ConsumerConfig(
+                        deliver_policy=DeliverPolicy.NEW,
+                        ack_wait=22 * 3600,  # 22 hours
+                    ),
+                    manual_ack=True,
+                )
+                self.subscription_sids.append(sub)
+                self.logger.info( f"Listening to '{subject}' subject with queue group '{queue}'")
 
-        try:
-            self.subscription_sid = await self.js.subscribe(
-                stream=self.config.nats_stream,
-                subject=self.config.nats_input,
-                queue=self.runner_name,
-                durable=self.runner_name,
-                cb=self.create_message_cb(),
-                config=ConsumerConfig(
-                    deliver_policy=DeliverPolicy.NEW,
-                    ack_wait = 22 * 3600,  # 22 hours
-                ),
-                manual_ack=True,
-            )
-        except Exception as err:
-            tb = traceback.format_exc()
-            self.logger.error(
-                f"Error subscribing to stream {self.config.handler_path}: {err}\n\n{tb}"
-            )
-            sys.exit(1)
-
-        self.logger.info(
-            f"Listening to '{self.config.nats_input}' subject with queue '{queue_name}' "
-            f"from stream '{self.config.nats_stream}'"
-        )
+            except Exception as err:
+                tb = traceback.format_exc()
+                self.logger.error(
+                    f"Error subscribing to NATS subject {subject}: {err}\n\n{tb}"
+                )
+                sys.exit(1)
 
         await self.execute_handler_init()
 
     def create_message_cb(self) -> callable:
         async def message_cb(msg) -> None:
-
             """
             Callback for processing a message.
 
@@ -120,70 +122,35 @@ class NodeRunner(Runner):
 
             start = datetime.utcnow()
 
-            # Parse incoming message
             request_msg = self.new_request_msg(msg.data)
 
-            self.logger.info(f"Received new request message from NATS subject {msg.subject}")
+            self.logger.info(f"Received a message from {msg.subject} with requestID {request_msg.request_id}")
 
             try:
-                # Make a shallow copy of the ctx object to set inside the request msg.
+                # Make a shallow copy of the ctx object to set inside the request msg
                 ctx = copy.copy(self.handler_ctx)
-                ctx.__request_msg__ = request_msg
+                ctx.set_request_msg(request_msg)
 
-                # Execute the handler function sending context and the payload.
-                handler_result = await self.handler_fn(ctx, request_msg.payload)
-                # Tell NATS we don't need to receive the message anymore and we are done processing it.
-                await msg.ack()
+                handler = self.handler_manager.get_handler(request_msg.from_node)
+                await handler(ctx, request_msg.payload)
+
                 end = datetime.utcnow()
-
-                # Save the elapsed time for this node and for the workflow if it is the last node.
-                self.save_elapsed_time(request_msg, start, end)
-
-                # Ignore send reply if the msg was replied previously.
-                if self.config.krt_last_node == "true" and request_msg.replied:
-                    if handler_result is not None:
-                        self.logger.info(
-                            "ignoring the last node response because the message was replied previously"
-                        )
-                    return
-
-                # Generate a KreNatsMessage response.
-                res = self.new_response_msg(request_msg, handler_result, start, end)
-
-                # Publish the response message to the output subject.
-                output_subject = self.get_output_subject(request_msg.early_exit)
-                await self.publish_response(output_subject, res)
+                self.save_elapsed_time(start, end, request_msg.from_node, True)
 
             except Exception as err:
-                # Publish an error message to the final reply subject
-                # in order to stop the workflow execution. So the next nodes will be ignored
-                # and the gRPC response will be an exception.
-
-                # Tell NATS we don't need to receive the message anymore and we are done processing it.
-                await msg.ack()
-
                 tb = traceback.format_exc()
-                self.logger.error(f"error executing handler: {err} \n\n{tb}")
-                response_err = KreNatsMessage()
-                response_err.error = f"error in '{self.config.krt_node_name}': {str(err)}"
-                output_subject = self.config.nats_entrypoint_subject
+                self.logger.error(f"Error executing handler: {err} \n\n{tb}")
+                error_message = f"Error in node '{self.config.krt_node_name}' executing handler for node '{request_msg.from_node}': {str(err)}"
+                await self.__publish_error__(request_msg.request_id, error_message)
 
-                await self.js.publish(
-                    stream=self.config.nats_stream,
-                    subject=output_subject,
-                    payload=response_err.SerializeToString(),
-                )
+                end = datetime.utcnow()
+                self.save_elapsed_time(start, end, request_msg.from_node, False)
+
+            # Tell NATS we don't need to receive the message anymore and we are done processing it
+            await msg.ack()
             gc.collect()
 
         return message_cb
-
-    def get_output_subject(self, early_exit: bool) -> str:
-        if early_exit:
-            self.logger.info(f"Early exit recieved, worklow has stopped execution")
-            output_subject = self.config.nats_entrypoint_subject
-        else:
-            output_subject = self.config.nats_output
-        return output_subject
 
     @staticmethod
     def new_request_msg(data: bytes) -> KreNatsMessage:
@@ -195,48 +162,62 @@ class NodeRunner(Runner):
 
         return request_msg
 
-    # new_response_msg creates a KreNatsMessage maintaining the tracking ID plus adding the
-    # handler result and the tracking information for this node.
-    def new_response_msg(
-            self, request_msg: KreNatsMessage, payload: any, start, end
-    ) -> KreNatsMessage:
-        res = KreNatsMessage()
-        res.replied = request_msg.replied
-        res.reply = request_msg.reply
-        res.tracking_id = request_msg.tracking_id
-        res.tracking.extend(request_msg.tracking)
-        res.payload.Pack(payload)
+    async def __publish_msg__(self, response_payload: Message, request_msg: KreNatsMessage, msg_type: MessageType, channel: str):
+        response_msg = self.new_response_msg(request_msg, msg_type)
+        response_msg.payload.Pack(response_payload)
+        await self.publish_response(response_msg, channel)
 
-        # add tracking info
-        t = res.tracking.add()
-        t.node_name = self.config.krt_node_name
-        t.start = start.isoformat()
-        t.end = end.isoformat()
+    async def __publish_any__(self, response_payload, request_msg: KreNatsMessage, msg_type: MessageType, channel: str):
+        response_msg = self.new_response_msg(request_msg, msg_type)
+        response_msg.payload.CopyFrom(response_payload)
+        await self.publish_response(response_msg, channel)
+
+    async def __publish_error__(self, request_id: str, error_message: str, channel: str = ""):
+        msg = KreNatsMessage()
+        msg.request_id = request_id
+        msg.error = error_message
+        msg.from_node = self.config.krt_node_name
+        msg.message_type = ERROR
+
+        await self.publish_response(msg, channel)
+
+    def new_response_msg(self, request_msg: KreNatsMessage, msg_type: MessageType) -> KreNatsMessage:
+        """
+        Creates a KreNatsMessage that keeps previous request ID plus adding the payload we wish to send.
+
+        :param  request_msg:  The KreNatsMessage request message from which this new msg will originate.
+        :param msg_type:  The new KreNatsMessage MessageType.
+        :return: KreNatsMessage.
+        """
+
+        res = KreNatsMessage()
+        res.request_id = request_msg.request_id
+        res.from_node = self.config.krt_node_name
+        res.message_type = msg_type
 
         return res
 
-    async def publish_response(self, subject: str, response_msg: KreNatsMessage) -> None:
-
+    async def publish_response(self, response_msg: KreNatsMessage, channel: str) -> None:
         """
         Publish the response message to the output subject.
 
-        Args:
-            subject: The subject to publish the response message.
-            response_msg:  The response message to publish.
+        :param  response_msg:  The response message to publish.
+        :param channel:  The subject channel where the message will be published.
+        :return: None.
         """
 
         serialized_response_msg = compress_if_needed(
             response_msg.SerializeToString(), logger=self.logger
         )
 
+        subject = self.__get_output_subject__(channel)
+
         try:
             await self.js.publish(
                 stream=self.config.nats_stream, subject=subject, payload=serialized_response_msg
             )
-            self.logger.info(
-                f"Published response to NATS subject {subject} "
-                f"from stream {self.config.nats_stream}"
-            )
+            self.logger.info(f"Publishing response to {subject} subject")
+
         except ConnectionClosedError as err:
             self.logger.error(f"Connection closed when publishing response: {err}")
         except TimeoutError as err:
@@ -244,58 +225,34 @@ class NodeRunner(Runner):
         except Exception as err:
             self.logger.error(f"Error publishing response: {err}")
 
-    async def early_reply(self, response: any, request_id: str):
-        res = KreNatsMessage()
-        res.payload.Pack(response)
-        res.reply = request_id
-        await self.publish_response(self.config.nats_entrypoint_subject, res)
+    def __get_output_subject__(self, channel: str = ""):
+        output_subject = self.config.nats_output
+        if channel == "":
+            return output_subject
+        return f'{output_subject}.{channel}'
 
-    def save_elapsed_time(self, req_msg: KreNatsMessage, start: datetime, end: datetime) -> None:
+    def save_elapsed_time(self, start: datetime, end: datetime, from_node: str, success: bool) -> None:
         """
-        save_elapsed_time stores in InfluxDB the elapsed time for the current node and the
-        total elapsed time of the complete workflow if it is the last node.
+        Stores in InfluxDB how much time did it take the node to run the handler
+        also saves if the request was succesfully processed.
 
-        :param req_msg: the request message.
         :param start: when this node started.
         :param end: when this node ended.
-        :return: None
+        :param success: was the request processed succesfully.
+        :return: None.
         """
-        # Save the elapsed time for this node
-        prev = req_msg.tracking[-1]
-        prev_end = datetime.fromisoformat(prev.end)
 
         elapsed = end - start
-        waiting = start - prev_end
-
         tags = {
-            "workflow": self.config.krt_workflow_name,
-            "version": self.config.krt_version,
-            "node": self.config.krt_node_name,
+            "from_node": from_node,
         }
 
         fields = {
-            "tracking_id": req_msg.tracking_id,
-            "node_from": prev.node_name,
             "elapsed_ms": elapsed.total_seconds() * 1000,
-            "waiting_ms": waiting.total_seconds() * 1000,
+            "success": success,
         }
 
         self.handler_ctx.measurement.save("node_elapsed_time", fields, tags)
-
-        is_last_node = True if self.config.krt_last_node == "true" else False
-
-        if is_last_node:
-            # Save the complete workflow elapsed time
-            entrypoint = req_msg.tracking[0]
-            entrypoint_start = datetime.fromisoformat(entrypoint.start)
-            elapsed = (end - entrypoint_start).total_seconds() * 1000
-
-            tags = {
-                "workflow": self.config.krt_workflow_name,
-                "version": self.config.krt_version,
-            }
-            fields = {"elapsed_ms": elapsed, "tracking_id": req_msg.tracking_id}
-            self.handler_ctx.measurement.save("workflow_elapsed_time", fields, tags)
 
 
 if __name__ == "__main__":
