@@ -42,7 +42,7 @@ func Start(handlerInit HandlerInit, defaultHandler Handler, handlersOpt ...map[s
 		customHandler = handlersOpt[0]
 	}
 
-	handlerManager := NewManager(defaultHandler, customHandler)
+	handlerManager := NewHandlerManager(defaultHandler, customHandler)
 
 	// Connect to NATS
 	nc, err := nats.Connect(cfg.NATS.Server)
