@@ -8,7 +8,7 @@ from grpclib.const import Status
 from nats.js.api import ConsumerConfig, DeliverPolicy
 from nats.aio.client import Client as NATS
 
-from kre_nats_msg_pb2 import KreNatsMessage
+from kre_nats_msg_pb2 import KreNatsMessage, OK
 
 COMPRESS_LEVEL = 9
 MESSAGE_THRESHOLD = 1024 * 1024
@@ -143,6 +143,7 @@ class EntrypointKRE:
         request_msg.payload.Pack(raw_msg)
         request_msg.request_id = request_id
         request_msg.from_node = self.config.krt_node_name
+        request_msg.message_type = OK
         return self._prepare_nats_request(request_msg.SerializeToString())
 
     def _create_grpc_response(self, message_data: bytes) -> KreNatsMessage:
