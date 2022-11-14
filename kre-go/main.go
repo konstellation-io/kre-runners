@@ -22,7 +22,7 @@ type HandlerInit func(ctx *HandlerContext)
 
 // Handler is the function executed each time a message from NATS arrives.
 //
-// Responses, if desired, must be sent through the handlerContext's sendOutput func.
+// Responses, if desired, must be sent through the handlerContext's sendOutput or SendAny funcs.
 type Handler func(ctx *HandlerContext, data *anypb.Any) error
 
 // Start receives the handler init function and the handler function
