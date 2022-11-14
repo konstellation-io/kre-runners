@@ -4,10 +4,11 @@ import "google/protobuf/any.proto";
 option go_package = "./kre";
 
 enum MessageType {
-  OK = 0;
-  ERROR = 1;
-  EARLY_REPLY = 2;
-  EARLY_EXIT = 3;
+  UNDEFINED = 0;
+  OK = 1;
+  ERROR = 2;
+  EARLY_REPLY = 3;
+  EARLY_EXIT = 4;
 }
 
 message KreNatsMessage { 
