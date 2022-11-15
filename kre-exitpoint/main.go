@@ -20,8 +20,6 @@ func defaultHandler(ctx *kre.HandlerContext, data *anypb.Any) error {
 		ctx.SendOutput(data)
 	}
 
-	saveExitpointMetrics(ctx)
-
 	return nil
 }
 
@@ -31,28 +29,14 @@ func lastNodeHandler(ctx *kre.HandlerContext, data *anypb.Any) error {
 
 	ctx.SendAny(data)
 
-	saveExitpointMetrics(ctx)
-
 	return nil
-}
-
-// saveExitpointMetrics is a helper function used to save influxdb metrics.
-// We will save one metric: One to count the number of times this node has been called.
-func saveExitpointMetrics(ctx *kre.HandlerContext) {
-	tags := map[string]string{}
-
-	fields := map[string]interface{}{
-		"called_node": "exitpoint",
-	}
-
-	ctx.Measurement.Save("number_of_calls", fields, tags)
-
 }
 
 func main() {
 	logger := simplelogger.New(simplelogger.LevelInfo)
 	config := config.NewConfig(logger)
 
+	// kre will assign the default exitpoint to subscribe to all workflow nodes
 	handlers := map[string]kre.Handler{
 		config.LastNodeName: lastNodeHandler,
 	}
