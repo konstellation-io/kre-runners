@@ -1,3 +1,15 @@
+# [kre-entrypoint-v2.0.0](https://github.com/konstellation-io/kre-runners/compare/kre-entrypoint-v1.8.1...kre-entrypoint-v2.0.0) (2022-11-15)
+
+
+### Features
+
+* **kre-py:** krt-v2 python runner support ([#124](https://github.com/konstellation-io/kre-runners/issues/124)) ([ac2e4c2](https://github.com/konstellation-io/kre-runners/commit/ac2e4c2a2f6aa913eecf584b404250884153c029))
+
+
+### BREAKING CHANGES
+
+* **kre-py:** change python runner to krt v2 support
+
 # [kre-entrypoint-v1.8.1](https://github.com/konstellation-io/kre-runners/compare/kre-entrypoint-v1.8.0...kre-entrypoint-v1.8.1) (2022-09-15)
 
 

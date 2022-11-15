@@ -1,3 +1,27 @@
+# [kre-go-v4.0.0](https://github.com/konstellation-io/kre-runners/compare/kre-go-v3.0.0...kre-go-v4.0.0) (2022-11-15)
+
+
+### Features
+
+* **kre-py:** krt-v2 python runner support ([#124](https://github.com/konstellation-io/kre-runners/issues/124)) ([ac2e4c2](https://github.com/konstellation-io/kre-runners/commit/ac2e4c2a2f6aa913eecf584b404250884153c029))
+
+
+### BREAKING CHANGES
+
+* **kre-py:** change python runner to krt v2 support
+
+# [kre-go-v3.0.0](https://github.com/konstellation-io/kre-runners/compare/kre-go-v2.1.4...kre-go-v3.0.0) (2022-11-15)
+
+
+### Features
+
+* **kre-go:** enable branching ([#128](https://github.com/konstellation-io/kre-runners/issues/128)) ([47d5cb4](https://github.com/konstellation-io/kre-runners/commit/47d5cb4c5d79e344b343b1d4dc85e79042f7efc2))
+
+
+### BREAKING CHANGES
+
+* **kre-go:** change go runner to krt v2 support
+
 # [kre-go-v2.1.4](https://github.com/konstellation-io/kre-runners/compare/kre-go-v2.1.3...kre-go-v2.1.4) (2022-09-22)
 
 

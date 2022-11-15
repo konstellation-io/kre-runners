@@ -15,7 +15,6 @@ import (
 )
 
 const (
-	ISO8601          = "2006-01-02T15:04:05.000000"
 	MessageThreshold = 1024 * 1024
 )
 
@@ -28,7 +27,7 @@ type Runner struct {
 	nc             *nats.Conn
 	js             nats.JetStreamContext
 	handlerContext *HandlerContext
-	handlerManager *Manager
+	handlerManager *HandlerManager
 }
 
 // NewRunner creates a new Runner instance, initializing a new handler context within and runs
@@ -38,7 +37,7 @@ func NewRunner(
 	cfg config.Config,
 	nc *nats.Conn,
 	js nats.JetStreamContext,
-	handlerManager *Manager,
+	handlerManager *HandlerManager,
 	handlerInit HandlerInit,
 	mongoM *mongodb.MongoDB,
 ) *Runner {
@@ -92,7 +91,7 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 		return
 	}
 
-	// Tell NATS we don't need to receive the message anymore and we are done processing it
+	// Tell NATS we don't need to receive the message anymore and we are done processing it.
 	ackErr := msg.Ack()
 	if ackErr != nil {
 		r.logger.Errorf(ErrMsgAck, ackErr)
