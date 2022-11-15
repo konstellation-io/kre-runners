@@ -3,18 +3,18 @@ import "google/protobuf/any.proto";
 
 option go_package = "./kre";
 
-message KreNatsMessage {
-  message Tracking {
-    string node_name = 1;
-    string start = 2;
-    string end = 3;
-  }
+enum MessageType {
+  UNDEFINED = 0;
+  OK = 1;
+  ERROR = 2;
+  EARLY_REPLY = 3;
+  EARLY_EXIT = 4;
+}
 
-  string tracking_id = 1;
-  repeated Tracking tracking = 2;
-  string reply = 3;
-  google.protobuf.Any payload = 4;
-  string error = 5;
-  bool replied = 6;
-  bool early_exit = 7;
+message KreNatsMessage { 
+  string request_id = 1;
+  google.protobuf.Any payload = 2;
+  string error = 3;
+  string from_node = 4;
+  MessageType message_type = 5;
 }

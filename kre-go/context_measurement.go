@@ -1,11 +1,12 @@
 package kre
 
 import (
+	"time"
+
 	influxdb2 "github.com/influxdata/influxdb-client-go"
 	"github.com/influxdata/influxdb-client-go/api"
 	"github.com/konstellation-io/kre-runners/kre-go/config"
 	"github.com/konstellation-io/kre/libs/simplelogger"
-	"time"
 )
 
 // We are using influxdb-client-go that is compatible with 1.8+ versions:
@@ -35,6 +36,14 @@ func NewContextMeasurement(cfg config.Config, logger *simplelogger.SimpleLogger)
 	}
 }
 
+// Save will save a metric into this runtime's influx bucket.
+// Default tags will be added:
+//
+// 'version' - The version's name
+//
+// 'workflow' - The workflow's name
+//
+// 'node' - This node's name
 func (c *contextMeasurement) Save(measurement string, fields map[string]interface{}, tags map[string]string) {
 	p := influxdb2.NewPointWithMeasurement(measurement)
 
@@ -47,6 +56,8 @@ func (c *contextMeasurement) Save(measurement string, fields map[string]interfac
 	}
 
 	p.AddTag("version", c.cfg.Version)
+	p.AddTag("workflow", c.cfg.WorkflowName)
+	p.AddTag("node", c.cfg.NodeName)
 
 	p.SetTime(time.Now())
 

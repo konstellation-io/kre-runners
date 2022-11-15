@@ -5,44 +5,51 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/konstellation-io/kre/libs/simplelogger"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/konstellation-io/kre-runners/kre-go/config"
 	"github.com/konstellation-io/kre-runners/kre-go/mongodb"
-	"github.com/konstellation-io/kre/libs/simplelogger"
 )
 
 const (
-	ISO8601          = "2006-01-02T15:04:05.000000"
 	MessageThreshold = 1024 * 1024
 )
 
 var ErrMessageToBig = errors.New("compressed message exceeds maximum size allowed of 1 MB")
+var ErrMsgAck = "Error in message ack: %s"
 
 type Runner struct {
 	logger         *simplelogger.SimpleLogger
 	cfg            config.Config
 	nc             *nats.Conn
 	js             nats.JetStreamContext
-	handler        Handler
 	handlerContext *HandlerContext
+	handlerManager *HandlerManager
 }
 
-// NewRunner creates a new Runner instance.
-func NewRunner(logger *simplelogger.SimpleLogger, cfg config.Config, nc *nats.Conn, js nats.JetStreamContext,
-	handler Handler, handlerInit HandlerInit, mongoM *mongodb.MongoDB) *Runner {
+// NewRunner creates a new Runner instance, initializing a new handler context within and runs
+// the given handler init func.
+func NewRunner(
+	logger *simplelogger.SimpleLogger,
+	cfg config.Config,
+	nc *nats.Conn,
+	js nats.JetStreamContext,
+	handlerManager *HandlerManager,
+	handlerInit HandlerInit,
+	mongoM *mongodb.MongoDB,
+) *Runner {
 	runner := &Runner{
-		logger:  logger,
-		cfg:     cfg,
-		nc:      nc,
-		js:      js,
-		handler: handler,
+		logger:         logger,
+		cfg:            cfg,
+		nc:             nc,
+		js:             js,
+		handlerManager: handlerManager,
 	}
 
-	// Create handler context
-	c := NewHandlerContext(cfg, nc, mongoM, logger, runner.earlyReply)
+	c := NewHandlerContext(cfg, nc, mongoM, logger, runner.publishMsg, runner.publishAny)
 	handlerInit(c)
 
 	runner.handlerContext = c
@@ -50,96 +57,63 @@ func NewRunner(logger *simplelogger.SimpleLogger, cfg config.Config, nc *nats.Co
 	return runner
 }
 
-// ProcessMessage parses the incoming NATS message, executes the handler function and publishes
-// the handler result to the output subject.
+// ProcessMessage parses the incoming NATS message and executes the appropiate handler function
+// taking into account the origin's node of the message.
 func (r *Runner) ProcessMessage(msg *nats.Msg) {
-	start := time.Now().UTC()
+	var (
+		start = time.Now().UTC()
+	)
 
-	// Parse incoming message
 	requestMsg, err := r.newRequestMessage(msg.Data)
 	if err != nil {
-		r.logger.Errorf("Error parsing msg.data because is not a valid protobuf: %s", err)
+		errMsg := fmt.Sprintf("Error parsing msg.data coming from subject %s because is not a valid protobuf: %s", msg.Subject, err)
+		r.processRunnerError(msg, errMsg, requestMsg.RequestId, start, requestMsg.FromNode)
 		return
 	}
 
-	r.logger.Infof("Received a message on '%s' to be published in '%s' with requestId '%s'", msg.Subject, r.cfg.NATS.OutputSubject, requestMsg.Reply)
+	r.logger.Infof("Received a message from '%s' with requestId '%s'", msg.Subject, requestMsg.RequestId)
 
 	// Make a shallow copy of the ctx object to set inside the request msg.
 	hCtx := r.handlerContext
 	hCtx.reqMsg = requestMsg
 
-	// Execute the handler function sending context and the payload.
-	handlerResult, err := r.handler(hCtx, requestMsg.Payload)
-	// Tell NATS we don't need to receive the message anymore and we are done processing it.
+	handler := r.handlerManager.GetHandler(requestMsg.FromNode)
+	if handler == nil {
+		errMsg := fmt.Sprintf("Error missing handler for node '%s'", requestMsg.FromNode)
+		r.processRunnerError(msg, errMsg, requestMsg.RequestId, start, requestMsg.FromNode)
+		return
+	}
+
+	err = handler(hCtx, requestMsg.Payload)
+	if err != nil {
+		errMsg := fmt.Sprintf("Error in node '%s' executing handler for node '%s': %s", r.cfg.NodeName, requestMsg.FromNode, err)
+		r.processRunnerError(msg, errMsg, requestMsg.RequestId, start, requestMsg.FromNode)
+		return
+	}
+
+	// Tell NATS we don't need to receive the message anymore and we are done processing it
 	ackErr := msg.Ack()
 	if ackErr != nil {
-		r.logger.Errorf("Error in message ack: %s", ackErr.Error())
-	}
-	if err != nil {
-		r.stopWorkflowReturningErr(err, r.cfg.NATS.EntrypointSubject)
-		return
+		r.logger.Errorf(ErrMsgAck, ackErr)
 	}
 
 	end := time.Now().UTC()
-
-	// Save the elapsed time for this node and for the workflow if it is the last node.
-	r.saveElapsedTime(requestMsg, start, end, r.cfg.IsLastNode)
-
-	// Ignore send reply if the msg was replied previously.
-	if r.cfg.IsLastNode && requestMsg.Replied {
-		if handlerResult != nil {
-			r.logger.Info("ignoring the last node response because the message was replied previously")
-		}
-
-		return
-	}
-
-	// Generate a KreNatsMessage response.
-	responseMsg, err := r.newResponseMsg(handlerResult, requestMsg, start, end)
-	if err != nil {
-		r.stopWorkflowReturningErr(err, r.cfg.NATS.EntrypointSubject)
-		return
-	}
-
-	// Publish the response message to the output subject.
-	outputSubject := r.getOutputSubject(requestMsg.EarlyExit)
-	r.publishResponse(outputSubject, responseMsg)
+	r.saveElapsedTime(start, end, requestMsg.FromNode, true)
 }
 
-// getOutputSubject returns the subject to which we must publish our next response.
-func (r *Runner) getOutputSubject(earlyExit bool) string {
-	var outputSubject string
-	if earlyExit {
-		r.logger.Info("Early exit recieved, worklow has stopped execution")
-		outputSubject = r.cfg.NATS.EntrypointSubject
-	} else {
-		outputSubject = r.cfg.NATS.OutputSubject
+func (r *Runner) processRunnerError(msg *nats.Msg, errMsg string, requestID string, start time.Time, fromNode string) {
+	ackErr := msg.Ack()
+	if ackErr != nil {
+		r.logger.Errorf(ErrMsgAck, ackErr)
 	}
-	return outputSubject
+
+	r.logger.Error(errMsg)
+	r.publishError(requestID, errMsg)
+
+	end := time.Now().UTC()
+	r.saveElapsedTime(start, end, fromNode, false)
 }
 
-// stopWorkflowReturningErr publishes an error message to the final reply subject
-// in order to stop the workflow execution. So the next nodes will be ignored and the
-// gRPC response will be an exception.
-func (r *Runner) stopWorkflowReturningErr(err error, replySubject string) {
-	r.logger.Errorf("Error executing handler: %s", err)
-
-	errMsg := &KreNatsMessage{
-		Error: fmt.Sprintf("error in '%s': %s", r.cfg.NodeName, err),
-	}
-	replyErrMsg, err := proto.Marshal(errMsg)
-	if err != nil {
-		r.logger.Errorf("Error generating error output because it is not a serializable Protobuf: %s", err)
-		return
-	}
-
-	_, err = r.js.Publish(replySubject, replyErrMsg)
-	if err != nil {
-		r.logger.Errorf("Error publishing output: %s", err)
-	}
-}
-
-// newRequestMessage creates an instance of KreNatsMessage for the input string. decompress if necessary
 func (r *Runner) newRequestMessage(data []byte) (*KreNatsMessage, error) {
 	requestMsg := &KreNatsMessage{}
 
@@ -157,54 +131,47 @@ func (r *Runner) newRequestMessage(data []byte) (*KreNatsMessage, error) {
 	return requestMsg, err
 }
 
-// newResponseMsg creates a KreNatsMessage maintaining the tracking ID and adding the
-// handler result and the tracking information for this node.
-func (r *Runner) newResponseMsg(handlerResult proto.Message, requestMsg *KreNatsMessage, start time.Time, end time.Time) (*KreNatsMessage, error) {
-	payload, err := anypb.New(handlerResult)
+// publishMsg will send a desired payload to the node's output subject.
+func (r *Runner) publishMsg(msg proto.Message, reqMsg *KreNatsMessage, msgType MessageType, channel string) error {
+	payload, err := anypb.New(msg)
 	if err != nil {
-		return nil, fmt.Errorf("the handler result is not a valid protobuf: %w", err)
+		return fmt.Errorf("the handler result is not a valid protobuf: %s", err)
 	}
+	responseMsg := r.newResponseMsg(payload, reqMsg, msgType)
 
-	tracking := append(requestMsg.Tracking, &KreNatsMessage_Tracking{
-		NodeName: r.cfg.NodeName,
-		Start:    start.Format(ISO8601),
-		End:      end.Format(ISO8601),
-	})
+	r.publishResponse(responseMsg, channel)
 
+	return nil
+}
+
+func (r *Runner) publishAny(payload *anypb.Any, reqMsg *KreNatsMessage, msgType MessageType, channel string) {
+	responseMsg := r.newResponseMsg(payload, reqMsg, msgType)
+	r.publishResponse(responseMsg, channel)
+}
+
+func (r *Runner) publishError(requestID, errMsg string) {
 	responseMsg := &KreNatsMessage{
-		Replied:    requestMsg.Replied,
-		TrackingId: requestMsg.TrackingId,
-		Tracking:   tracking,
-		Payload:    payload,
-		Reply:      requestMsg.Reply,
+		RequestId:   requestID,
+		Error:       errMsg,
+		FromNode:    r.cfg.NodeName,
+		MessageType: MessageType_ERROR,
 	}
-
-	return responseMsg, nil
+	r.publishResponse(responseMsg, "")
 }
 
-// prepareOutputMessage check the length of the message and compress if necessary.
-// fails on compressed messages bigger than the threshold.
-func (r *Runner) prepareOutputMessage(msg []byte) ([]byte, error) {
-	if len(msg) <= MessageThreshold {
-		return msg, nil
+// newResponseMsg creates a KreNatsMessage that keeps previous request ID plus adding the payload we wish to send.
+func (r *Runner) newResponseMsg(payload *anypb.Any, requestMsg *KreNatsMessage, msgType MessageType) *KreNatsMessage {
+	return &KreNatsMessage{
+		RequestId:   requestMsg.RequestId,
+		Payload:     payload,
+		FromNode:    r.cfg.NodeName,
+		MessageType: msgType,
 	}
-
-	outMsg, err := r.compressData(msg)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(outMsg) > MessageThreshold {
-		return nil, ErrMessageToBig
-	}
-
-	r.logger.Infof("Original message size: %s. Compressed: %s", sizeInKB(msg), sizeInKB(outMsg))
-
-	return outMsg, nil
 }
 
-// publishResponse publishes the response in the NATS output subject.
-func (r *Runner) publishResponse(outputSubject string, responseMsg *KreNatsMessage) {
+func (r *Runner) publishResponse(responseMsg *KreNatsMessage, channel string) {
+	outputSubject := r.getOutputSubject(channel)
+
 	outputMsg, err := proto.Marshal(responseMsg)
 	if err != nil {
 		r.logger.Errorf("Error generating output result because handler result is not a serializable Protobuf: %s", err)
@@ -225,69 +192,50 @@ func (r *Runner) publishResponse(outputSubject string, responseMsg *KreNatsMessa
 	}
 }
 
-func (r Runner) earlyReply(response proto.Message, requestID string) error {
-	payload, err := anypb.New(response)
-	if err != nil {
-		return fmt.Errorf("the handler result is not a valid protobuf: %w", err)
+func (r *Runner) getOutputSubject(channel string) string {
+	outputSubject := r.cfg.NATS.OutputSubject
+	if channel != "" {
+		return fmt.Sprintf("%s.%s", outputSubject, channel)
 	}
-
-	res := &KreNatsMessage{
-		Payload: payload,
-		Reply:   requestID,
-	}
-
-	r.publishResponse(r.cfg.NATS.EntrypointSubject, res)
-
-	return nil
+	return outputSubject
 }
 
-// saveElapsedTime stores in InfluxDB the elapsed time for the current node and the total elapsed time of the
-// complete workflow if it is the last node.
-func (r *Runner) saveElapsedTime(reqMsg *KreNatsMessage, start time.Time, end time.Time, isLastNode bool) {
-	prev := reqMsg.Tracking[len(reqMsg.Tracking)-1]
-	prevEnd, err := time.Parse(ISO8601, prev.End)
-	if err != nil {
-		r.logger.Errorf("Error parsing previous node end time = \"%s\"", prev.End)
+// prepareOutputMessage will check the length of the message and compress it if necessary.
+// Fails on compressed messages bigger than the threshold.
+func (r *Runner) prepareOutputMessage(msg []byte) ([]byte, error) {
+	if len(msg) <= MessageThreshold {
+		return msg, nil
 	}
 
+	outMsg, err := r.compressData(msg)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(outMsg) > MessageThreshold {
+		return nil, ErrMessageToBig
+	}
+
+	r.logger.Infof("Original message size: %s. Compressed: %s", sizeInKB(msg), sizeInKB(outMsg))
+
+	return outMsg, nil
+}
+
+// saveElapsedTime stores in InfluxDB how much time did it take the node to run the handler,
+// also saves if the request was succesfully processed.
+func (r *Runner) saveElapsedTime(start time.Time, end time.Time, fromNode string, success bool) {
 	elapsed := end.Sub(start)
-	waiting := start.Sub(prevEnd)
 
 	tags := map[string]string{
-		"workflow": r.cfg.WorkflowName,
-		"version":  r.cfg.Version,
-		"node":     r.cfg.NodeName,
+		"from_node": fromNode,
 	}
 
 	fields := map[string]interface{}{
-		"tracking_id": reqMsg.TrackingId,
-		"node_from":   prev.NodeName,
-		"elapsed_ms":  elapsed.Seconds() * 1000,
-		"waiting_ms":  waiting.Seconds() * 1000,
+		"elapsed_ms": elapsed.Seconds() * 1000,
+		"success":    success,
 	}
 
 	r.handlerContext.Measurement.Save("node_elapsed_time", fields, tags)
-
-	if isLastNode {
-		entrypoint := reqMsg.Tracking[0]
-		entrypointStart, err := time.Parse(ISO8601, entrypoint.Start)
-		if err != nil {
-			r.logger.Errorf("Error parsing entrypoint start time = \"%s\"", entrypoint.Start)
-		}
-		elapsed = end.Sub(entrypointStart)
-
-		tags = map[string]string{
-			"workflow": r.cfg.WorkflowName,
-			"version":  r.cfg.Version,
-		}
-
-		fields = map[string]interface{}{
-			"tracking_id": reqMsg.TrackingId,
-			"elapsed_ms":  elapsed.Seconds() * 1000,
-		}
-
-		r.handlerContext.Measurement.Save("workflow_elapsed_time", fields, tags)
-	}
 }
 
 func sizeInKB(s []byte) string {
