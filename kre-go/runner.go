@@ -91,7 +91,7 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 		return
 	}
 
-	// Tell NATS we don't need to receive the message anymore and we are done processing it
+	// Tell NATS we don't need to receive the message anymore and we are done processing it.
 	ackErr := msg.Ack()
 	if ackErr != nil {
 		r.logger.Errorf(ErrMsgAck, ackErr)
