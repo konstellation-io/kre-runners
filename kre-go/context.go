@@ -1,12 +1,12 @@
 package kre
 
 import (
-	"errors"
 	"path"
 	"time"
 
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/konstellation-io/kre-runners/kre-go/config"
 	"github.com/konstellation-io/kre-runners/kre-go/mongodb"
@@ -19,37 +19,42 @@ var (
 	getDataTimeout    = 1 * time.Second
 )
 
-type EarlyReplyFunc = func(response proto.Message, requestID string) error
+const (
+	defaultChannel = ""
+)
+
+type PublishMsgFunc = func(response proto.Message, reqMsg *KreNatsMessage, msgType MessageType, channel string) error
+type PublishAnyFunc = func(response *anypb.Any, reqMsg *KreNatsMessage, msgType MessageType, channel string)
 
 type HandlerContext struct {
 	cfg         config.Config
 	values      map[string]interface{}
-	earlyReply  EarlyReplyFunc
+	publishMsg  PublishMsgFunc
+	publishAny  PublishAnyFunc
 	reqMsg      *KreNatsMessage
 	Logger      *simplelogger.SimpleLogger
 	Prediction  *contextPrediction
 	Measurement *contextMeasurement
-	DB          *contextData
+	DB          *contextDatabase
 }
 
-func NewHandlerContext(cfg config.Config, nc *nats.Conn, mongoM mongodb.Manager, logger *simplelogger.SimpleLogger, earlyReply EarlyReplyFunc) *HandlerContext {
+func NewHandlerContext(
+	cfg config.Config,
+	nc *nats.Conn,
+	mongoM mongodb.Manager,
+	logger *simplelogger.SimpleLogger,
+	publishMsg PublishMsgFunc,
+	publishAny PublishAnyFunc,
+) *HandlerContext {
 	return &HandlerContext{
-		cfg:        cfg,
-		values:     map[string]interface{}{},
-		earlyReply: earlyReply,
-		Logger:     logger,
-		Prediction: &contextPrediction{
-			cfg:    cfg,
-			nc:     nc,
-			logger: logger,
-		},
+		cfg:         cfg,
+		values:      map[string]interface{}{},
+		publishMsg:  publishMsg,
+		publishAny:  publishAny,
+		Logger:      logger,
+		Prediction:  NewContextPrediction(cfg, nc, logger),
 		Measurement: NewContextMeasurement(cfg, logger),
-		DB: &contextData{
-			cfg:    cfg,
-			nc:     nc,
-			mongoM: mongoM,
-			logger: logger,
-		},
+		DB:          NewContextDatabase(cfg, nc, mongoM, logger),
 	}
 }
 
@@ -96,19 +101,69 @@ func (c *HandlerContext) GetFloat(key string) float64 {
 	return -1.0
 }
 
-// EarlyReply sends a reply to the entrypoint. The workflow execution continues.
-// Use this function when you need to reply faster than the workflow execution duration.
-func (c *HandlerContext) EarlyReply(response proto.Message) error {
-	if c.reqMsg.Replied {
-		return errors.New("error the message was replied previously")
-	}
-
-	c.reqMsg.Replied = true
-	return c.earlyReply(response, c.reqMsg.Reply)
+// GetRequestID will return the payload's original request ID.
+func (c *HandlerContext) GetRequestID() string {
+	return c.reqMsg.RequestId
 }
 
-// SetEarlyExit changes this node's next response recipient to the entrypoint.
-// Use this function when you want to halt your workflow execution.
-func (c *HandlerContext) SetEarlyExit() {
-	c.reqMsg.EarlyExit = true
+// SendOutput will send a desired typed proto payload to the node's subject.
+// By specifying a channel, the message will be sent to that subject's subtopic.
+//
+// SendOutput converts the proto message into an any type. This means the following node will recieve
+// an any type protobuf.
+//
+// GRPC requests can only be answered once. So once the entrypoint has been replied by the exitpoint,
+// all following replies to the entrypoint from the same request will be ignored.
+func (c *HandlerContext) SendOutput(response proto.Message, channelOpt ...string) error {
+	return c.publishMsg(response, c.reqMsg, MessageType_OK, c.getChannel(channelOpt))
+}
+
+// SendAny will send any type of proto payload to the node's subject.
+// By specifying a channel, the message will be sent to that subject's subtopic.
+//
+// As a difference from SendOutput, SendAny will not convert your proto structure.
+//
+// Use this function when you wish to simply redirect your node's payload without unpackaging.
+// Once the entrypoint has been replied, all following replies to the entrypoint will be ignored.
+func (c *HandlerContext) SendAny(response *anypb.Any, channelOpt ...string) {
+	c.publishAny(response, c.reqMsg, MessageType_OK, c.getChannel(channelOpt))
+}
+
+// SendEarlyReply works as the SendOutput functionality
+// with the addition of typing this message as an early reply.
+func (c *HandlerContext) SendEarlyReply(response proto.Message, channelOpt ...string) error {
+	return c.publishMsg(response, c.reqMsg, MessageType_EARLY_REPLY, c.getChannel(channelOpt))
+}
+
+// SendEarlyExit works as the SendOutput functionality
+// with the addition of typing this message as an early exit.
+func (c *HandlerContext) SendEarlyExit(response proto.Message, channelOpt ...string) error {
+	return c.publishMsg(response, c.reqMsg, MessageType_EARLY_EXIT, c.getChannel(channelOpt))
+}
+
+func (c *HandlerContext) getChannel(channels []string) string {
+	if len(channels) > 0 {
+		return channels[0]
+	}
+	return defaultChannel
+}
+
+// IsMessageOK returns true if the incoming message is of message type OK.
+func (c *HandlerContext) IsMessageOK() bool {
+	return c.reqMsg.MessageType == MessageType_OK
+}
+
+// IsMessageError returns true if the incoming message is of message type ERROR.
+func (c *HandlerContext) IsMessageError() bool {
+	return c.reqMsg.MessageType == MessageType_ERROR
+}
+
+// IsMessageEarlyReply returns true if the incoming message is of message type EARLY REPLY.
+func (c *HandlerContext) IsMessageEarlyReply() bool {
+	return c.reqMsg.MessageType == MessageType_EARLY_REPLY
+}
+
+// IsMessageEarlyExit returns true if the incoming message is of message type EARLY EXIT.
+func (c *HandlerContext) IsMessageEarlyExit() bool {
+	return c.reqMsg.MessageType == MessageType_EARLY_EXIT
 }

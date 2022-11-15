@@ -2,8 +2,11 @@ import abc
 import asyncio
 import logging
 import time
-from exceptions import ProcessMessagesNotImplemented
+import sys
+import traceback
 import pymongo
+
+from exceptions import ProcessMessagesNotImplemented
 from nats.aio.client import Client as NATS
 
 
@@ -25,7 +28,7 @@ class Runner:
         self.nc = NATS()
         self.js = None
         self.config = config
-        self.subscription_sid = None
+        self.subscription_sids = []
         self.runner_name = runner_name
         self.mongo_conn = None
 
@@ -71,9 +74,20 @@ class Runner:
         Stop the NATS connection and the asyncio loop.
         """
 
-        if not self.nc.is_closed:
-            await self.nc.close()
-            self.logger.info("NATS connection closed")
+        # nats.aio.subscription Subscription
+        for sub in self.subscription_sids:
+            try:
+                await sub.unsubscribe()
+            except Exception as err:
+                tb = traceback.format_exc()
+                self.logger.error(
+                    f"Error unsubscribing from the NATS subject {sub.subject}: {err}\n\n{tb}"
+                )
+                sys.exit(1)
+
+            if not self.nc.is_closed:
+                await self.nc.close()
+                self.logger.info("NATS connection closed")
 
         self.loop.stop()
 
