@@ -3,7 +3,6 @@ from datetime import datetime
 from influxdb_client import InfluxDBClient, Point, WritePrecision
 from influxdb_client.client.write_api import WriteOptions, WriteType
 
-
 # We are using influxdb-client-python that is compatible with 1.8+ versions:
 # https://github.com/influxdata/influxdb-client-python#influxdb-1-8-api-compatibility
 INFLUX_ORG = ""  # not used
@@ -32,8 +31,18 @@ class ContextMeasurement:
         fields: dict,
         tags: dict,
         time: datetime = None,
-        precision=PRECISION_NS,
+        precision: str = PRECISION_NS,
     ):
+        """
+        Save will save a metric into this runtime's influx bucket.
+        Default tags will be added:
+
+        'version' - The version's name
+
+        'workflow' - The workflow's name
+
+        'node' - This node's name
+        """
         point = Point(measurement)
 
         for key in fields:
@@ -43,6 +52,8 @@ class ContextMeasurement:
             point.tag(key, tags[key])
 
         point.tag("version", self.__config__.krt_version)
+        point.tag("workflow", self.__config__.krt_workflow_name)
+        point.tag("node", self.__config__.krt_node_name)
 
         if time is None:
             time = datetime.utcnow()

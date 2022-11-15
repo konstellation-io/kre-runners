@@ -1,22 +1,18 @@
 package kre
 
-import "github.com/konstellation-io/kre-runners/kre-go/config"
-
-type Manager struct {
+type HandlerManager struct {
 	handlers       map[string]Handler
 	defaultHandler Handler
 }
 
-type ContextManager config.Config
-
-func NewManager(defaultHandler Handler, customHandlers map[string]Handler) *Manager {
-	return &Manager{
+func NewHandlerManager(defaultHandler Handler, customHandlers map[string]Handler) *HandlerManager {
+	return &HandlerManager{
 		handlers:       customHandlers,
 		defaultHandler: defaultHandler,
 	}
 }
 
-func (s *Manager) GetHandler(selector string) Handler {
+func (s *HandlerManager) GetHandler(selector string) Handler {
 	h, ok := s.handlers[selector]
 	if !ok {
 		return s.defaultHandler

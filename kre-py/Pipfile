@@ -9,7 +9,8 @@ flake8 = "==3.9.2"
 black = "==21.5b2"
 pytest = "==6.2.4"
 pytest-asyncio = "==0.15.1"
-pytest-cov = "*"
+pytest-cov = "==4.0.0"
+freezegun = "==1.2.2"
 
 [packages]
 nats-py = "==2.1.0"
