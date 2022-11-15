@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strings"
 
 	"github.com/konstellation-io/kre/libs/simplelogger"
 )
@@ -13,10 +14,10 @@ type Config struct {
 	Version      string
 	NodeName     string
 	BasePath     string
+	IsExitpoint  bool
 	NATS         ConfigNATS
 	MongoDB      MongoDB
 	InfluxDB     InfluxDB
-	IsLastNode   bool
 }
 
 type MongoDB struct {
@@ -28,10 +29,9 @@ type MongoDB struct {
 type ConfigNATS struct {
 	Server             string
 	Stream             string
-	InputSubject       string
+	InputSubjects      []string
 	OutputSubject      string
 	MongoWriterSubject string
-	EntrypointSubject  string
 }
 
 type InfluxDB struct {
@@ -46,14 +46,13 @@ func NewConfig(logger *simplelogger.SimpleLogger) Config {
 		Version:      getCfgFromEnv(logger, "KRT_VERSION"),
 		NodeName:     getCfgFromEnv(logger, "KRT_NODE_NAME"),
 		BasePath:     getCfgFromEnv(logger, "KRT_BASE_PATH"),
-		IsLastNode:   getCfgBoolFromEnv(logger, "KRT_IS_LAST_NODE"),
+		IsExitpoint:  getCfgBoolFromEnv(logger, "KRT_IS_EXITPOINT"),
 		NATS: ConfigNATS{
 			Server:             getCfgFromEnv(logger, "KRT_NATS_SERVER"),
 			Stream:             getCfgFromEnv(logger, "KRT_NATS_STREAM"),
-			InputSubject:       getCfgFromEnv(logger, "KRT_NATS_INPUT"),
+			InputSubjects:      getSubscriptionsFromEnv(logger, "KRT_NATS_INPUTS"),
 			OutputSubject:      getCfgFromEnv(logger, "KRT_NATS_OUTPUT"),
 			MongoWriterSubject: getCfgFromEnv(logger, "KRT_NATS_MONGO_WRITER"),
-			EntrypointSubject:  getCfgFromEnv(logger, "KRT_NATS_ENTRYPOINT_SUBJECT"),
 		},
 		MongoDB: MongoDB{
 			Address:     getCfgFromEnv(logger, "KRT_MONGO_URI"),
@@ -81,4 +80,14 @@ func getCfgBoolFromEnv(logger *simplelogger.SimpleLogger, name string) bool {
 		return true
 	}
 	return false
+}
+
+func getSubscriptionsFromEnv(logger *simplelogger.SimpleLogger, name string) []string {
+	val, ok := os.LookupEnv(name)
+	if !ok {
+		logger.Errorf("Error reading config: the '%s' env var is missing", name)
+		os.Exit(1)
+	}
+
+	return strings.Split(val, ",")
 }

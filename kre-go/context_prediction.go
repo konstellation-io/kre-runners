@@ -3,8 +3,9 @@ package kre
 import (
 	"encoding/json"
 	"fmt"
-	nats2 "github.com/nats-io/nats.go"
 	"time"
+
+	nats2 "github.com/nats-io/nats.go"
 
 	"github.com/konstellation-io/kre-runners/kre-go/config"
 	"github.com/konstellation-io/kre/libs/simplelogger"
@@ -44,6 +45,18 @@ type contextPrediction struct {
 	cfg    config.Config
 	nc     *nats2.Conn
 	logger *simplelogger.SimpleLogger
+}
+
+func NewContextPrediction(
+	cfg config.Config,
+	nc *nats2.Conn,
+	logger *simplelogger.SimpleLogger,
+) *contextPrediction {
+	return &contextPrediction{
+		cfg:    cfg,
+		nc:     nc,
+		logger: logger,
+	}
 }
 
 func (c *contextPrediction) Save(date time.Time, predictedValue, trueValue string) {
