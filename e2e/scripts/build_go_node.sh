@@ -6,4 +6,8 @@
   echo "Building nodeC Golang binary..."
   go build -o ../../bin/nodeC .
 
+  cd ./../../../exitpoint-vol/src/node
+  echo "Building exitpoint Golang binary..."
+  go build -o ../../bin/exitpoint .
+
   echo "Done"
