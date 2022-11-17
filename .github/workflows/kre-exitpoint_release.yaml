@@ -4,7 +4,6 @@ on:
   push:
     paths:
       - "kre-exitpoint/**/*"
-      - ".github/workflows/kre-exitpoint*"
     branches: [ main ]
 
 jobs:
