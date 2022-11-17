@@ -3,7 +3,7 @@ module github.com/konstellation-io/kre-runners/exitpoint
 go 1.18
 
 require (
-	github.com/konstellation-io/kre-runners/kre-go v0.0.0-20220922101638-0e253b4f20fd
+	github.com/konstellation-io/kre-runners/kre-go v0.0.0-20221115170712-0a37b3c27c39
 	github.com/konstellation-io/kre/libs/simplelogger v0.0.0-20220411095035-228ab5da0b15
 	google.golang.org/protobuf v1.28.1
 )
