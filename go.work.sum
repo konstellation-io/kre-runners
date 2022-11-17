@@ -1,2 +1,5 @@
 github.com/konstellation-io/kre-runners/kre-go v0.0.0-20220922101638-0e253b4f20fd/go.mod h1:vAjB9tU6F0HfX3oogben/7qmmaStSgc4lj/P7Ayrgzs=
+github.com/konstellation-io/kre-runners/kre-go v0.0.0-20221115170712-0a37b3c27c39/go.mod h1:vAjB9tU6F0HfX3oogben/7qmmaStSgc4lj/P7Ayrgzs=
 github.com/nats-io/nats.go v1.15.0/go.mod h1:BPko4oXsySz4aSWeFgOHLZs3G4Jq4ZAyE6/zMCxRT6w=
+google.golang.org/protobuf v1.28.1 h1:d0NfwRgPtno5B1Wa6L2DAG+KivqkdutMf1UhdNx175w=
+google.golang.org/protobuf v1.28.1/go.mod h1:HV8QOd/L58Z+nl8r43ehVNZIU/HEI6OcFqwMG9pJV4I=
