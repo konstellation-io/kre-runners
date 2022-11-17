@@ -1,3 +1,21 @@
+# [kre-py-v3.0.0](https://github.com/konstellation-io/kre-runners/compare/kre-py-v2.1.5...kre-py-v3.0.0) (2022-11-15)
+
+
+### Bug Fixes
+
+* **kre-py:** revert changes to config ([#129](https://github.com/konstellation-io/kre-runners/issues/129)) ([eb091ae](https://github.com/konstellation-io/kre-runners/commit/eb091ae1f04ee02d050a8947bf2bf73afa17a396))
+
+
+### Features
+
+* **kre-py:** krt-v2 python runner support ([#124](https://github.com/konstellation-io/kre-runners/issues/124)) ([ac2e4c2](https://github.com/konstellation-io/kre-runners/commit/ac2e4c2a2f6aa913eecf584b404250884153c029))
+
+
+### BREAKING CHANGES
+
+* **kre-py:** change python runner to support krt v2
+* **kre-py:** change python runner to krt v2 support
+
 # [kre-py-v2.1.5](https://github.com/konstellation-io/kre-runners/compare/kre-py-v2.1.4...kre-py-v2.1.5) (2022-09-15)
 
 
