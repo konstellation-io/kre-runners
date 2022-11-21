@@ -1,3 +1,10 @@
+# [kre-exitpoint-v1.0.1](https://github.com/konstellation-io/kre-runners/compare/kre-exitpoint-v1.0.0...kre-exitpoint-v1.0.1) (2022-11-21)
+
+
+### Bug Fixes
+
+* **kre-exitpoint:** fix default handler ([#133](https://github.com/konstellation-io/kre-runners/issues/133)) ([6fa585b](https://github.com/konstellation-io/kre-runners/commit/6fa585b2fa5af0b9b99d83efc94a6482ca0731a3))
+
 # kre-exitpoint-v1.0.0 (2022-11-17)
 
 
