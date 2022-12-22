@@ -7,12 +7,12 @@ on:
       - "kre-go Tests"
       - "kre-entrypoint Tests"
       - "krt-files-downloader Tests"
+    branches: [ main ]
   push:
     paths:
       # kre-exitpoint does not have tests yet
       - "kre-exitpoint/**/*"
     branches: [ main ]
-  
 
 jobs:
   new-release:
