@@ -1,36 +1,3 @@
 {
-  "name": "krt-files-downloader",
-  "version": "0.0.1",
-  "release": {
-    "extends": "semantic-release-monorepo",
-    "branches": "main",
-    "plugins": [
-      [
-        "@semantic-release/commit-analyzer",
-        {
-          "preset": "angular"
-        }
-      ],
-      [
-        "@semantic-release/release-notes-generator",
-        {
-          "preset": "angular"
-        }
-      ],
-      [
-        "@semantic-release/changelog",
-        {
-          "changelogFile": "CHANGELOG.md"
-        }
-      ],
-      [
-        "@semantic-release/git",
-        {
-          "assets": [
-            "CHANGELOG.md"
-          ]
-        }
-      ]
-    ]
-  }
+  "name": "krt-files-downloader"
 }
