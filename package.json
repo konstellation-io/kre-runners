@@ -1,0 +1,27 @@
+{
+  "name": "kre-runners",
+  "private": true,
+  "workspaces": [
+    "kre-entrypoint",
+    "kre-exitpoint",
+    "kre-go",
+    "kre-py",
+    "krt-files-downloader"
+  ],
+  "release": {
+    "branches": [
+      "main"
+    ],
+    "plugins": [
+      "@semantic-release/commit-analyzer",
+      "@semantic-release/release-notes-generator",
+      "@semantic-release/github"
+    ]
+  },
+  "multi-release": {
+    "tagFormat": "${name}-v${version}"
+  },
+  "dependencies": {
+    "@qiwi/multi-semantic-release": "^6.5.1"
+  }
+}
