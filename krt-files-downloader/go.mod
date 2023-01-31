@@ -1,4 +1,4 @@
-module krt-files-downloader
+module krt-files-downloader/v2
 
 go 1.18
 
