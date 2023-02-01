@@ -3,6 +3,7 @@ package usecase_test
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"krt-files-downloader/v2/internal/domain/usecase"
 	"krt-files-downloader/v2/internal/mocks"
 	"os"
@@ -51,7 +52,7 @@ func TestKRTInteractor_DownloadKRTFiles(t *testing.T) {
 
 	defer os.RemoveAll(destination)
 
-	krtBuf, err := os.ReadFile(krtFile)
+	krtBuf, err := ioutil.ReadFile(krtFile)
 	require.Nil(t, err)
 
 	krtReader := bytes.NewReader(krtBuf)
