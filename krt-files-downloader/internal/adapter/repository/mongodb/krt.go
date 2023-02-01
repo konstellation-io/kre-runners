@@ -3,7 +3,7 @@ package mongodb
 import (
 	"fmt"
 	"io"
-	"krt-files-downloader/internal/adapter/config"
+	"krt-files-downloader/v2/internal/adapter/config"
 	"log"
 )
 
