@@ -3,7 +3,7 @@ package main
 import (
 	"google.golang.org/protobuf/types/known/anypb"
 
-	"github.com/konstellation-io/kre-runners/kre-go"
+	"github.com/konstellation-io/kre-runners/kre-go/v4"
 )
 
 var attendedRequests map[string]bool

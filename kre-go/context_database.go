@@ -8,8 +8,8 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 
-	"github.com/konstellation-io/kre-runners/kre-go/config"
-	"github.com/konstellation-io/kre-runners/kre-go/mongodb"
+	"github.com/konstellation-io/kre-runners/kre-go/v4/config"
+	"github.com/konstellation-io/kre-runners/kre-go/v4/mongodb"
 	"github.com/konstellation-io/kre/libs/simplelogger"
 )
 
