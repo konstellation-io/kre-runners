@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
-	"krt-files-downloader/internal/domain/usecase"
-	"krt-files-downloader/internal/mocks"
+	"krt-files-downloader/v2/internal/domain/usecase"
+	"krt-files-downloader/v2/internal/mocks"
 	"os"
 	"testing"
 

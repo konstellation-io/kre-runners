@@ -2,8 +2,8 @@ package usecase
 
 import (
 	"fmt"
-	"krt-files-downloader/internal/adapter/util"
-	"krt-files-downloader/internal/domain/repository"
+	"krt-files-downloader/v2/internal/adapter/util"
+	"krt-files-downloader/v2/internal/domain/repository"
 )
 
 type KRTInteractor struct {

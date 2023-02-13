@@ -1,9 +1,9 @@
 package main
 
 import (
-	"krt-files-downloader/internal/adapter/config"
-	"krt-files-downloader/internal/adapter/repository/mongodb"
-	"krt-files-downloader/internal/domain/usecase"
+	"krt-files-downloader/v2/internal/adapter/config"
+	"krt-files-downloader/v2/internal/adapter/repository/mongodb"
+	"krt-files-downloader/v2/internal/domain/usecase"
 	"log"
 )
 

@@ -1,4 +1,4 @@
-module github.com/konstellation-io/kre-runners/kre-go
+module github.com/konstellation-io/kre-runners/kre-go/v4
 
 go 1.18
 
