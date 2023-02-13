@@ -5,7 +5,7 @@ import (
 
 	influxdb2 "github.com/influxdata/influxdb-client-go"
 	"github.com/influxdata/influxdb-client-go/api"
-	"github.com/konstellation-io/kre-runners/kre-go/config"
+	"github.com/konstellation-io/kre-runners/kre-go/v4/config"
 	"github.com/konstellation-io/kre/libs/simplelogger"
 )
 

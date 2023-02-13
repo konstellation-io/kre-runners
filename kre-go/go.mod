@@ -6,7 +6,6 @@ require (
 	bou.ke/monkey v1.0.2
 	github.com/golang/mock v1.6.0
 	github.com/influxdata/influxdb-client-go v1.4.0
-	github.com/konstellation-io/kre-runners/kre-go v1.5.0
 	github.com/konstellation-io/kre/libs/simplelogger v0.0.0-20220411095035-228ab5da0b15
 	github.com/nats-io/nats-server/v2 v2.8.4
 	github.com/nats-io/nats.go v1.16.0
