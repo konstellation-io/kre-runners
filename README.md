@@ -4,13 +4,16 @@ This repo contains all language runners for [KRE](https://github.com/konstellati
 
 ## Runners coverage
 
-|      Component       |                               Coverage                               |                           Bugs                           |               Maintainability Rating               |
-| :------------------: | :------------------------------------------------------------------: | :------------------------------------------------------: | :------------------------------------------------: |
-|    KRE Entrypoint    | [![coverage][kre-entrypoint-coverage]][kre-entrypoint-coverage-link] | [![bugs][kre-entrypoint-bugs]][kre-entrypoint-bugs-link] | [![mr][kre-entrypoint-mr]][kre-entrypoint-mr-link] |
-|        KRE Go        |         [![coverage][kre-go-coverage]][kre-go-coverage-link]         |         [![bugs][kre-go-bugs]][kre-go-bugs-link]         |         [![mr][kre-go-mr]][kre-go-mr-link]         |
-|        KRE Py        |         [![coverage][kre-py-coverage]][kre-py-coverage-link]         |         [![bugs][kre-py-bugs]][kre-py-bugs-link]         |         [![mr][kre-py-mr]][kre-py-mr-link]         |
-| KRT Files Downloader |         [![coverage][krt-fd-coverage]][krt-fd-coverage-link]         |         [![bugs][krt-fd-bugs]][krt-fd-bugs-link]         |         [![mr][krt-fd-mr]][krt-fd-mr-link]         |
+|      Component       |                               Coverage                               |                           Bugs                           |               Maintainability Rating               |                      Go report                     |
+| :------------------: | :------------------------------------------------------------------: | :------------------------------------------------------: | :------------------------------------------------: | :------------------------------------------------: |
+|    KRE Entrypoint    | [![coverage][kre-entrypoint-coverage]][kre-entrypoint-coverage-link] | [![bugs][kre-entrypoint-bugs]][kre-entrypoint-bugs-link] | [-![mr][kre-entrypoint-mr]][kre-entrypoint-mr-link] | - |
+|        KRE Go        |         [![coverage][kre-go-coverage]][kre-go-coverage-link]         |         [![bugs][kre-go-bugs]][kre-go-bugs-link]         |         [![mr][kre-go-mr]][kre-go-mr-link]         | [![report][go-runner-report-badge]][go-runner-report-link] |
+|        KRE Py        |         [![coverage][kre-py-coverage]][kre-py-coverage-link]         |         [![bugs][kre-py-bugs]][kre-py-bugs-link]         |         [![mr][kre-py-mr]][kre-py-mr-link]         | - |
+| KRT Files Downloader |         [![coverage][krt-fd-coverage]][krt-fd-coverage-link]         |         [![bugs][krt-fd-bugs]][krt-fd-bugs-link]         |         [![mr][krt-fd-mr]][krt-fd-mr-link]         | - |
 
+
+[go-runner-report-badge]: https://goreportcard.com/badge/github.com/konstellation-io/kre-runners/kre-go
+[go-runner-report-link]: https://goreportcard.com/report/github.com/konstellation-io/kre-runners/kre-go
 [kre-py-coverage]: https://sonarcloud.io/api/project_badges/measure?project=konstellation-io_kre_py&metric=coverage
 [kre-py-coverage-link]: https://sonarcloud.io/dashboard?id=konstellation-io_kre_py
 [kre-py-bugs]: https://sonarcloud.io/api/project_badges/measure?project=konstellation-io_kre_py&metric=bugs
