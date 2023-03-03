@@ -25,17 +25,19 @@ const (
 
 type PublishMsgFunc = func(response proto.Message, reqMsg *KreNatsMessage, msgType MessageType, channel string) error
 type PublishAnyFunc = func(response *anypb.Any, reqMsg *KreNatsMessage, msgType MessageType, channel string)
+type CreateObjectStoreFunc = func(bucketName string) error
 
 type HandlerContext struct {
-	cfg         config.Config
-	values      map[string]interface{}
-	publishMsg  PublishMsgFunc
-	publishAny  PublishAnyFunc
-	reqMsg      *KreNatsMessage
-	Logger      *simplelogger.SimpleLogger
-	Prediction  *contextPrediction
-	Measurement *contextMeasurement
-	DB          *contextDatabase
+	cfg               config.Config
+	values            map[string]interface{}
+	publishMsg        PublishMsgFunc
+	publishAny        PublishAnyFunc
+	reqMsg            *KreNatsMessage
+	Logger            *simplelogger.SimpleLogger
+	Prediction        *contextPrediction
+	Measurement       *contextMeasurement
+	DB                *contextDatabase
+	createObjectStore CreateObjectStoreFunc
 }
 
 func NewHandlerContext(
@@ -45,16 +47,18 @@ func NewHandlerContext(
 	logger *simplelogger.SimpleLogger,
 	publishMsg PublishMsgFunc,
 	publishAny PublishAnyFunc,
+	createObjectStore CreateObjectStoreFunc,
 ) *HandlerContext {
 	return &HandlerContext{
-		cfg:         cfg,
-		values:      map[string]interface{}{},
-		publishMsg:  publishMsg,
-		publishAny:  publishAny,
-		Logger:      logger,
-		Prediction:  NewContextPrediction(cfg, nc, logger),
-		Measurement: NewContextMeasurement(cfg, logger),
-		DB:          NewContextDatabase(cfg, nc, mongoM, logger),
+		cfg:               cfg,
+		values:            map[string]interface{}{},
+		publishMsg:        publishMsg,
+		publishAny:        publishAny,
+		Logger:            logger,
+		Prediction:        NewContextPrediction(cfg, nc, logger),
+		Measurement:       NewContextMeasurement(cfg, logger),
+		DB:                NewContextDatabase(cfg, nc, mongoM, logger),
+		createObjectStore: createObjectStore,
 	}
 }
 
@@ -166,4 +170,9 @@ func (c *HandlerContext) IsMessageEarlyReply() bool {
 // IsMessageEarlyExit returns true if the incoming message is of message type EARLY EXIT.
 func (c *HandlerContext) IsMessageEarlyExit() bool {
 	return c.reqMsg.MessageType == MessageType_EARLY_EXIT
+}
+
+// CreateObjectStore creates an object store in NATS
+func (c *HandlerContext) CreateObjectStore(bucketName string) error {
+	return c.createObjectStore(bucketName)
 }

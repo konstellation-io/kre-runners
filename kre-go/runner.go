@@ -49,7 +49,7 @@ func NewRunner(
 		handlerManager: handlerManager,
 	}
 
-	c := NewHandlerContext(cfg, nc, mongoM, logger, runner.publishMsg, runner.publishAny)
+	c := NewHandlerContext(cfg, nc, mongoM, logger, runner.publishMsg, runner.publishAny, runner.createObjectStore)
 	handlerInit(c)
 
 	runner.handlerContext = c
@@ -240,4 +240,15 @@ func (r *Runner) saveElapsedTime(start time.Time, end time.Time, fromNode string
 
 func sizeInKB(s []byte) string {
 	return fmt.Sprintf("%.2f KB", float32(len(s))/1024)
+}
+
+func (r *Runner) createObjectStore(bucketName string) error {
+	cfg := nats.ObjectStoreConfig{
+		Bucket: bucketName,
+	}
+	_, err := r.js.CreateObjectStore(&cfg)
+	if err != nil {
+		return err
+	}
+	return nil
 }
