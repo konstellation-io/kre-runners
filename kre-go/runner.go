@@ -159,6 +159,107 @@ func (r *Runner) publishError(requestID, errMsg string) {
 	r.publishResponse(responseMsg, "")
 }
 
+func (r *Runner) createObjectStore(objectStore string) error {
+	_, err := r.js.ObjectStore(objectStore)
+	if err != nil {
+		_, err = r.js.CreateObjectStore(&nats.ObjectStoreConfig{
+			Bucket:  objectStore,
+			Storage: nats.FileStorage,
+		})
+		if err != nil {
+			return fmt.Errorf("error creating the object store: %s", err)
+		}
+	}
+	return nil
+}
+
+func (r *Runner) storeObject(key string, payload []byte, objectStore string) error {
+	if payload == nil {
+		return fmt.Errorf("the payload cannot be empty")
+	}
+
+	os, err := r.js.ObjectStore(objectStore)
+	if err != nil {
+		os, err = r.js.CreateObjectStore(&nats.ObjectStoreConfig{
+			Bucket:  objectStore,
+			Storage: nats.FileStorage,
+		})
+		if err != nil {
+			return fmt.Errorf("error creating the object store: %s", err)
+		}
+	}
+
+	_, err = os.PutBytes(key, payload)
+	if err != nil {
+		return fmt.Errorf("error storing object to the object store: %s", err)
+	}
+	return nil
+}
+
+func (r *Runner) getObject(key, objectStore string) ([]byte, error) {
+	os, err := r.js.ObjectStore(objectStore)
+	if err != nil {
+		return nil, fmt.Errorf("error binding the object store: %s", err)
+	}
+
+	response, err := os.GetBytes(key)
+
+	if err != nil {
+		return nil, fmt.Errorf("error retrieving object with key %s from the object store: %s", key, err)
+	}
+
+	return response, nil
+}
+
+func (r *Runner) createConfigStore(keyValueStore string) error {
+	_, err := r.js.KeyValue(keyValueStore)
+	if err != nil {
+		_, err = r.js.CreateKeyValue(&nats.KeyValueConfig{
+			Bucket:  keyValueStore,
+			Storage: nats.FileStorage,
+		})
+
+		if err != nil {
+			return fmt.Errorf("error creating the key-value store: %s", err)
+		}
+	}
+	return nil
+}
+
+func (r *Runner) saveConfig(key, value, keyValueStore string) error {
+	kvStore, err := r.js.KeyValue(keyValueStore)
+	if err != nil {
+		kvStore, err = r.js.CreateKeyValue(&nats.KeyValueConfig{
+			Bucket:  keyValueStore,
+			Storage: nats.FileStorage,
+		})
+		if err != nil {
+			return fmt.Errorf("error creating the key-value store: %s", err)
+		}
+	}
+
+	_, err = kvStore.PutString(key, value)
+	if err != nil {
+		return fmt.Errorf("error storing value with key %s to the key-value store: %s", key, err)
+	}
+	return nil
+}
+
+func (r *Runner) getConfig(key, keyValueStore string) (string, error) {
+	kvStore, err := r.js.KeyValue(keyValueStore)
+	if err != nil {
+		return "", fmt.Errorf("error binding the key-value store: %s", err)
+	}
+
+	response, err := kvStore.Get(key)
+
+	if err != nil {
+		return "", fmt.Errorf("error retrieving config with key %s from the key-value store: %s", key, err)
+	}
+
+	return string(response.Value()), nil
+}
+
 // newResponseMsg creates a KreNatsMessage that keeps previous request ID plus adding the payload we wish to send.
 func (r *Runner) newResponseMsg(payload *anypb.Any, requestMsg *KreNatsMessage, msgType MessageType) *KreNatsMessage {
 	return &KreNatsMessage{

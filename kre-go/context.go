@@ -20,17 +20,25 @@ var (
 )
 
 const (
-	defaultChannel = ""
+	defaultValue = ""
 )
 
 type PublishMsgFunc = func(response proto.Message, reqMsg *KreNatsMessage, msgType MessageType, channel string) error
 type PublishAnyFunc = func(response *anypb.Any, reqMsg *KreNatsMessage, msgType MessageType, channel string)
+type StoreObjectFunc = func(key string, payload []byte, objectStore string) error
+type GetObjectFunc = func(key, objectStore string) ([]byte, error)
+type SaveConfigFunc = func(key, value, keyValueStore string) error
+type GetConfigFunc = func(key, keyValueStore string) (string, error)
 
 type HandlerContext struct {
 	cfg         config.Config
 	values      map[string]interface{}
 	publishMsg  PublishMsgFunc
 	publishAny  PublishAnyFunc
+	storeObject StoreObjectFunc
+	getObject   GetObjectFunc
+	saveConfig  SaveConfigFunc
+	getConfig   GetConfigFunc
 	reqMsg      *KreNatsMessage
 	Logger      *simplelogger.SimpleLogger
 	Prediction  *contextPrediction
@@ -58,14 +66,17 @@ func NewHandlerContext(
 	}
 }
 
+// Path will return the relative path given as an argument as a full path.
 func (c *HandlerContext) Path(relativePath string) string {
 	return path.Join(c.cfg.BasePath, relativePath)
 }
 
+// Set will add the given key and value to the in-memory storage.
 func (c *HandlerContext) Set(key string, value interface{}) {
 	c.values[key] = value
 }
 
+// Get will return the value of the given key if it exists on the in-memory storage.
 func (c *HandlerContext) Get(key string) interface{} {
 	if val, ok := c.values[key]; ok {
 		return val
@@ -74,6 +85,7 @@ func (c *HandlerContext) Get(key string) interface{} {
 	return nil
 }
 
+// Get will return the value of the given key as a string if it exists on the in-memory storage.
 func (c *HandlerContext) GetString(key string) string {
 	v := c.Get(key)
 	if val, ok := v.(string); ok {
@@ -83,6 +95,8 @@ func (c *HandlerContext) GetString(key string) string {
 	return ""
 }
 
+
+// Get will return the value of the given key as an integer if it exists on the in-memory storage.
 func (c *HandlerContext) GetInt(key string) int {
 	v := c.Get(key)
 	if val, ok := v.(int); ok {
@@ -92,6 +106,7 @@ func (c *HandlerContext) GetInt(key string) int {
 	return -1
 }
 
+// Get will return the value of the given key as a float if it exists on the in-memory storage.
 func (c *HandlerContext) GetFloat(key string) float64 {
 	v := c.Get(key)
 	if val, ok := v.(float64); ok {
@@ -115,7 +130,7 @@ func (c *HandlerContext) GetRequestID() string {
 // GRPC requests can only be answered once. So once the entrypoint has been replied by the exitpoint,
 // all following replies to the entrypoint from the same request will be ignored.
 func (c *HandlerContext) SendOutput(response proto.Message, channelOpt ...string) error {
-	return c.publishMsg(response, c.reqMsg, MessageType_OK, c.getChannel(channelOpt))
+	return c.publishMsg(response, c.reqMsg, MessageType_OK, c.getOptionalString(channelOpt))
 }
 
 // SendAny will send any type of proto payload to the node's subject.
@@ -126,26 +141,50 @@ func (c *HandlerContext) SendOutput(response proto.Message, channelOpt ...string
 // Use this function when you wish to simply redirect your node's payload without unpackaging.
 // Once the entrypoint has been replied, all following replies to the entrypoint will be ignored.
 func (c *HandlerContext) SendAny(response *anypb.Any, channelOpt ...string) {
-	c.publishAny(response, c.reqMsg, MessageType_OK, c.getChannel(channelOpt))
+	c.publishAny(response, c.reqMsg, MessageType_OK, c.getOptionalString(channelOpt))
 }
 
 // SendEarlyReply works as the SendOutput functionality
 // with the addition of typing this message as an early reply.
 func (c *HandlerContext) SendEarlyReply(response proto.Message, channelOpt ...string) error {
-	return c.publishMsg(response, c.reqMsg, MessageType_EARLY_REPLY, c.getChannel(channelOpt))
+	return c.publishMsg(response, c.reqMsg, MessageType_EARLY_REPLY, c.getOptionalString(channelOpt))
 }
 
 // SendEarlyExit works as the SendOutput functionality
 // with the addition of typing this message as an early exit.
 func (c *HandlerContext) SendEarlyExit(response proto.Message, channelOpt ...string) error {
-	return c.publishMsg(response, c.reqMsg, MessageType_EARLY_EXIT, c.getChannel(channelOpt))
+	return c.publishMsg(response, c.reqMsg, MessageType_EARLY_EXIT, c.getOptionalString(channelOpt))
 }
 
-func (c *HandlerContext) getChannel(channels []string) string {
-	if len(channels) > 0 {
-		return channels[0]
+// StoreObject stores the given payload in the Object Store with the given key as identifier
+// If an objectStore name is given, a new Object Store will be created.
+func (c *HandlerContext) StoreObject(key string, payload []byte, objectStoreOpt ...string) error {
+	return c.storeObject(key, payload, c.getOptionalString(objectStoreOpt))
+}
+
+// GetObject retrieves the object stored in the given object store or the default object store for the workflow
+// with the given key as identifier as a byte array.
+func (c *HandlerContext) GetObject(key string, objectStoreOpt ...string) ([]byte, error) {
+	return c.getObject(key, c.getOptionalString(objectStoreOpt))
+}
+
+// SaveConfig Stores the given key and value to the given key-value storage, 
+// or the default key-value storage if not given any.
+func (c *HandlerContext) SaveConfig(key, value string, keyValStoreOpt ...string) error {
+	return c.saveConfig(key, value, c.getOptionalString(keyValStoreOpt))
+}
+
+// GetConfig retrieves the configuration given a key and an optional key-value storage name,
+// if no key-value storage name is given it will use the default one.
+func (c *HandlerContext) GetConfig(key string, keyValStoreOpt ...string) (string, error) {
+	return c.getConfig(key, c.getOptionalString(keyValStoreOpt))
+}
+
+func (c *HandlerContext) getOptionalString(values []string) string {
+	if len(values) > 0 {
+		return values[0]
 	}
-	return defaultChannel
+	return defaultValue
 }
 
 // IsMessageOK returns true if the incoming message is of message type OK.
