@@ -54,8 +54,8 @@ func NewConfig(logger *simplelogger.SimpleLogger) Config {
 			Stream:             getCfgFromEnv(logger, "KRT_NATS_STREAM"),
 			InputSubjects:      getSubscriptionsFromEnv(logger, "KRT_NATS_INPUTS"),
 			OutputSubject:      getCfgFromEnv(logger, "KRT_NATS_OUTPUT"),
-			ObjectStoreName:    getCfgFromEnv(logger, "KRT_NATS_OBJECT_STORE"),
-			KeyValueStoreName:  getCfgFromEnv(logger, "KRT_NATS_KEY_VALUE_STORE"),
+			ObjectStoreName:    getOptCfgFromEnv(logger, "KRT_NATS_OBJECT_STORE"),
+			KeyValueStoreName:  getOptCfgFromEnv(logger, "KRT_NATS_KEY_VALUE_STORE"),
 			MongoWriterSubject: getCfgFromEnv(logger, "KRT_NATS_MONGO_WRITER"),
 		},
 		MongoDB: MongoDB{
@@ -70,10 +70,19 @@ func NewConfig(logger *simplelogger.SimpleLogger) Config {
 }
 
 func getCfgFromEnv(logger *simplelogger.SimpleLogger, name string) string {
+	val := getOptCfgFromEnv(logger, name)
+	if val == "" {
+		logger.Errorf("Error reading config: the '%s' env var is missing", name)
+		os.Exit(1)
+	}
+	return val
+}
+
+func getOptCfgFromEnv(logger *simplelogger.SimpleLogger, name string) string {
 	val, ok := os.LookupEnv(name)
 	if !ok {
 		logger.Errorf("Error reading config: the '%s' env var is missing", name)
-		os.Exit(1)
+		return ""
 	}
 	return val
 }
