@@ -181,7 +181,7 @@ func (c *HandlerContext) GetObject(key string) ([]byte, error) {
 
 // DeleteObject deletes the object stored in the given object store or the default object store for the workflow
 // with the given key as identifier as a byte array.
-func (c *HandlerContext) DeleteObject(key string) ([]byte, error) {
+func (c *HandlerContext) DeleteObject(key string) error {
 	return c.deleteObject(key)
 }
 
