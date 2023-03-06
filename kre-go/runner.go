@@ -49,7 +49,20 @@ func NewRunner(
 		handlerManager: handlerManager,
 	}
 
-	c := NewHandlerContext(cfg, nc, mongoM, logger, runner.publishMsg, runner.publishAny)
+	c := NewHandlerContext(
+		cfg,
+		nc,
+		mongoM,
+		logger,
+		runner.publishMsg,
+		runner.publishAny,
+		runner.storeObject,
+		runner.getObject,
+		runner.deleteObject,
+		runner.saveConfig,
+		runner.getConfig,
+	)
+
 	handlerInit(c)
 
 	runner.handlerContext = c
@@ -159,45 +172,27 @@ func (r *Runner) publishError(requestID, errMsg string) {
 	r.publishResponse(responseMsg, "")
 }
 
-func (r *Runner) createObjectStore(objectStore string) error {
-	_, err := r.js.ObjectStore(objectStore)
-	if err != nil {
-		_, err = r.js.CreateObjectStore(&nats.ObjectStoreConfig{
-			Bucket:  objectStore,
-			Storage: nats.FileStorage,
-		})
-		if err != nil {
-			return fmt.Errorf("error creating the object store: %s", err)
-		}
-	}
-	return nil
-}
-
-func (r *Runner) storeObject(key string, payload []byte, objectStore string) error {
+func (r *Runner) storeObject(key string, payload []byte) error {
 	if payload == nil {
 		return fmt.Errorf("the payload cannot be empty")
 	}
-
-	os, err := r.js.ObjectStore(objectStore)
+	os, err := r.js.ObjectStore(r.cfg.NATS.ObjectStoreName)
 	if err != nil {
-		os, err = r.js.CreateObjectStore(&nats.ObjectStoreConfig{
-			Bucket:  objectStore,
-			Storage: nats.FileStorage,
-		})
-		if err != nil {
-			return fmt.Errorf("error creating the object store: %s", err)
-		}
+		return fmt.Errorf("the object store does not exist: %s", err)
 	}
 
 	_, err = os.PutBytes(key, payload)
 	if err != nil {
 		return fmt.Errorf("error storing object to the object store: %s", err)
 	}
+
+	r.logger.Debugf("File with key %q successfully stored in object store %q", key, r.cfg.NATS.ObjectStoreName)
+
 	return nil
 }
 
-func (r *Runner) getObject(key, objectStore string) ([]byte, error) {
-	os, err := r.js.ObjectStore(objectStore)
+func (r *Runner) getObject(key string) ([]byte, error) {
+	os, err := r.js.ObjectStore(r.cfg.NATS.ObjectStoreName)
 	if err != nil {
 		return nil, fmt.Errorf("error binding the object store: %s", err)
 	}
@@ -208,7 +203,26 @@ func (r *Runner) getObject(key, objectStore string) ([]byte, error) {
 		return nil, fmt.Errorf("error retrieving object with key %s from the object store: %s", key, err)
 	}
 
+	r.logger.Debugf("File with key %q successfully retrieved from object store %q", key, r.cfg.NATS.ObjectStoreName)
+
 	return response, nil
+}
+
+func (r *Runner) deleteObject(key string) error {
+	os, err := r.js.ObjectStore(r.cfg.NATS.ObjectStoreName)
+	if err != nil {
+		return fmt.Errorf("error binding the object store: %s", err)
+	}
+
+	err = os.Delete(key)
+
+	if err != nil {
+		return fmt.Errorf("error retrieving object with key %s from the object store: %s", key, err)
+	}
+
+	r.logger.Debugf("File with key %q successfully deleted in object store %q", key, r.cfg.NATS.ObjectStoreName)
+
+	return nil
 }
 
 func (r *Runner) createConfigStore(keyValueStore string) error {

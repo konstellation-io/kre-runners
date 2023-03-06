@@ -25,25 +25,27 @@ const (
 
 type PublishMsgFunc = func(response proto.Message, reqMsg *KreNatsMessage, msgType MessageType, channel string) error
 type PublishAnyFunc = func(response *anypb.Any, reqMsg *KreNatsMessage, msgType MessageType, channel string)
-type StoreObjectFunc = func(key string, payload []byte, objectStore string) error
-type GetObjectFunc = func(key, objectStore string) ([]byte, error)
+type StoreObjectFunc = func(key string, payload []byte) error
+type GetObjectFunc = func(key string) ([]byte, error)
+type DeleteObjectFunc = func(key string) error
 type SaveConfigFunc = func(key, value, keyValueStore string) error
 type GetConfigFunc = func(key, keyValueStore string) (string, error)
 
 type HandlerContext struct {
-	cfg         config.Config
-	values      map[string]interface{}
-	publishMsg  PublishMsgFunc
-	publishAny  PublishAnyFunc
-	storeObject StoreObjectFunc
-	getObject   GetObjectFunc
-	saveConfig  SaveConfigFunc
-	getConfig   GetConfigFunc
-	reqMsg      *KreNatsMessage
-	Logger      *simplelogger.SimpleLogger
-	Prediction  *contextPrediction
-	Measurement *contextMeasurement
-	DB          *contextDatabase
+	cfg          config.Config
+	values       map[string]interface{}
+	publishMsg   PublishMsgFunc
+	publishAny   PublishAnyFunc
+	storeObject  StoreObjectFunc
+	getObject    GetObjectFunc
+	deleteObject DeleteObjectFunc
+	saveConfig   SaveConfigFunc
+	getConfig    GetConfigFunc
+	reqMsg       *KreNatsMessage
+	Logger       *simplelogger.SimpleLogger
+	Prediction   *contextPrediction
+	Measurement  *contextMeasurement
+	DB           *contextDatabase
 }
 
 func NewHandlerContext(
@@ -53,16 +55,26 @@ func NewHandlerContext(
 	logger *simplelogger.SimpleLogger,
 	publishMsg PublishMsgFunc,
 	publishAny PublishAnyFunc,
+	storeObject StoreObjectFunc,
+	getObject GetObjectFunc,
+	deleteObject DeleteObjectFunc,
+	saveConfig SaveConfigFunc,
+	getCofig GetConfigFunc,
 ) *HandlerContext {
 	return &HandlerContext{
-		cfg:         cfg,
-		values:      map[string]interface{}{},
-		publishMsg:  publishMsg,
-		publishAny:  publishAny,
-		Logger:      logger,
-		Prediction:  NewContextPrediction(cfg, nc, logger),
-		Measurement: NewContextMeasurement(cfg, logger),
-		DB:          NewContextDatabase(cfg, nc, mongoM, logger),
+		cfg:          cfg,
+		values:       map[string]interface{}{},
+		publishMsg:   publishMsg,
+		publishAny:   publishAny,
+		getObject:    getObject,
+		storeObject:  storeObject,
+		deleteObject: deleteObject,
+		saveConfig:   saveConfig,
+		getConfig:    getCofig,
+		Logger:       logger,
+		Prediction:   NewContextPrediction(cfg, nc, logger),
+		Measurement:  NewContextMeasurement(cfg, logger),
+		DB:           NewContextDatabase(cfg, nc, mongoM, logger),
 	}
 }
 
@@ -94,7 +106,6 @@ func (c *HandlerContext) GetString(key string) string {
 	c.Logger.Infof("Error getting value for key '%s' is not a string", key)
 	return ""
 }
-
 
 // Get will return the value of the given key as an integer if it exists on the in-memory storage.
 func (c *HandlerContext) GetInt(key string) int {
@@ -158,17 +169,23 @@ func (c *HandlerContext) SendEarlyExit(response proto.Message, channelOpt ...str
 
 // StoreObject stores the given payload in the Object Store with the given key as identifier
 // If an objectStore name is given, a new Object Store will be created.
-func (c *HandlerContext) StoreObject(key string, payload []byte, objectStoreOpt ...string) error {
-	return c.storeObject(key, payload, c.getOptionalString(objectStoreOpt))
+func (c *HandlerContext) StoreObject(key string, payload []byte) error {
+	return c.storeObject(key, payload)
 }
 
 // GetObject retrieves the object stored in the given object store or the default object store for the workflow
 // with the given key as identifier as a byte array.
-func (c *HandlerContext) GetObject(key string, objectStoreOpt ...string) ([]byte, error) {
-	return c.getObject(key, c.getOptionalString(objectStoreOpt))
+func (c *HandlerContext) GetObject(key string) ([]byte, error) {
+	return c.getObject(key)
 }
 
-// SaveConfig Stores the given key and value to the given key-value storage, 
+// DeleteObject deletes the object stored in the given object store or the default object store for the workflow
+// with the given key as identifier as a byte array.
+func (c *HandlerContext) DeleteObject(key string) ([]byte, error) {
+	return c.deleteObject(key)
+}
+
+// SaveConfig Stores the given key and value to the given key-value storage,
 // or the default key-value storage if not given any.
 func (c *HandlerContext) SaveConfig(key, value string, keyValStoreOpt ...string) error {
 	return c.saveConfig(key, value, c.getOptionalString(keyValStoreOpt))
