@@ -89,7 +89,7 @@ func (c *HandlerContext) Get(key string) interface{} {
 	return nil
 }
 
-// Get will return the value of the given key as a string if it exists on the in-memory storage.
+// GetString will return the value of the given key as a string if it exists on the in-memory storage.
 func (c *HandlerContext) GetString(key string) string {
 	v := c.Get(key)
 	if val, ok := v.(string); ok {
@@ -99,7 +99,7 @@ func (c *HandlerContext) GetString(key string) string {
 	return ""
 }
 
-// Get will return the value of the given key as an integer if it exists on the in-memory storage.
+// GetInt will return the value of the given key as an integer if it exists on the in-memory storage.
 func (c *HandlerContext) GetInt(key string) int {
 	v := c.Get(key)
 	if val, ok := v.(int); ok {
@@ -109,7 +109,7 @@ func (c *HandlerContext) GetInt(key string) int {
 	return -1
 }
 
-// Get will return the value of the given key as a float if it exists on the in-memory storage.
+// GetFloat will return the value of the given key as a float if it exists on the in-memory storage.
 func (c *HandlerContext) GetFloat(key string) float64 {
 	v := c.Get(key)
 	if val, ok := v.(float64); ok {
