@@ -59,8 +59,6 @@ func NewRunner(
 		runner.storeObject,
 		runner.getObject,
 		runner.deleteObject,
-		runner.saveConfig,
-		runner.getConfig,
 	)
 
 	handlerInit(c)
@@ -223,55 +221,6 @@ func (r *Runner) deleteObject(key string) error {
 	r.logger.Debugf("File with key %q successfully deleted in object store %q", key, r.cfg.NATS.ObjectStoreName)
 
 	return nil
-}
-
-func (r *Runner) createConfigStore(keyValueStore string) error {
-	_, err := r.js.KeyValue(keyValueStore)
-	if err != nil {
-		_, err = r.js.CreateKeyValue(&nats.KeyValueConfig{
-			Bucket:  keyValueStore,
-			Storage: nats.FileStorage,
-		})
-
-		if err != nil {
-			return fmt.Errorf("error creating the key-value store: %s", err)
-		}
-	}
-	return nil
-}
-
-func (r *Runner) saveConfig(key, value, keyValueStore string) error {
-	kvStore, err := r.js.KeyValue(keyValueStore)
-	if err != nil {
-		kvStore, err = r.js.CreateKeyValue(&nats.KeyValueConfig{
-			Bucket:  keyValueStore,
-			Storage: nats.FileStorage,
-		})
-		if err != nil {
-			return fmt.Errorf("error creating the key-value store: %s", err)
-		}
-	}
-
-	_, err = kvStore.PutString(key, value)
-	if err != nil {
-		return fmt.Errorf("error storing value with key %s to the key-value store: %s", key, err)
-	}
-	return nil
-}
-
-func (r *Runner) getConfig(key, keyValueStore string) (string, error) {
-	kvStore, err := r.js.KeyValue(keyValueStore)
-	if err != nil {
-		return "", fmt.Errorf("error binding the key-value store: %s", err)
-	}
-
-	response, err := kvStore.Get(key)
-
-	if err != nil {
-		return "", fmt.Errorf("error retrieving config with key %s from the key-value store: %s", key, err)
-	}
-
-	return string(response.Value()), nil
 }
 
 // newResponseMsg creates a KreNatsMessage that keeps previous request ID plus adding the payload we wish to send.

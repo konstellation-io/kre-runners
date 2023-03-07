@@ -28,8 +28,6 @@ type PublishAnyFunc = func(response *anypb.Any, reqMsg *KreNatsMessage, msgType 
 type StoreObjectFunc = func(key string, payload []byte) error
 type GetObjectFunc = func(key string) ([]byte, error)
 type DeleteObjectFunc = func(key string) error
-type SaveConfigFunc = func(key, value, keyValueStore string) error
-type GetConfigFunc = func(key, keyValueStore string) (string, error)
 
 type HandlerContext struct {
 	cfg          config.Config
@@ -39,8 +37,6 @@ type HandlerContext struct {
 	storeObject  StoreObjectFunc
 	getObject    GetObjectFunc
 	deleteObject DeleteObjectFunc
-	saveConfig   SaveConfigFunc
-	getConfig    GetConfigFunc
 	reqMsg       *KreNatsMessage
 	Logger       *simplelogger.SimpleLogger
 	Prediction   *contextPrediction
@@ -58,8 +54,6 @@ func NewHandlerContext(
 	storeObject StoreObjectFunc,
 	getObject GetObjectFunc,
 	deleteObject DeleteObjectFunc,
-	saveConfig SaveConfigFunc,
-	getCofig GetConfigFunc,
 ) *HandlerContext {
 	return &HandlerContext{
 		cfg:          cfg,
@@ -69,8 +63,6 @@ func NewHandlerContext(
 		getObject:    getObject,
 		storeObject:  storeObject,
 		deleteObject: deleteObject,
-		saveConfig:   saveConfig,
-		getConfig:    getCofig,
 		Logger:       logger,
 		Prediction:   NewContextPrediction(cfg, nc, logger),
 		Measurement:  NewContextMeasurement(cfg, logger),
@@ -183,18 +175,6 @@ func (c *HandlerContext) GetObject(key string) ([]byte, error) {
 // with the given key as identifier as a byte array.
 func (c *HandlerContext) DeleteObject(key string) error {
 	return c.deleteObject(key)
-}
-
-// SaveConfig Stores the given key and value to the given key-value storage,
-// or the default key-value storage if not given any.
-func (c *HandlerContext) SaveConfig(key, value string, keyValStoreOpt ...string) error {
-	return c.saveConfig(key, value, c.getOptionalString(keyValStoreOpt))
-}
-
-// GetConfig retrieves the configuration given a key and an optional key-value storage name,
-// if no key-value storage name is given it will use the default one.
-func (c *HandlerContext) GetConfig(key string, keyValStoreOpt ...string) (string, error) {
-	return c.getConfig(key, c.getOptionalString(keyValStoreOpt))
 }
 
 func (c *HandlerContext) getOptionalString(values []string) string {
