@@ -26,6 +26,7 @@ type Runner struct {
 	cfg            config.Config
 	nc             *nats.Conn
 	js             nats.JetStreamContext
+	objStore       nats.ObjectStore
 	handlerContext *HandlerContext
 	handlerManager *HandlerManager
 }
@@ -37,6 +38,7 @@ func NewRunner(
 	cfg config.Config,
 	nc *nats.Conn,
 	js nats.JetStreamContext,
+	objStore nats.ObjectStore,
 	handlerManager *HandlerManager,
 	handlerInit HandlerInit,
 	mongoM *mongodb.MongoDB,
@@ -46,6 +48,7 @@ func NewRunner(
 		cfg:            cfg,
 		nc:             nc,
 		js:             js,
+		objStore:       objStore,
 		handlerManager: handlerManager,
 	}
 
@@ -171,15 +174,14 @@ func (r *Runner) publishError(requestID, errMsg string) {
 }
 
 func (r *Runner) storeObject(key string, payload []byte) error {
+	if r.objStore == nil {
+		return fmt.Errorf("the object store does not exist")
+	}
 	if payload == nil {
 		return fmt.Errorf("the payload cannot be empty")
 	}
-	os, err := r.js.ObjectStore(r.cfg.NATS.ObjectStoreName)
-	if err != nil {
-		return fmt.Errorf("the object store does not exist: %s", err)
-	}
 
-	_, err = os.PutBytes(key, payload)
+	_, err := r.objStore.PutBytes(key, payload)
 	if err != nil {
 		return fmt.Errorf("error storing object to the object store: %s", err)
 	}
@@ -190,13 +192,11 @@ func (r *Runner) storeObject(key string, payload []byte) error {
 }
 
 func (r *Runner) getObject(key string) ([]byte, error) {
-	os, err := r.js.ObjectStore(r.cfg.NATS.ObjectStoreName)
-	if err != nil {
-		return nil, fmt.Errorf("error binding the object store: %s", err)
+	if r.objStore == nil {
+		return nil, fmt.Errorf("the object store does not exist")
 	}
 
-	response, err := os.GetBytes(key)
-
+	response, err := r.objStore.GetBytes(key)
 	if err != nil {
 		return nil, fmt.Errorf("error retrieving object with key %s from the object store: %s", key, err)
 	}
@@ -207,13 +207,11 @@ func (r *Runner) getObject(key string) ([]byte, error) {
 }
 
 func (r *Runner) deleteObject(key string) error {
-	os, err := r.js.ObjectStore(r.cfg.NATS.ObjectStoreName)
-	if err != nil {
-		return fmt.Errorf("error binding the object store: %s", err)
+	if r.objStore == nil {
+		return fmt.Errorf("the object store does not exist")
 	}
 
-	err = os.Delete(key)
-
+	err := r.objStore.Delete(key)
 	if err != nil {
 		return fmt.Errorf("error retrieving object with key %s from the object store: %s", key, err)
 	}
