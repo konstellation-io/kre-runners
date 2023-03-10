@@ -28,6 +28,17 @@ type PublishAnyFunc = func(response *anypb.Any, reqMsg *KreNatsMessage, msgType 
 type StoreObjectFunc = func(key string, payload []byte) error
 type GetObjectFunc = func(key string) ([]byte, error)
 type DeleteObjectFunc = func(key string) error
+type SetConfigFunc = func(key, value string, scope Scope) error
+type GetConfigFunc = func(key string, scopes []Scope) (string, error)
+type DeleteConfigFunc = func(key string, scope Scope) error
+
+type Scope string
+
+const (
+	ScopeProject  Scope = "project"
+	ScopeWorkflow Scope = "workflow"
+	ScopeNode     Scope = "node"
+)
 
 type HandlerContext struct {
 	cfg          config.Config
@@ -37,6 +48,9 @@ type HandlerContext struct {
 	storeObject  StoreObjectFunc
 	getObject    GetObjectFunc
 	deleteObject DeleteObjectFunc
+	setConfig    SetConfigFunc
+	getConfig    GetConfigFunc
+	deleteConfig DeleteConfigFunc
 	reqMsg       *KreNatsMessage
 	Logger       *simplelogger.SimpleLogger
 	Prediction   *contextPrediction
@@ -54,6 +68,9 @@ func NewHandlerContext(
 	storeObject StoreObjectFunc,
 	getObject GetObjectFunc,
 	deleteObject DeleteObjectFunc,
+	setConfig SetConfigFunc,
+	getConfig GetConfigFunc,
+	deleteConfig DeleteConfigFunc,
 ) *HandlerContext {
 	return &HandlerContext{
 		cfg:          cfg,
@@ -63,6 +80,9 @@ func NewHandlerContext(
 		getObject:    getObject,
 		storeObject:  storeObject,
 		deleteObject: deleteObject,
+		setConfig:    setConfig,
+		getConfig:    getConfig,
+		deleteConfig: deleteConfig,
 		Logger:       logger,
 		Prediction:   NewContextPrediction(cfg, nc, logger),
 		Measurement:  NewContextMeasurement(cfg, logger),
@@ -177,11 +197,36 @@ func (c *HandlerContext) DeleteObject(key string) error {
 	return c.deleteObject(key)
 }
 
+// SetConfig set the given key and value to an optional scoped key-value storage,
+// or the default key-value storage (Node's) if not given any.
+func (c *HandlerContext) SetConfig(key, value string, scopeOpt ...Scope) error {
+	return c.setConfig(key, value, c.getOptionalScope(scopeOpt))
+}
+
+// GetConfig retrieves the configuration given a key from an optional scoped key-value storage,
+// if no scoped key-value storage is given it will search in all the scopes starting by Node then upwards.
+func (c *HandlerContext) GetConfig(key string, scopeOpt ...Scope) (string, error) {
+	return c.getConfig(key, scopeOpt)
+}
+
+// DeleteConfig retrieves the configuration given a key from an optional scoped key-value storage,
+// if no key-value storage is given it will use the default one (Node's).
+func (c *HandlerContext) DeleteConfig(key string, scopeOpt ...Scope) error {
+	return c.deleteConfig(key, c.getOptionalScope(scopeOpt))
+}
+
 func (c *HandlerContext) getOptionalString(values []string) string {
 	if len(values) > 0 {
 		return values[0]
 	}
 	return defaultValue
+}
+
+func (c *HandlerContext) getOptionalScope(scopes []Scope) Scope {
+	if len(scopes) > 0 {
+		return scopes[0]
+	}
+	return ScopeNode
 }
 
 // IsMessageOK returns true if the incoming message is of message type OK.

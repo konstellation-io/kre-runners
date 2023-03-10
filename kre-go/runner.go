@@ -27,6 +27,7 @@ type Runner struct {
 	nc             *nats.Conn
 	js             nats.JetStreamContext
 	objStore       nats.ObjectStore
+	kvStoresMap    map[Scope]nats.KeyValue
 	handlerContext *HandlerContext
 	handlerManager *HandlerManager
 }
@@ -39,6 +40,7 @@ func NewRunner(
 	nc *nats.Conn,
 	js nats.JetStreamContext,
 	objStore nats.ObjectStore,
+	kvStoresMap map[Scope]nats.KeyValue,
 	handlerManager *HandlerManager,
 	handlerInit HandlerInit,
 	mongoM *mongodb.MongoDB,
@@ -49,6 +51,7 @@ func NewRunner(
 		nc:             nc,
 		js:             js,
 		objStore:       objStore,
+		kvStoresMap:    kvStoresMap,
 		handlerManager: handlerManager,
 	}
 
@@ -62,6 +65,9 @@ func NewRunner(
 		runner.storeObject,
 		runner.getObject,
 		runner.deleteObject,
+		runner.setConfig,
+		runner.getConfig,
+		runner.deleteConfig,
 	)
 
 	handlerInit(c)
@@ -217,6 +223,61 @@ func (r *Runner) deleteObject(key string) error {
 	}
 
 	r.logger.Debugf("File with key %q successfully deleted in object store %q", key, r.cfg.NATS.ObjectStoreName)
+
+	return nil
+}
+
+func (r *Runner) setConfig(key, value string, scope Scope) error {
+	kvStore, ok := r.kvStoresMap[scope]
+	if !ok {
+		return fmt.Errorf("could not find key value store given scope %s", scope)
+	}
+
+	_, err := kvStore.PutString(key, value)
+	if err != nil {
+		return fmt.Errorf("error storing value with key %s to the key-value store: %s", key, err)
+	}
+
+	return nil
+}
+
+func (r *Runner) getConfig(key string, scopeOpt []Scope) (string, error) {
+	if len(scopeOpt) > 0 {
+		return r.getConfigFromScope(key, scopeOpt[0])
+	} else {
+		allScopes := []Scope{ScopeNode, ScopeWorkflow, ScopeProject}
+		for _, scope := range allScopes {
+			config, err := r.getConfigFromScope(key, scope)
+
+			if err == nil {
+				return config, nil
+			}
+		}
+
+		return "", fmt.Errorf("error retrieving config with key %s, not found in any key-value stiore", key)
+	}
+}
+
+func (r *Runner) getConfigFromScope(key string, scope Scope) (string, error) {
+	value, err := r.kvStoresMap[scope].Get(key)
+
+	if err != nil {
+		return "", fmt.Errorf("error retrieving config with key %s from the key-value store: %s", key, err)
+	}
+
+	return string(value.Value()), nil
+}
+
+func (r *Runner) deleteConfig(key string, scope Scope) error {
+	kvStore, ok := r.kvStoresMap[scope]
+	if !ok {
+		return fmt.Errorf("could not find key value store given scope %s", scope)
+	}
+
+	err := kvStore.Delete(key)
+	if err != nil {
+		return fmt.Errorf("error deleting value with key %s from the key-value store: %s", key, err)
+	}
 
 	return nil
 }

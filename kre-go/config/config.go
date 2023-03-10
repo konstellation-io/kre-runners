@@ -27,13 +27,15 @@ type MongoDB struct {
 }
 
 type ConfigNATS struct {
-	Server             string
-	Stream             string
-	InputSubjects      []string
-	OutputSubject      string
-	ObjectStoreName    string
-	KeyValueStoreName  string
-	MongoWriterSubject string
+	Server                    string
+	Stream                    string
+	InputSubjects             []string
+	OutputSubject             string
+	ObjectStoreName           string
+	KeyValueStoreProjectName  string
+	KeyValueStoreWorkflowName string
+	KeyValueStoreNodeName     string
+	MongoWriterSubject        string
 }
 
 type InfluxDB struct {
@@ -50,13 +52,15 @@ func NewConfig(logger *simplelogger.SimpleLogger) Config {
 		BasePath:     getCfgFromEnv(logger, "KRT_BASE_PATH"),
 		IsExitpoint:  getCfgBoolFromEnv(logger, "KRT_IS_EXITPOINT"),
 		NATS: ConfigNATS{
-			Server:             getCfgFromEnv(logger, "KRT_NATS_SERVER"),
-			Stream:             getCfgFromEnv(logger, "KRT_NATS_STREAM"),
-			InputSubjects:      getSubscriptionsFromEnv(logger, "KRT_NATS_INPUTS"),
-			OutputSubject:      getCfgFromEnv(logger, "KRT_NATS_OUTPUT"),
-			ObjectStoreName:    getOptCfgFromEnv(logger, "KRT_NATS_OBJECT_STORE"),
-			KeyValueStoreName:  getOptCfgFromEnv(logger, "KRT_NATS_KEY_VALUE_STORE"),
-			MongoWriterSubject: getCfgFromEnv(logger, "KRT_NATS_MONGO_WRITER"),
+			Server:                    getCfgFromEnv(logger, "KRT_NATS_SERVER"),
+			Stream:                    getCfgFromEnv(logger, "KRT_NATS_STREAM"),
+			InputSubjects:             getSubscriptionsFromEnv(logger, "KRT_NATS_INPUTS"),
+			OutputSubject:             getCfgFromEnv(logger, "KRT_NATS_OUTPUT"),
+			ObjectStoreName:           getOptCfgFromEnv(logger, "KRT_NATS_OBJECT_STORE"),
+			KeyValueStoreProjectName:  getCfgFromEnv(logger, "KRT_NATS_KEY_VALUE_STORE_PROJECT"),
+			KeyValueStoreWorkflowName: getCfgFromEnv(logger, "KRT_NATS_KEY_VALUE_STORE_WORKFLOW"),
+			KeyValueStoreNodeName:     getCfgFromEnv(logger, "KRT_NATS_KEY_VALUE_STORE_NODE"),
+			MongoWriterSubject:        getCfgFromEnv(logger, "KRT_NATS_MONGO_WRITER"),
 		},
 		MongoDB: MongoDB{
 			Address:     getCfgFromEnv(logger, "KRT_MONGO_URI"),
