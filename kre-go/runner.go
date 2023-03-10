@@ -254,7 +254,7 @@ func (r *Runner) getConfig(key string, scopeOpt []Scope) (string, error) {
 			}
 		}
 
-		return "", fmt.Errorf("error retrieving config with key %s, not found in any key-value stiore", key)
+		return "", fmt.Errorf("error retrieving config with key %s, not found in any key-value store", key)
 	}
 }
 

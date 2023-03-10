@@ -200,7 +200,7 @@ func (c *HandlerContext) DeleteObject(key string) error {
 // SetConfig set the given key and value to an optional scoped key-value storage,
 // or the default key-value storage (Node's) if not given any.
 func (c *HandlerContext) SetConfig(key, value string, scopeOpt ...Scope) error {
-	return c.setConfig(key, value, c.getOptionalScope(scopeOpt))
+	return c.setConfig(key, value, c.getOptionalScope(scopeOpt, ScopeNode))
 }
 
 // GetConfig retrieves the configuration given a key from an optional scoped key-value storage,
@@ -212,7 +212,7 @@ func (c *HandlerContext) GetConfig(key string, scopeOpt ...Scope) (string, error
 // DeleteConfig retrieves the configuration given a key from an optional scoped key-value storage,
 // if no key-value storage is given it will use the default one (Node's).
 func (c *HandlerContext) DeleteConfig(key string, scopeOpt ...Scope) error {
-	return c.deleteConfig(key, c.getOptionalScope(scopeOpt))
+	return c.deleteConfig(key, c.getOptionalScope(scopeOpt, ScopeNode))
 }
 
 func (c *HandlerContext) getOptionalString(values []string) string {
@@ -222,11 +222,11 @@ func (c *HandlerContext) getOptionalString(values []string) string {
 	return defaultValue
 }
 
-func (c *HandlerContext) getOptionalScope(scopes []Scope) Scope {
+func (c *HandlerContext) getOptionalScope(scopes []Scope, defaultScope Scope) Scope {
 	if len(scopes) > 0 {
 		return scopes[0]
 	}
-	return ScopeNode
+	return defaultScope
 }
 
 // IsMessageOK returns true if the incoming message is of message type OK.

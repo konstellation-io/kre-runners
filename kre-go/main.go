@@ -124,7 +124,7 @@ func initKVStoresMap(cfg config.Config, logger *simplelogger.SimpleLogger, js na
 
 	kvStore, err := js.KeyValue(cfg.NATS.KeyValueStoreProjectName)
 	if err != nil {
-		logger.Errorf("error binding the key value store: %s", err)
+		logger.Errorf("error binding the key value store for the scope Project: %s", err)
 		os.Exit(1)
 	}
 
@@ -132,7 +132,7 @@ func initKVStoresMap(cfg config.Config, logger *simplelogger.SimpleLogger, js na
 
 	kvStore, err = js.KeyValue(cfg.NATS.KeyValueStoreWorkflowName)
 	if err != nil {
-		logger.Errorf("error binding the key value store: %s", err)
+		logger.Errorf("error binding the key value store for the scope Workflow: %s", err)
 		os.Exit(1)
 	}
 
@@ -140,7 +140,7 @@ func initKVStoresMap(cfg config.Config, logger *simplelogger.SimpleLogger, js na
 
 	kvStore, err = js.KeyValue(cfg.NATS.KeyValueStoreNodeName)
 	if err != nil {
-		logger.Errorf("error binding the key value store: %s", err)
+		logger.Errorf("error binding the key value store for the scope Node: %s", err)
 		os.Exit(1)
 	}
 
