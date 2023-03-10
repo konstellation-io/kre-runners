@@ -68,6 +68,7 @@ class NodeRunner(Runner):
         self.handler_ctx = HandlerContext(
             self.config,
             self.nc,
+            self.js,
             self.mongo_conn,
             self.logger,
             self.__publish_msg__,
