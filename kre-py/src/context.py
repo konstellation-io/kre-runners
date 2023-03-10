@@ -26,7 +26,9 @@ class HandlerContext:
         self.prediction = ContextPrediction(config, nc, logger)
         self.measurement = ContextMeasurement(config, logger)
         self.db = ContextData(config, nc, mongo_conn, logger)
-        self.object_store = ContextObjectStore(config, js, logger)
+
+        if config.nats_object_store is not None:
+            self.object_store = ContextObjectStore(config, js, logger)
 
     def path(self, relative_path):
         return os.path.join(self.__config__.base_path, relative_path)
