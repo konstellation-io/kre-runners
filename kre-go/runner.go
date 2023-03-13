@@ -155,7 +155,7 @@ func (r *Runner) newRequestMessage(data []byte) (*KreNatsMessage, error) {
 func (r *Runner) publishMsg(msg proto.Message, reqMsg *KreNatsMessage, msgType MessageType, channel string) error {
 	payload, err := anypb.New(msg)
 	if err != nil {
-		return fmt.Errorf("the handler result is not a valid protobuf: %s", err)
+		return fmt.Errorf("the handler result is not a valid protobuf: %w", err)
 	}
 	responseMsg := r.newResponseMsg(payload, reqMsg, msgType)
 
@@ -189,7 +189,7 @@ func (r *Runner) storeObject(key string, payload []byte) error {
 
 	_, err := r.objStore.PutBytes(key, payload)
 	if err != nil {
-		return fmt.Errorf("error storing object to the object store: %s", err)
+		return fmt.Errorf("error storing object to the object store: %w", err)
 	}
 
 	r.logger.Debugf("File with key %q successfully stored in object store %q", key, r.cfg.NATS.ObjectStoreName)
@@ -204,7 +204,7 @@ func (r *Runner) getObject(key string) ([]byte, error) {
 
 	response, err := r.objStore.GetBytes(key)
 	if err != nil {
-		return nil, fmt.Errorf("error retrieving object with key %s from the object store: %s", key, err)
+		return nil, fmt.Errorf("error retrieving object with key %s from the object store: %w", key, err)
 	}
 
 	r.logger.Debugf("File with key %q successfully retrieved from object store %q", key, r.cfg.NATS.ObjectStoreName)
@@ -219,7 +219,7 @@ func (r *Runner) deleteObject(key string) error {
 
 	err := r.objStore.Delete(key)
 	if err != nil {
-		return fmt.Errorf("error retrieving object with key %s from the object store: %s", key, err)
+		return fmt.Errorf("error retrieving object with key %s from the object store: %w", key, err)
 	}
 
 	r.logger.Debugf("File with key %q successfully deleted in object store %q", key, r.cfg.NATS.ObjectStoreName)
@@ -235,7 +235,7 @@ func (r *Runner) setConfig(key, value string, scope Scope) error {
 
 	_, err := kvStore.PutString(key, value)
 	if err != nil {
-		return fmt.Errorf("error storing value with key %s to the key-value store: %s", key, err)
+		return fmt.Errorf("error storing value with key %s to the key-value store: %w", key, err)
 	}
 
 	return nil
@@ -262,7 +262,7 @@ func (r *Runner) getConfigFromScope(key string, scope Scope) (string, error) {
 	value, err := r.kvStoresMap[scope].Get(key)
 
 	if err != nil {
-		return "", fmt.Errorf("error retrieving config with key %s from the key-value store: %s", key, err)
+		return "", fmt.Errorf("error retrieving config with key %s from the key-value store: %w", key, err)
 	}
 
 	return string(value.Value()), nil
@@ -276,7 +276,7 @@ func (r *Runner) deleteConfig(key string, scope Scope) error {
 
 	err := kvStore.Delete(key)
 	if err != nil {
-		return fmt.Errorf("error deleting value with key %s from the key-value store: %s", key, err)
+		return fmt.Errorf("error deleting value with key %s from the key-value store: %w", key, err)
 	}
 
 	return nil
