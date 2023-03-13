@@ -89,11 +89,6 @@ func getOptCfgFromEnv(logger *simplelogger.SimpleLogger, name string) string {
 	return val
 }
 
-func getCfgBoolFromEnv(logger *simplelogger.SimpleLogger, name string) bool {
-	val := getCfgFromEnv(logger, name)
-	return val == "true"
-}
-
 func getSubscriptionsFromEnv(logger *simplelogger.SimpleLogger, name string) []string {
 	val, ok := os.LookupEnv(name)
 	if !ok {
