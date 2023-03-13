@@ -93,5 +93,14 @@ class ContextObjectStore:
         :raises Exception: If the Object Store does not exist.
         :raises Exception: If there is an error while deleting the object.
         """
-        raise NotImplementedError
+        if self.__object_store__ is None:
+            raise Exception("the object store does not exist")
 
+        try:
+            await self.__object_store__.delete(name=key)
+        except Exception as e:
+            raise Exception(f"error deleting object with key {key} from the object store: {e}")
+
+        self.__logger__.debug(
+            f"File with key {key} successfully deleted from object store {self.__config__.nats_object_store}"
+        )
