@@ -34,7 +34,7 @@
         },
         "nats-py": {
             "git": "https://github.com/konstellation-io/nats.py.git",
-            "ref": "9f9a52ba50a6fae8107531b99da793eab172d34a"
+            "ref": "49c4065e9bb110fb1cbbccaf5308e7772fe79de1"
         },
         "protobuf": {
             "hashes": [
