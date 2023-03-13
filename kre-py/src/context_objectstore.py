@@ -1,5 +1,6 @@
 import sys
 from logging import Logger
+from typing import Optional
 
 from nats.js import JetStreamContext
 from nats.js.api import ObjectMeta
@@ -16,7 +17,7 @@ class ContextObjectStore:
     def __init__(self, config: Config, js: JetStreamContext, logger: Logger):
         self.__config__: Config = config
         self.__logger__: Logger = logger
-        self.__object_store__: ObjectStore | None = None
+        self.__object_store__: Optional[ObjectStore] = None
 
         self.__connect(js)
 
@@ -62,7 +63,7 @@ class ContextObjectStore:
             f"File with key {key} successfully stored in object store {self.__config__.nats_object_store}"
         )
 
-    async def get_object(self, key: str) -> bytes | None:
+    async def get_object(self, key: str) -> Optional[bytes]:
         """
         Retrieves a payload with the desired key from Object Store.
 
