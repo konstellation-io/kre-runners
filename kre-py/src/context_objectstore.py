@@ -62,12 +62,12 @@ class ContextObjectStore:
             f"File with key {key} successfully stored in object store {self.__config__.nats_object_store}"
         )
 
-    async def get_object(self, key: str) -> bytes:
+    async def get_object(self, key: str) -> bytes | None:
         """
         Retrieves a payload with the desired key from Object Store.
 
         :param key: the object name.
-        :returns: a sequence of bytes.
+        :returns: a sequence of bytes, or None if the object has been previously deleted.
         :raises Exception: If the Object Store does not exist.
         :raises Exception: If there is an error while retrieving the object.
         """
