@@ -19,8 +19,8 @@ jobs:
         id: tag-folder
         run: |
           TAG=${GITHUB_REF_NAME}
-          DOCKERFILE_FOLDER=${TAG%/v*}
-          IMAGE_TAG=${TAG##*/v}
+          DOCKERFILE_FOLDER=${TAG%-v*}
+          IMAGE_TAG=${TAG##*-v}
           echo "FOLDER=${DOCKERFILE_FOLDER}" >> ${GITHUB_OUTPUT}
           echo "IMAGE_TAG=${IMAGE_TAG}" >> ${GITHUB_OUTPUT}
 
