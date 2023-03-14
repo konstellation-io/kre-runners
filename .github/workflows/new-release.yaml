@@ -10,8 +10,9 @@ on:
     branches: [ main ]
   push:
     paths:
-      # kre-exitpoint does not have tests yet
+      # kre-exitpoint and kre-py-objstore does not have tests yet
       - "kre-exitpoint/**/*"
+      - "kre-py-objstore/**/*"
     branches: [ main ]
 
 jobs:
