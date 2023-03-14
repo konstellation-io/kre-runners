@@ -6,6 +6,7 @@
     "kre-exitpoint",
     "kre-go",
     "kre-py",
+    "kre-py-objstore",
     "krt-files-downloader"
   ],
   "release": {
