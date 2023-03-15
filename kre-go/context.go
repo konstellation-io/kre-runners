@@ -40,6 +40,21 @@ const (
 	ScopeNode     Scope = "node"
 )
 
+type HandlerContextParams struct {
+	Cfg          config.Config
+	NC           *nats.Conn
+	MongoManager mongodb.Manager
+	Logger       *simplelogger.SimpleLogger
+	PublishMsg   PublishMsgFunc
+	PublishAny   PublishAnyFunc
+	StoreObject  StoreObjectFunc
+	GetObject    GetObjectFunc
+	DeleteObject DeleteObjectFunc
+	SetConfig    SetConfigFunc
+	GetConfig    GetConfigFunc
+	DeleteConfig DeleteConfigFunc
+}
+
 type HandlerContext struct {
 	cfg          config.Config
 	values       map[string]interface{}
@@ -58,35 +73,22 @@ type HandlerContext struct {
 	DB           *contextDatabase
 }
 
-func NewHandlerContext(
-	cfg config.Config,
-	nc *nats.Conn,
-	mongoM mongodb.Manager,
-	logger *simplelogger.SimpleLogger,
-	publishMsg PublishMsgFunc,
-	publishAny PublishAnyFunc,
-	storeObject StoreObjectFunc,
-	getObject GetObjectFunc,
-	deleteObject DeleteObjectFunc,
-	setConfig SetConfigFunc,
-	getConfig GetConfigFunc,
-	deleteConfig DeleteConfigFunc,
-) *HandlerContext {
+func NewHandlerContext(params *HandlerContextParams) *HandlerContext {
 	return &HandlerContext{
-		cfg:          cfg,
+		cfg:          params.Cfg,
 		values:       map[string]interface{}{},
-		publishMsg:   publishMsg,
-		publishAny:   publishAny,
-		getObject:    getObject,
-		storeObject:  storeObject,
-		deleteObject: deleteObject,
-		setConfig:    setConfig,
-		getConfig:    getConfig,
-		deleteConfig: deleteConfig,
-		Logger:       logger,
-		Prediction:   NewContextPrediction(cfg, nc, logger),
-		Measurement:  NewContextMeasurement(cfg, logger),
-		DB:           NewContextDatabase(cfg, nc, mongoM, logger),
+		publishMsg:   params.PublishMsg,
+		publishAny:   params.PublishAny,
+		getObject:    params.GetObject,
+		storeObject:  params.StoreObject,
+		deleteObject: params.DeleteObject,
+		setConfig:    params.SetConfig,
+		getConfig:    params.GetConfig,
+		deleteConfig: params.DeleteConfig,
+		Logger:       params.Logger,
+		Prediction:   NewContextPrediction(params.Cfg, params.NC, params.Logger),
+		Measurement:  NewContextMeasurement(params.Cfg, params.Logger),
+		DB:           NewContextDatabase(params.Cfg, params.NC, params.MongoManager, params.Logger),
 	}
 }
 

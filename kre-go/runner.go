@@ -1,7 +1,6 @@
 package kre
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -11,6 +10,7 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/konstellation-io/kre-runners/kre-go/v4/config"
+	"github.com/konstellation-io/kre-runners/kre-go/v4/internal/errors"
 	"github.com/konstellation-io/kre-runners/kre-go/v4/mongodb"
 )
 
@@ -18,8 +18,17 @@ const (
 	MessageThreshold = 1024 * 1024
 )
 
-var ErrMessageToBig = errors.New("compressed message exceeds maximum size allowed of 1 MB")
-var ErrMsgAck = "Error in message ack: %s"
+type RunnerParams struct {
+	Logger         *simplelogger.SimpleLogger
+	Cfg            config.Config
+	NC             *nats.Conn
+	JS             nats.JetStreamContext
+	ObjStore       nats.ObjectStore
+	KVStoresMap    map[Scope]nats.KeyValue
+	HandlerManager *HandlerManager
+	HandlerInit    HandlerInit
+	MongoManager   mongodb.Manager
+}
 
 type Runner struct {
 	logger         *simplelogger.SimpleLogger
@@ -34,32 +43,22 @@ type Runner struct {
 
 // NewRunner creates a new Runner instance, initializing a new handler context within and runs
 // the given handler init func.
-func NewRunner(
-	logger *simplelogger.SimpleLogger,
-	cfg config.Config,
-	nc *nats.Conn,
-	js nats.JetStreamContext,
-	objStore nats.ObjectStore,
-	kvStoresMap map[Scope]nats.KeyValue,
-	handlerManager *HandlerManager,
-	handlerInit HandlerInit,
-	mongoM *mongodb.MongoDB,
-) *Runner {
+func NewRunner(params *RunnerParams) *Runner {
 	runner := &Runner{
-		logger:         logger,
-		cfg:            cfg,
-		nc:             nc,
-		js:             js,
-		objStore:       objStore,
-		kvStoresMap:    kvStoresMap,
-		handlerManager: handlerManager,
+		logger:         params.Logger,
+		cfg:            params.Cfg,
+		nc:             params.NC,
+		js:             params.JS,
+		objStore:       params.ObjStore,
+		kvStoresMap:    params.KVStoresMap,
+		handlerManager: params.HandlerManager,
 	}
 
-	c := NewHandlerContext(
-		cfg,
-		nc,
-		mongoM,
-		logger,
+	ctx := NewHandlerContext(&HandlerContextParams{
+		params.Cfg,
+		params.NC,
+		params.MongoManager,
+		params.Logger,
 		runner.publishMsg,
 		runner.publishAny,
 		runner.storeObject,
@@ -68,11 +67,11 @@ func NewRunner(
 		runner.setConfig,
 		runner.getConfig,
 		runner.deleteConfig,
-	)
+	})
 
-	handlerInit(c)
+	params.HandlerInit(ctx)
 
-	runner.handlerContext = c
+	runner.handlerContext = ctx
 
 	return runner
 }
@@ -114,7 +113,7 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 	// Tell NATS we don't need to receive the message anymore and we are done processing it.
 	ackErr := msg.Ack()
 	if ackErr != nil {
-		r.logger.Errorf(ErrMsgAck, ackErr)
+		r.logger.Errorf(errors.ErrMsgAck, ackErr)
 	}
 
 	end := time.Now().UTC()
@@ -124,7 +123,7 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 func (r *Runner) processRunnerError(msg *nats.Msg, errMsg string, requestID string, start time.Time, fromNode string) {
 	ackErr := msg.Ack()
 	if ackErr != nil {
-		r.logger.Errorf(ErrMsgAck, ackErr)
+		r.logger.Errorf(errors.ErrMsgAck, ackErr)
 	}
 
 	r.logger.Error(errMsg)
@@ -181,10 +180,10 @@ func (r *Runner) publishError(requestID, errMsg string) {
 
 func (r *Runner) storeObject(key string, payload []byte) error {
 	if r.objStore == nil {
-		return fmt.Errorf("the object store does not exist")
+		return errors.ErrUndefinedObjectStore
 	}
 	if payload == nil {
-		return fmt.Errorf("the payload cannot be empty")
+		return errors.ErrEmptyPayload
 	}
 
 	_, err := r.objStore.PutBytes(key, payload)
@@ -199,7 +198,7 @@ func (r *Runner) storeObject(key string, payload []byte) error {
 
 func (r *Runner) getObject(key string) ([]byte, error) {
 	if r.objStore == nil {
-		return nil, fmt.Errorf("the object store does not exist")
+		return nil, errors.ErrUndefinedObjectStore
 	}
 
 	response, err := r.objStore.GetBytes(key)
@@ -214,7 +213,7 @@ func (r *Runner) getObject(key string) ([]byte, error) {
 
 func (r *Runner) deleteObject(key string) error {
 	if r.objStore == nil {
-		return fmt.Errorf("the object store does not exist")
+		return errors.ErrUndefinedObjectStore
 	}
 
 	err := r.objStore.Delete(key)
@@ -336,7 +335,7 @@ func (r *Runner) prepareOutputMessage(msg []byte) ([]byte, error) {
 	}
 
 	if len(outMsg) > MessageThreshold {
-		return nil, ErrMessageToBig
+		return nil, errors.ErrMessageToBig
 	}
 
 	r.logger.Infof("Original message size: %s. Compressed: %s", sizeInKB(msg), sizeInKB(outMsg))

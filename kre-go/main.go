@@ -59,28 +59,30 @@ func Start(handlerInit HandlerInit, defaultHandler Handler, handlersOpt ...map[s
 		os.Exit(1)
 	}
 
-	// Connect to ObjectStore (optional)
-	var objStore nats.ObjectStore
-	if cfg.NATS.ObjectStoreName != "" {
-		objStore, err = js.ObjectStore(cfg.NATS.ObjectStoreName)
-		if err != nil {
-			logger.Errorf("error binding the object store: %s", err)
-			os.Exit(1)
-		}
-	}
+	objStore := initObjectStore(logger, cfg, js)
 
 	kvStoresMap := initKVStoresMap(cfg, logger, js)
 
 	// Connect to MongoDB
-	mongoM := mongodb.NewMongoManager(cfg, logger)
-	err = mongoM.Connect()
+	mongoManager := mongodb.NewMongoManager(cfg, logger)
+	err = mongoManager.Connect()
 	if err != nil {
 		logger.Errorf("Error connecting to MongoDB: %s", err)
 		os.Exit(1)
 	}
 
 	// Handle incoming messages from NATS
-	runner := NewRunner(logger, cfg, nc, js, objStore, kvStoresMap, handlerManager, handlerInit, mongoM)
+	runner := NewRunner(&RunnerParams{
+		Logger:         logger,
+		Cfg:            cfg,
+		NC:             nc,
+		JS:             js,
+		ObjStore:       objStore,
+		KVStoresMap:    kvStoresMap,
+		HandlerManager: handlerManager,
+		HandlerInit:    handlerInit,
+		MongoManager:   mongoManager,
+	})
 
 	var subscriptions []*nats.Subscription
 	for _, subject := range cfg.NATS.InputSubjects {
@@ -147,4 +149,20 @@ func initKVStoresMap(cfg config.Config, logger *simplelogger.SimpleLogger, js na
 	kvStoresMap[ScopeNode] = kvStore
 
 	return kvStoresMap
+}
+
+func initObjectStore(logger *simplelogger.SimpleLogger, cfg config.Config, js nats.JetStreamContext) nats.ObjectStore {
+	// Connect to ObjectStore (optional)
+	var objStore nats.ObjectStore
+	var err error
+
+	if cfg.NATS.ObjectStoreName != "" {
+		objStore, err = js.ObjectStore(cfg.NATS.ObjectStoreName)
+		if err != nil {
+			logger.Errorf("error binding the object store: %s", err)
+			os.Exit(1)
+		}
+	}
+
+	return objStore
 }
