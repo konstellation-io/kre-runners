@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "a2a76c30cf80b22999ef377ff094ea943ff65376e94b053594f1ff0144ac03da"
+            "sha256": "c4195bc5730968dfc322e2794044d9c5ca74691565f07b6d83b337f75c075e0c"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -33,8 +33,11 @@
             "version": "==1.9.0"
         },
         "nats-py": {
-            "git": "https://github.com/konstellation-io/nats.py.git",
-            "ref": "163b0a6752a8815217d35113984e8798943baf85"
+            "hashes": [
+                "sha256:e849ec9099ead4fc1ebc92f254c93753092c19d8c3c1031181b9ac612d232a12"
+            ],
+            "index": "pypi",
+            "version": "==2.1.0"
         },
         "protobuf": {
             "hashes": [
@@ -383,11 +386,11 @@
         },
         "pathspec": {
             "hashes": [
-                "sha256:3a66eb970cbac598f9e5ccb5b2cf58930cd8e3ed86d393d541eaf2d8b1705229",
-                "sha256:64d338d4e0914e91c1792321e6907b5a593f1ab1851de7fc269557a21b30ebbc"
+                "sha256:2798de800fa92780e33acca925945e9a19a133b715067cf165b8866c15a31687",
+                "sha256:d8af70af76652554bd134c22b3e8a1cc46ed7d91edcdd721ef1a0c51a84a5293"
             ],
             "markers": "python_version >= '3.7'",
-            "version": "==0.11.0"
+            "version": "==0.11.1"
         },
         "pluggy": {
             "hashes": [
