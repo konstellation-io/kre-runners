@@ -18,6 +18,17 @@ const (
 	MessageThreshold = 1024 * 1024
 )
 
+type RunnerParams struct {
+	Logger         *simplelogger.SimpleLogger
+	Cfg            config.Config
+	NC             *nats.Conn
+	JS             nats.JetStreamContext
+	ObjStore       nats.ObjectStore
+	HandlerManager *HandlerManager
+	HandlerInit    HandlerInit
+	MongoDB        *mongodb.MongoDB
+}
+
 type Runner struct {
 	logger         *simplelogger.SimpleLogger
 	cfg            config.Config
@@ -30,40 +41,31 @@ type Runner struct {
 
 // NewRunner creates a new Runner instance, initializing a new handler context within and runs
 // the given handler init func.
-func NewRunner(
-	logger *simplelogger.SimpleLogger,
-	cfg config.Config,
-	nc *nats.Conn,
-	js nats.JetStreamContext,
-	objStore nats.ObjectStore,
-	handlerManager *HandlerManager,
-	handlerInit HandlerInit,
-	mongoM *mongodb.MongoDB,
-) *Runner {
+func NewRunner(params *RunnerParams) *Runner {
 	runner := &Runner{
-		logger:         logger,
-		cfg:            cfg,
-		nc:             nc,
-		js:             js,
-		objStore:       objStore,
-		handlerManager: handlerManager,
+		logger:         params.Logger,
+		cfg:            params.Cfg,
+		nc:             params.NC,
+		js:             params.JS,
+		objStore:       params.ObjStore,
+		handlerManager: params.HandlerManager,
 	}
 
-	c := NewHandlerContext(
-		cfg,
-		nc,
-		mongoM,
-		logger,
+	ctx := NewHandlerContext(&HandlerContextParams{
+		params.Cfg,
+		params.NC,
+		params.MongoDB,
+		params.Logger,
 		runner.publishMsg,
 		runner.publishAny,
 		runner.storeObject,
 		runner.getObject,
 		runner.deleteObject,
-	)
+	})
 
-	handlerInit(c)
+	params.HandlerInit(ctx)
 
-	runner.handlerContext = c
+	runner.handlerContext = ctx
 
 	return runner
 }
