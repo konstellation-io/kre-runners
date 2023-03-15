@@ -21,6 +21,5 @@ class Config:
             self.mongo_data_db_name = "data"
             self.mongo_uri = os.environ["KRT_MONGO_URI"]
             self.influx_uri = os.environ["KRT_INFLUX_URI"]
-            self.is_exitpoint = os.environ["KRT_IS_EXITPOINT"] == "true"
         except Exception as err:
             raise Exception(f"error reading config: the {str(err)} env var is missing")

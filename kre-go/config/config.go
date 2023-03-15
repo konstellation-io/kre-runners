@@ -14,7 +14,6 @@ type Config struct {
 	Version      string
 	NodeName     string
 	BasePath     string
-	IsExitpoint  bool
 	NATS         ConfigNATS
 	MongoDB      MongoDB
 	InfluxDB     InfluxDB
@@ -50,7 +49,6 @@ func NewConfig(logger *simplelogger.SimpleLogger) Config {
 		Version:      getCfgFromEnv(logger, "KRT_VERSION"),
 		NodeName:     getCfgFromEnv(logger, "KRT_NODE_NAME"),
 		BasePath:     getCfgFromEnv(logger, "KRT_BASE_PATH"),
-		IsExitpoint:  getCfgBoolFromEnv(logger, "KRT_IS_EXITPOINT"),
 		NATS: ConfigNATS{
 			Server:                    getCfgFromEnv(logger, "KRT_NATS_SERVER"),
 			Stream:                    getCfgFromEnv(logger, "KRT_NATS_STREAM"),
@@ -89,11 +87,6 @@ func getOptCfgFromEnv(logger *simplelogger.SimpleLogger, name string) string {
 		return ""
 	}
 	return val
-}
-
-func getCfgBoolFromEnv(logger *simplelogger.SimpleLogger, name string) bool {
-	val := getCfgFromEnv(logger, name)
-	return val == "true"
 }
 
 func getSubscriptionsFromEnv(logger *simplelogger.SimpleLogger, name string) []string {
