@@ -6,9 +6,10 @@ import (
 )
 
 type Config struct {
-	Server     string
-	Stream     string
-	KvsConfigs KVSConfigs
+	Server      string
+	Stream      string
+	ObjectStore string
+	KvsConfigs  KVSConfigs
 }
 
 type KVSConfigs struct {
@@ -23,8 +24,9 @@ type KVSConfigs struct {
 
 func NewConfig() Config {
 	return Config{
-		Server: getCfgFromEnv("KRT_NATS_SERVER"),
-		Stream: getCfgFromEnv("KRT_NATS_STREAM"),
+		Server:      getCfgFromEnv("KRT_NATS_SERVER"),
+		Stream:      getCfgFromEnv("KRT_NATS_STREAM"),
+		ObjectStore: getCfgFromEnv("KRT_NATS_OBJECT_STORE"),
 		KvsConfigs: KVSConfigs{
 			KVSProject:    getCfgFromEnv("KRT_NATS_KEY_VALUE_STORE_PROJECT"),
 			KVSWorkflow:   getCfgFromEnv("KRT_NATS_KEY_VALUE_STORE_WORKFLOW"),
