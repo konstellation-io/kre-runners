@@ -59,15 +59,7 @@ func Start(handlerInit HandlerInit, defaultHandler Handler, handlersOpt ...map[s
 		os.Exit(1)
 	}
 
-	// Connect to ObjectStore (optional)
-	var objStore nats.ObjectStore
-	if cfg.NATS.ObjectStoreName != "" {
-		objStore, err = js.ObjectStore(cfg.NATS.ObjectStoreName)
-		if err != nil {
-			logger.Errorf("error binding the object store: %s", err)
-			os.Exit(1)
-		}
-	}
+	objStore := initObjectStore(logger, cfg, js)
 
 	// Connect to MongoDB
 	mongoM := mongodb.NewMongoManager(cfg, logger)
@@ -115,4 +107,20 @@ func Start(handlerInit HandlerInit, defaultHandler Handler, handlersOpt ...map[s
 			os.Exit(1)
 		}
 	}
+}
+
+func initObjectStore(logger *simplelogger.SimpleLogger, cfg config.Config, js nats.JetStreamContext) nats.ObjectStore {
+	// Connect to ObjectStore (optional)
+	var objStore nats.ObjectStore
+	var err error
+
+	if cfg.NATS.ObjectStoreName != "" {
+		objStore, err = js.ObjectStore(cfg.NATS.ObjectStoreName)
+		if err != nil {
+			logger.Errorf("error binding the object store: %s", err)
+			os.Exit(1)
+		}
+	}
+
+	return objStore
 }

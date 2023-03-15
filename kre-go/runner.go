@@ -1,7 +1,6 @@
 package kre
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -11,15 +10,13 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/konstellation-io/kre-runners/kre-go/v4/config"
+	"github.com/konstellation-io/kre-runners/kre-go/v4/internal/errors"
 	"github.com/konstellation-io/kre-runners/kre-go/v4/mongodb"
 )
 
 const (
 	MessageThreshold = 1024 * 1024
 )
-
-var ErrMessageToBig = errors.New("compressed message exceeds maximum size allowed of 1 MB")
-var ErrMsgAck = "Error in message ack: %s"
 
 type Runner struct {
 	logger         *simplelogger.SimpleLogger
@@ -108,7 +105,7 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 	// Tell NATS we don't need to receive the message anymore and we are done processing it.
 	ackErr := msg.Ack()
 	if ackErr != nil {
-		r.logger.Errorf(ErrMsgAck, ackErr)
+		r.logger.Errorf(errors.ErrMsgAck, ackErr)
 	}
 
 	end := time.Now().UTC()
@@ -118,7 +115,7 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 func (r *Runner) processRunnerError(msg *nats.Msg, errMsg string, requestID string, start time.Time, fromNode string) {
 	ackErr := msg.Ack()
 	if ackErr != nil {
-		r.logger.Errorf(ErrMsgAck, ackErr)
+		r.logger.Errorf(errors.ErrMsgAck, ackErr)
 	}
 
 	r.logger.Error(errMsg)
@@ -175,10 +172,10 @@ func (r *Runner) publishError(requestID, errMsg string) {
 
 func (r *Runner) storeObject(key string, payload []byte) error {
 	if r.objStore == nil {
-		return fmt.Errorf("the object store does not exist")
+		return errors.ErrUndefinedObjectStore
 	}
 	if payload == nil {
-		return fmt.Errorf("the payload cannot be empty")
+		return errors.ErrEmptyPayload
 	}
 
 	_, err := r.objStore.PutBytes(key, payload)
@@ -193,7 +190,7 @@ func (r *Runner) storeObject(key string, payload []byte) error {
 
 func (r *Runner) getObject(key string) ([]byte, error) {
 	if r.objStore == nil {
-		return nil, fmt.Errorf("the object store does not exist")
+		return nil, errors.ErrUndefinedObjectStore
 	}
 
 	response, err := r.objStore.GetBytes(key)
@@ -208,7 +205,7 @@ func (r *Runner) getObject(key string) ([]byte, error) {
 
 func (r *Runner) deleteObject(key string) error {
 	if r.objStore == nil {
-		return fmt.Errorf("the object store does not exist")
+		return errors.ErrUndefinedObjectStore
 	}
 
 	err := r.objStore.Delete(key)
@@ -275,7 +272,7 @@ func (r *Runner) prepareOutputMessage(msg []byte) ([]byte, error) {
 	}
 
 	if len(outMsg) > MessageThreshold {
-		return nil, ErrMessageToBig
+		return nil, errors.ErrMessageToBig
 	}
 
 	r.logger.Infof("Original message size: %s. Compressed: %s", sizeInKB(msg), sizeInKB(outMsg))
