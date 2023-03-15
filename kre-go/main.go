@@ -62,15 +62,24 @@ func Start(handlerInit HandlerInit, defaultHandler Handler, handlersOpt ...map[s
 	objStore := initObjectStore(logger, cfg, js)
 
 	// Connect to MongoDB
-	mongoM := mongodb.NewMongoManager(cfg, logger)
-	err = mongoM.Connect()
+	mongoManager := mongodb.NewMongoManager(cfg, logger)
+	err = mongoManager.Connect()
 	if err != nil {
 		logger.Errorf("Error connecting to MongoDB: %s", err)
 		os.Exit(1)
 	}
 
 	// Handle incoming messages from NATS
-	runner := NewRunner(logger, cfg, nc, js, objStore, handlerManager, handlerInit, mongoM)
+	runner := NewRunner(&RunnerParams{
+		Logger:         logger,
+		Cfg:            cfg,
+		NC:             nc,
+		JS:             js,
+		ObjStore:       objStore,
+		HandlerManager: handlerManager,
+		HandlerInit:    handlerInit,
+		MongoManager:   mongoManager,
+	})
 
 	var subscriptions []*nats.Subscription
 	for _, subject := range cfg.NATS.InputSubjects {

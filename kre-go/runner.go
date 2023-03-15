@@ -26,7 +26,7 @@ type RunnerParams struct {
 	ObjStore       nats.ObjectStore
 	HandlerManager *HandlerManager
 	HandlerInit    HandlerInit
-	MongoDB        *mongodb.MongoDB
+	MongoManager   mongodb.Manager
 }
 
 type Runner struct {
@@ -54,7 +54,7 @@ func NewRunner(params *RunnerParams) *Runner {
 	ctx := NewHandlerContext(&HandlerContextParams{
 		params.Cfg,
 		params.NC,
-		params.MongoDB,
+		params.MongoManager,
 		params.Logger,
 		runner.publishMsg,
 		runner.publishAny,
