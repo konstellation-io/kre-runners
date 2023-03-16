@@ -1,3 +1,4 @@
+import asyncio
 import shutil
 import subprocess
 import sys
@@ -45,13 +46,14 @@ class ContextObjectStore:
         out = subprocess.run(args=self.__info_cmd__.split(), capture_output=True)
         if out.returncode != 0:
             self.__logger__.error(
-                f"Error while getting info for Object Store {self.__config__.nats_object_store}: {str(out.stderr)}"
+                f"Error while getting info for Object Store {self.__config__.nats_object_store}: "
+                f"{out.stderr.decode('utf-8')}"
             )
             sys.exit(1)
 
         self.__logger__.info(f"Successfully bound to Object Store {self.__config__.nats_object_store}")
 
-    def store_object(self, key: str, payload: bytes):
+    async def store_object(self, key: str, payload: bytes):
         """
         Stores a payload with the desired key to Object Store.
 
@@ -65,15 +67,21 @@ class ContextObjectStore:
             raise Exception("the payload cannot be empty")
 
         cmd = self.__put_obj_cmd__.format(obj_name=key)
-        out = subprocess.run(cmd.split(), input=payload, capture_output=True)
-        if out.returncode != 0:
-            raise Exception(f"error storing object with key {key} to the object store: {str(out.stderr)}")
+        subp = await asyncio.create_subprocess_shell(
+            cmd,
+            stdin=asyncio.subprocess.PIPE,
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        _, stderr = await subp.communicate(input=payload)
+        if subp.returncode != 0:
+            raise Exception(f"error storing object with key {key} to the object store: {stderr.decode('utf-8')}")
 
         self.__logger__.debug(
             f"File with key {key} successfully stored in object store {self.__config__.nats_object_store}"
         )
 
-    def get_object(self, key: str) -> bytes:
+    async def get_object(self, key: str) -> bytes:
         """
         Retrieves a payload with the desired key from Object Store.
 
@@ -84,9 +92,17 @@ class ContextObjectStore:
 
         with tempfile.NamedTemporaryFile(mode="rb") as fd:
             cmd = self.__get_obj_cmd__.format(obj_name=key, dst_path=fd.name)
-            out = subprocess.run(cmd.split(), capture_output=True)
-            if out.returncode != 0:
-                raise Exception(f"error retrieving object with key {key} from the object store: {str(out.stderr)}")
+            subp = await asyncio.create_subprocess_shell(
+                cmd,
+                stdin=None,
+                stdout=asyncio.subprocess.DEVNULL,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            _, stderr = await subp.communicate()
+            if subp.returncode != 0:
+                raise Exception(
+                    f"error retrieving object with key {key} from the object store: {stderr.decode('utf-8')}"
+                )
 
             payload = fd.read()
 
@@ -95,7 +111,7 @@ class ContextObjectStore:
         )
         return payload
 
-    def delete_object(self, key: str):
+    async def delete_object(self, key: str):
         """
         Deletes an object from Object Store.
 
@@ -103,9 +119,15 @@ class ContextObjectStore:
         :raises Exception: If there is an error while deleting the object.
         """
         cmd = self.__del_obj_cmd__.format(obj_name=key)
-        out = subprocess.run(cmd.split(), capture_output=True)
-        if out.returncode != 0:
-            raise Exception(f"error deleting object with key {key} from the object store: {str(out.stderr)}")
+        subp = await asyncio.create_subprocess_shell(
+            cmd,
+            stdin=None,
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        _, stderr = await subp.communicate()
+        if subp.returncode != 0:
+            raise Exception(f"error deleting object with key {key} from the object store: {stderr.decode('utf-8')}")
 
         self.__logger__.debug(
             f"File with key {key} successfully deleted from object store {self.__config__.nats_object_store}"
