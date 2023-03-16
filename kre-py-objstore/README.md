@@ -1,3 +1,4 @@
-# KRE Python Runner with NATS Object Store library
+# KRE Python Runner with nats-cli
 
-This is an implementation in Python for the KRE runner that is based on [kre-py](../kre-py/README.md) image and introduces the Python NATS library with new object store functionallity.
+This is an implementation in Python for the KRE runner that is based on [kre-py](../kre-py/README.md) image, which installs
+the nats-cli binary to gain access to Object Store from Python code.
