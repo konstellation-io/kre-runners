@@ -1,4 +1,5 @@
 import asyncio
+import shlex
 import shutil
 import subprocess
 import sys
@@ -66,7 +67,7 @@ class ContextObjectStore:
         if not payload:
             raise Exception("the payload cannot be empty")
 
-        cmd = self.__put_obj_cmd__.format(obj_name=key)
+        cmd = self.__put_obj_cmd__.format(obj_name=shlex.quote(key))
         subp = await asyncio.create_subprocess_shell(
             cmd,
             stdin=asyncio.subprocess.PIPE,
@@ -91,7 +92,7 @@ class ContextObjectStore:
         """
 
         with tempfile.NamedTemporaryFile(mode="rb") as fd:
-            cmd = self.__get_obj_cmd__.format(obj_name=key, dst_path=fd.name)
+            cmd = self.__get_obj_cmd__.format(obj_name=shlex.quote(key), dst_path=fd.name)
             subp = await asyncio.create_subprocess_shell(
                 cmd,
                 stdin=None,
@@ -118,7 +119,7 @@ class ContextObjectStore:
         :param key: the object name.
         :raises Exception: If there is an error while deleting the object.
         """
-        cmd = self.__del_obj_cmd__.format(obj_name=key)
+        cmd = self.__del_obj_cmd__.format(obj_name=shlex.quote(key))
         subp = await asyncio.create_subprocess_shell(
             cmd,
             stdin=None,
