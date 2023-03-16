@@ -16,7 +16,7 @@ DEFAULT_CHANNEL = ""
 
 
 class HandlerContext:
-    def __init__(self, config, nc, js, mongo_conn, logger, publish_msg: PublishMsgFunc, publish_any: PublishAnyFunc):
+    def __init__(self, config, nc, mongo_conn, logger, publish_msg: PublishMsgFunc, publish_any: PublishAnyFunc):
         self.__data__ = lambda: None
         self.__config__ = config
         self.__publish_msg__ = publish_msg
@@ -28,7 +28,7 @@ class HandlerContext:
         self.db = ContextData(config, nc, mongo_conn, logger)
 
         if config.nats_object_store is not None:
-            self.object_store = ContextObjectStore(config, js, logger)
+            self.object_store = ContextObjectStore(config, logger)
 
     def path(self, relative_path):
         return os.path.join(self.__config__.base_path, relative_path)
