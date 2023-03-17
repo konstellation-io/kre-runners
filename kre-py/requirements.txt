@@ -25,7 +25,7 @@ scipy==1.5.4
 six==1.15.0
 smart-open==3.0.0
 threadpoolctl==2.1.0
-torch==1.5.1
+torch==1.13.1
 torchvision==0.6.1
 tqdm==4.51.0
 urllib3==1.25.11
