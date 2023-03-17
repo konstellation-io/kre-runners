@@ -57,7 +57,7 @@ func testObjectStore(ctx *kre.HandlerContext) error {
 		return fmt.Errorf("error getting object: %w", err)
 	}
 
-	ctx.Logger.Info(string(objRes))
+	ctx.Logger.Infof("the value from the object store is: %s", string(objRes))
 
 	ctx.DeleteObject(objKey)
 	if err != nil {
@@ -86,7 +86,7 @@ func testKVStore(ctx *kre.HandlerContext) error {
 		return fmt.Errorf("error getting config: %w", err)
 	}
 
-	ctx.Logger.Info(kvRes)
+	ctx.Logger.Infof("the config from the kvStore is %s", kvRes)
 
 	ctx.DeleteConfig(kvKey)
 	if err != nil {
