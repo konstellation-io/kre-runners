@@ -182,7 +182,7 @@ func (r *Runner) storeObject(key string, payload []byte) error {
 
 	_, err := r.objStore.PutBytes(key, payload)
 	if err != nil {
-		return fmt.Errorf("error storing object to the object store: %s", err)
+		return fmt.Errorf("error storing object to the object store: %w", err)
 	}
 
 	r.logger.Debugf("File with key %q successfully stored in object store %q", key, r.cfg.NATS.ObjectStoreName)
@@ -197,7 +197,7 @@ func (r *Runner) getObject(key string) ([]byte, error) {
 
 	response, err := r.objStore.GetBytes(key)
 	if err != nil {
-		return nil, fmt.Errorf("error retrieving object with key %s from the object store: %s", key, err)
+		return nil, fmt.Errorf("error retrieving object with key %s from the object store: %w", key, err)
 	}
 
 	r.logger.Debugf("File with key %q successfully retrieved from object store %q", key, r.cfg.NATS.ObjectStoreName)
@@ -212,7 +212,7 @@ func (r *Runner) deleteObject(key string) error {
 
 	err := r.objStore.Delete(key)
 	if err != nil {
-		return fmt.Errorf("error retrieving object with key %s from the object store: %s", key, err)
+		return fmt.Errorf("error retrieving object with key %s from the object store: %w", key, err)
 	}
 
 	r.logger.Debugf("File with key %q successfully deleted in object store %q", key, r.cfg.NATS.ObjectStoreName)
