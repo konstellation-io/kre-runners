@@ -8,8 +8,8 @@ import (
 
 	"bou.ke/monkey"
 	"github.com/golang/mock/gomock"
-	"github.com/konstellation-io/kre-runners/kre-go/config"
-	"github.com/konstellation-io/kre-runners/kre-go/mocks"
+	"github.com/konstellation-io/kre-runners/kre-go/v4/config"
+	"github.com/konstellation-io/kre-runners/kre-go/v4/mocks"
 	"github.com/konstellation-io/kre/libs/simplelogger"
 
 	"github.com/stretchr/testify/suite"

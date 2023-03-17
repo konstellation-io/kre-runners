@@ -8,7 +8,7 @@ import (
 	protobuf "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	"github.com/konstellation-io/kre-runners/kre-go"
+	"github.com/konstellation-io/kre-runners/kre-go/v4"
 )
 
 func handlerInit(ctx *kre.HandlerContext) {

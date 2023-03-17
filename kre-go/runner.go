@@ -10,8 +10,8 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	"github.com/konstellation-io/kre-runners/kre-go/config"
-	"github.com/konstellation-io/kre-runners/kre-go/mongodb"
+	"github.com/konstellation-io/kre-runners/kre-go/v4/config"
+	"github.com/konstellation-io/kre-runners/kre-go/v4/mongodb"
 )
 
 const (
