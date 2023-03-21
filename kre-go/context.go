@@ -38,7 +38,6 @@ type HandlerContextParams struct {
 
 type HandlerContext struct {
 	cfg         config.Config
-	values      map[string]interface{}
 	publishMsg  PublishMsgFunc
 	publishAny  PublishAnyFunc
 	reqMsg      *KreNatsMessage
@@ -52,7 +51,6 @@ type HandlerContext struct {
 func NewHandlerContext(params *HandlerContextParams) *HandlerContext {
 	return &HandlerContext{
 		cfg:         params.Cfg,
-		values:      map[string]interface{}{},
 		publishMsg:  params.PublishMsg,
 		publishAny:  params.PublishAny,
 		Logger:      params.Logger,
@@ -66,50 +64,6 @@ func NewHandlerContext(params *HandlerContextParams) *HandlerContext {
 // Path will return the relative path given as an argument as a full path.
 func (c *HandlerContext) Path(relativePath string) string {
 	return path.Join(c.cfg.BasePath, relativePath)
-}
-
-// Set will add the given key and value to the in-memory storage.
-func (c *HandlerContext) Set(key string, value interface{}) {
-	c.values[key] = value
-}
-
-// Get will return the value of the given key if it exists on the in-memory storage.
-func (c *HandlerContext) Get(key string) interface{} {
-	if val, ok := c.values[key]; ok {
-		return val
-	}
-	c.Logger.Infof("Error getting value for key '%s' returning nil", key)
-	return nil
-}
-
-// GetString will return the value of the given key as a string if it exists on the in-memory storage.
-func (c *HandlerContext) GetString(key string) string {
-	v := c.Get(key)
-	if val, ok := v.(string); ok {
-		return val
-	}
-	c.Logger.Infof("Error getting value for key '%s' is not a string", key)
-	return ""
-}
-
-// GetInt will return the value of the given key as an integer if it exists on the in-memory storage.
-func (c *HandlerContext) GetInt(key string) int {
-	v := c.Get(key)
-	if val, ok := v.(int); ok {
-		return val
-	}
-	c.Logger.Infof("Error getting value for key '%s' is not a int", key)
-	return -1
-}
-
-// GetFloat will return the value of the given key as a float if it exists on the in-memory storage.
-func (c *HandlerContext) GetFloat(key string) float64 {
-	v := c.Get(key)
-	if val, ok := v.(float64); ok {
-		return val
-	}
-	c.Logger.Infof("Error getting value for key '%s' is not a float64", key)
-	return -1.0
 }
 
 // GetRequestID will return the payload's original request ID.
