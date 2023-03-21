@@ -162,19 +162,16 @@ func (c *HandlerContext) SendEarlyExit(response proto.Message, channelOpt ...str
 }
 
 // StoreObject stores the given payload in the Object Store with the given key as identifier
-// If an objectStore name is given, a new Object Store will be created.
 func (c *HandlerContext) StoreObject(key string, payload []byte) error {
 	return c.storeObject(key, payload)
 }
 
-// GetObject retrieves the object stored in the given object store or the default object store for the workflow
-// with the given key as identifier as a byte array.
+// GetObject retrieves the object stored in the node's object store
 func (c *HandlerContext) GetObject(key string) ([]byte, error) {
 	return c.getObject(key)
 }
 
-// DeleteObject deletes the object stored in the given object store or the default object store for the workflow
-// with the given key as identifier as a byte array.
+// DeleteObject deletes the object stored in the node's object store
 func (c *HandlerContext) DeleteObject(key string) error {
 	return c.deleteObject(key)
 }
