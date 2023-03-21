@@ -28,67 +28,50 @@ type PublishAnyFunc = func(response *anypb.Any, reqMsg *KreNatsMessage, msgType 
 type StoreObjectFunc = func(key string, payload []byte) error
 type GetObjectFunc = func(key string) ([]byte, error)
 type DeleteObjectFunc = func(key string) error
-type SetConfigFunc = func(key, value string, scope Scope) error
-type GetConfigFunc = func(key string, scopes []Scope) (string, error)
-type DeleteConfigFunc = func(key string, scope Scope) error
-
-type Scope string
-
-const (
-	ScopeProject  Scope = "project"
-	ScopeWorkflow Scope = "workflow"
-	ScopeNode     Scope = "node"
-)
 
 type HandlerContextParams struct {
-	Cfg          config.Config
-	NC           *nats.Conn
-	MongoManager mongodb.Manager
-	Logger       *simplelogger.SimpleLogger
-	PublishMsg   PublishMsgFunc
-	PublishAny   PublishAnyFunc
-	StoreObject  StoreObjectFunc
-	GetObject    GetObjectFunc
-	DeleteObject DeleteObjectFunc
-	SetConfig    SetConfigFunc
-	GetConfig    GetConfigFunc
-	DeleteConfig DeleteConfigFunc
+	Cfg                  config.Config
+	NC                   *nats.Conn
+	MongoManager         mongodb.Manager
+	Logger               *simplelogger.SimpleLogger
+	PublishMsg           PublishMsgFunc
+	PublishAny           PublishAnyFunc
+	StoreObject          StoreObjectFunc
+	GetObject            GetObjectFunc
+	DeleteObject         DeleteObjectFunc
+	ContextConfiguration *contextConfiguration
 }
 
 type HandlerContext struct {
-	cfg          config.Config
-	values       map[string]interface{}
-	publishMsg   PublishMsgFunc
-	publishAny   PublishAnyFunc
-	storeObject  StoreObjectFunc
-	getObject    GetObjectFunc
-	deleteObject DeleteObjectFunc
-	setConfig    SetConfigFunc
-	getConfig    GetConfigFunc
-	deleteConfig DeleteConfigFunc
-	reqMsg       *KreNatsMessage
-	Logger       *simplelogger.SimpleLogger
-	Prediction   *contextPrediction
-	Measurement  *contextMeasurement
-	DB           *contextDatabase
+	cfg           config.Config
+	values        map[string]interface{}
+	publishMsg    PublishMsgFunc
+	publishAny    PublishAnyFunc
+	storeObject   StoreObjectFunc
+	getObject     GetObjectFunc
+	deleteObject  DeleteObjectFunc
+	reqMsg        *KreNatsMessage
+	Logger        *simplelogger.SimpleLogger
+	Prediction    *contextPrediction
+	Measurement   *contextMeasurement
+	DB            *contextDatabase
+	Configuration *contextConfiguration
 }
 
 func NewHandlerContext(params *HandlerContextParams) *HandlerContext {
 	return &HandlerContext{
-		cfg:          params.Cfg,
-		values:       map[string]interface{}{},
-		publishMsg:   params.PublishMsg,
-		publishAny:   params.PublishAny,
-		getObject:    params.GetObject,
-		storeObject:  params.StoreObject,
-		deleteObject: params.DeleteObject,
-		setConfig:    params.SetConfig,
-		getConfig:    params.GetConfig,
-		deleteConfig: params.DeleteConfig,
-		Logger:       params.Logger,
-		Prediction:   NewContextPrediction(params.Cfg, params.NC, params.Logger),
-		Measurement:  NewContextMeasurement(params.Cfg, params.Logger),
-		DB:           NewContextDatabase(params.Cfg, params.NC, params.MongoManager, params.Logger),
+		cfg:           params.Cfg,
+		values:        map[string]interface{}{},
+		publishMsg:    params.PublishMsg,
+		publishAny:    params.PublishAny,
+		getObject:     params.GetObject,
+		storeObject:   params.StoreObject,
+		deleteObject:  params.DeleteObject,
+		Logger:        params.Logger,
+		Prediction:    NewContextPrediction(params.Cfg, params.NC, params.Logger),
+		Measurement:   NewContextMeasurement(params.Cfg, params.Logger),
+		DB:            NewContextDatabase(params.Cfg, params.NC, params.MongoManager, params.Logger),
+		Configuration: params.ContextConfiguration,
 	}
 }
 
@@ -199,36 +182,11 @@ func (c *HandlerContext) DeleteObject(key string) error {
 	return c.deleteObject(key)
 }
 
-// SetConfig set the given key and value to an optional scoped key-value storage,
-// or the default key-value storage (Node's) if not given any.
-func (c *HandlerContext) SetConfig(key, value string, scopeOpt ...Scope) error {
-	return c.setConfig(key, value, c.getOptionalScope(scopeOpt, ScopeNode))
-}
-
-// GetConfig retrieves the configuration given a key from an optional scoped key-value storage,
-// if no scoped key-value storage is given it will search in all the scopes starting by Node then upwards.
-func (c *HandlerContext) GetConfig(key string, scopeOpt ...Scope) (string, error) {
-	return c.getConfig(key, scopeOpt)
-}
-
-// DeleteConfig retrieves the configuration given a key from an optional scoped key-value storage,
-// if no key-value storage is given it will use the default one (Node's).
-func (c *HandlerContext) DeleteConfig(key string, scopeOpt ...Scope) error {
-	return c.deleteConfig(key, c.getOptionalScope(scopeOpt, ScopeNode))
-}
-
 func (c *HandlerContext) getOptionalString(values []string) string {
 	if len(values) > 0 {
 		return values[0]
 	}
 	return defaultValue
-}
-
-func (c *HandlerContext) getOptionalScope(scopes []Scope, defaultScope Scope) Scope {
-	if len(scopes) > 0 {
-		return scopes[0]
-	}
-	return defaultScope
 }
 
 // IsMessageOK returns true if the incoming message is of message type OK.

@@ -61,7 +61,8 @@ func Start(handlerInit HandlerInit, defaultHandler Handler, handlersOpt ...map[s
 
 	objStore := initObjectStore(logger, cfg, js)
 
-	kvStoresMap := initKVStoresMap(cfg, logger, js)
+	// Context Configuration
+	contextConfiguration := NewContextConfiguration(cfg, logger, js)
 
 	// Connect to MongoDB
 	mongoManager := mongodb.NewMongoManager(cfg, logger)
@@ -73,15 +74,15 @@ func Start(handlerInit HandlerInit, defaultHandler Handler, handlersOpt ...map[s
 
 	// Handle incoming messages from NATS
 	runner := NewRunner(&RunnerParams{
-		Logger:         logger,
-		Cfg:            cfg,
-		NC:             nc,
-		JS:             js,
-		ObjStore:       objStore,
-		KVStoresMap:    kvStoresMap,
-		HandlerManager: handlerManager,
-		HandlerInit:    handlerInit,
-		MongoManager:   mongoManager,
+		Logger:               logger,
+		Cfg:                  cfg,
+		NC:                   nc,
+		JS:                   js,
+		ObjStore:             objStore,
+		HandlerManager:       handlerManager,
+		HandlerInit:          handlerInit,
+		MongoManager:         mongoManager,
+		ContextConfiguration: contextConfiguration,
 	})
 
 	var subscriptions []*nats.Subscription
@@ -119,36 +120,6 @@ func Start(handlerInit HandlerInit, defaultHandler Handler, handlersOpt ...map[s
 			os.Exit(1)
 		}
 	}
-}
-
-func initKVStoresMap(cfg config.Config, logger *simplelogger.SimpleLogger, js nats.JetStreamContext) map[Scope]nats.KeyValue {
-	kvStoresMap := make(map[Scope]nats.KeyValue, 3)
-
-	kvStore, err := js.KeyValue(cfg.NATS.KeyValueStoreProjectName)
-	if err != nil {
-		logger.Errorf("error binding the key value store for the scope Project: %s", err)
-		os.Exit(1)
-	}
-
-	kvStoresMap[ScopeProject] = kvStore
-
-	kvStore, err = js.KeyValue(cfg.NATS.KeyValueStoreWorkflowName)
-	if err != nil {
-		logger.Errorf("error binding the key value store for the scope Workflow: %s", err)
-		os.Exit(1)
-	}
-
-	kvStoresMap[ScopeWorkflow] = kvStore
-
-	kvStore, err = js.KeyValue(cfg.NATS.KeyValueStoreNodeName)
-	if err != nil {
-		logger.Errorf("error binding the key value store for the scope Node: %s", err)
-		os.Exit(1)
-	}
-
-	kvStoresMap[ScopeNode] = kvStore
-
-	return kvStoresMap
 }
 
 func initObjectStore(logger *simplelogger.SimpleLogger, cfg config.Config, js nats.JetStreamContext) nats.ObjectStore {

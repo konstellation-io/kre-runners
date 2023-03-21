@@ -1,0 +1,134 @@
+package kre
+
+import (
+	"fmt"
+	"os"
+
+	"github.com/konstellation-io/kre-runners/kre-go/v4/config"
+	"github.com/konstellation-io/kre/libs/simplelogger"
+	"github.com/nats-io/nats.go"
+)
+
+type Scope string
+
+const (
+	ScopeProject  Scope = "project"
+	ScopeWorkflow Scope = "workflow"
+	ScopeNode     Scope = "node"
+)
+
+type contextConfiguration struct {
+	kvStoresMap map[Scope]nats.KeyValue
+}
+
+func NewContextConfiguration(
+	cfg config.Config,
+	logger *simplelogger.SimpleLogger,
+	js nats.JetStreamContext,
+) *contextConfiguration {
+	return &contextConfiguration{
+		kvStoresMap: initKVStoresMap(cfg, logger, js),
+	}
+}
+
+func initKVStoresMap(cfg config.Config, logger *simplelogger.SimpleLogger, js nats.JetStreamContext) map[Scope]nats.KeyValue {
+	kvStoresMap := make(map[Scope]nats.KeyValue, 3)
+
+	kvStore, err := js.KeyValue(cfg.NATS.KeyValueStoreProjectName)
+	if err != nil {
+		logger.Errorf("error binding the key value store for the scope Project: %s", err)
+		os.Exit(1)
+	}
+
+	kvStoresMap[ScopeProject] = kvStore
+
+	kvStore, err = js.KeyValue(cfg.NATS.KeyValueStoreWorkflowName)
+	if err != nil {
+		logger.Errorf("error binding the key value store for the scope Workflow: %s", err)
+		os.Exit(1)
+	}
+
+	kvStoresMap[ScopeWorkflow] = kvStore
+
+	kvStore, err = js.KeyValue(cfg.NATS.KeyValueStoreNodeName)
+	if err != nil {
+		logger.Errorf("error binding the key value store for the scope Node: %s", err)
+		os.Exit(1)
+	}
+
+	kvStoresMap[ScopeNode] = kvStore
+
+	return kvStoresMap
+}
+
+// SetConfig set the given key and value to an optional scoped key-value storage,
+// or the default key-value storage (Node's) if not given any.
+func (cc *contextConfiguration) SetConfig(key, value string, scopeOpt ...Scope) error {
+	scope := cc.getOptionalScope(scopeOpt, ScopeNode)
+
+	kvStore, ok := cc.kvStoresMap[scope]
+	if !ok {
+		return fmt.Errorf("could not find key value store given scope %s", scope)
+	}
+
+	_, err := kvStore.PutString(key, value)
+	if err != nil {
+		return fmt.Errorf("error storing value with key %s to the key-value store: %w", key, err)
+	}
+
+	return nil
+}
+
+// GetConfig retrieves the configuration given a key from an optional scoped key-value storage,
+// if no scoped key-value storage is given it will search in all the scopes starting by Node then upwards.
+func (cc *contextConfiguration) GetConfig(key string, scopeOpt ...Scope) (string, error) {
+	if len(scopeOpt) > 0 {
+		return cc.getConfigFromScope(key, scopeOpt[0])
+	} else {
+		allScopesInOrder := []Scope{ScopeNode, ScopeWorkflow, ScopeProject}
+		for _, scope := range allScopesInOrder {
+			config, err := cc.getConfigFromScope(key, scope)
+
+			if err == nil {
+				return config, nil
+			}
+		}
+
+		return "", fmt.Errorf("error retrieving config with key %s, not found in any key-value store", key)
+	}
+}
+
+func (cc *contextConfiguration) getConfigFromScope(key string, scope Scope) (string, error) {
+	value, err := cc.kvStoresMap[scope].Get(key)
+
+	if err != nil {
+		return "", fmt.Errorf("error retrieving config with key %s from the key-value store: %w", key, err)
+	}
+
+	return string(value.Value()), nil
+}
+
+// DeleteConfig retrieves the configuration given a key from an optional scoped key-value storage,
+// if no key-value storage is given it will use the default one (Node's).
+func (cc *contextConfiguration) DeleteConfig(key string, scopeOpt ...Scope) error {
+	scope := cc.getOptionalScope(scopeOpt, ScopeNode)
+
+	kvStore, ok := cc.kvStoresMap[scope]
+	if !ok {
+		return fmt.Errorf("could not find key value store given scope %s", scope)
+	}
+
+	err := kvStore.Delete(key)
+	if err != nil {
+		return fmt.Errorf("error deleting value with key %s from the key-value store: %w", key, err)
+	}
+
+	return nil
+}
+
+func (cc *contextConfiguration) getOptionalScope(scopes []Scope, defaultScope Scope) Scope {
+	if len(scopes) > 0 {
+		return scopes[0]
+	}
+	return defaultScope
+}
