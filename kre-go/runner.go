@@ -34,7 +34,6 @@ type Runner struct {
 	cfg            config.Config
 	nc             *nats.Conn
 	js             nats.JetStreamContext
-	objStore       nats.ObjectStore
 	handlerContext *HandlerContext
 	handlerManager *HandlerManager
 }
@@ -47,7 +46,6 @@ func NewRunner(params *RunnerParams) *Runner {
 		cfg:            params.Cfg,
 		nc:             params.NC,
 		js:             params.JS,
-		objStore:       params.ObjStore,
 		handlerManager: params.HandlerManager,
 	}
 
@@ -56,11 +54,9 @@ func NewRunner(params *RunnerParams) *Runner {
 		params.NC,
 		params.MongoManager,
 		params.Logger,
+		params.ObjStore,
 		runner.publishMsg,
 		runner.publishAny,
-		runner.storeObject,
-		runner.getObject,
-		runner.deleteObject,
 	})
 
 	params.HandlerInit(ctx)
@@ -170,54 +166,6 @@ func (r *Runner) publishError(requestID, errMsg string) {
 		MessageType: MessageType_ERROR,
 	}
 	r.publishResponse(responseMsg, "")
-}
-
-func (r *Runner) storeObject(key string, payload []byte) error {
-	if r.objStore == nil {
-		return errors.ErrUndefinedObjectStore
-	}
-	if payload == nil {
-		return errors.ErrEmptyPayload
-	}
-
-	_, err := r.objStore.PutBytes(key, payload)
-	if err != nil {
-		return fmt.Errorf("error storing object to the object store: %w", err)
-	}
-
-	r.logger.Debugf("File with key %q successfully stored in object store %q", key, r.cfg.NATS.ObjectStoreName)
-
-	return nil
-}
-
-func (r *Runner) getObject(key string) ([]byte, error) {
-	if r.objStore == nil {
-		return nil, errors.ErrUndefinedObjectStore
-	}
-
-	response, err := r.objStore.GetBytes(key)
-	if err != nil {
-		return nil, fmt.Errorf("error retrieving object with key %s from the object store: %w", key, err)
-	}
-
-	r.logger.Debugf("File with key %q successfully retrieved from object store %q", key, r.cfg.NATS.ObjectStoreName)
-
-	return response, nil
-}
-
-func (r *Runner) deleteObject(key string) error {
-	if r.objStore == nil {
-		return errors.ErrUndefinedObjectStore
-	}
-
-	err := r.objStore.Delete(key)
-	if err != nil {
-		return fmt.Errorf("error retrieving object with key %s from the object store: %w", key, err)
-	}
-
-	r.logger.Debugf("File with key %q successfully deleted in object store %q", key, r.cfg.NATS.ObjectStoreName)
-
-	return nil
 }
 
 // newResponseMsg creates a KreNatsMessage that keeps previous request ID plus adding the payload we wish to send.

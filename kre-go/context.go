@@ -25,50 +25,41 @@ const (
 
 type PublishMsgFunc = func(response proto.Message, reqMsg *KreNatsMessage, msgType MessageType, channel string) error
 type PublishAnyFunc = func(response *anypb.Any, reqMsg *KreNatsMessage, msgType MessageType, channel string)
-type StoreObjectFunc = func(key string, payload []byte) error
-type GetObjectFunc = func(key string) ([]byte, error)
-type DeleteObjectFunc = func(key string) error
 
 type HandlerContextParams struct {
 	Cfg          config.Config
 	NC           *nats.Conn
 	MongoManager mongodb.Manager
 	Logger       *simplelogger.SimpleLogger
+	ObjectStore  nats.ObjectStore
 	PublishMsg   PublishMsgFunc
 	PublishAny   PublishAnyFunc
-	StoreObject  StoreObjectFunc
-	GetObject    GetObjectFunc
-	DeleteObject DeleteObjectFunc
 }
 
 type HandlerContext struct {
-	cfg          config.Config
-	values       map[string]interface{}
-	publishMsg   PublishMsgFunc
-	publishAny   PublishAnyFunc
-	storeObject  StoreObjectFunc
-	getObject    GetObjectFunc
-	deleteObject DeleteObjectFunc
-	reqMsg       *KreNatsMessage
-	Logger       *simplelogger.SimpleLogger
-	Prediction   *contextPrediction
-	Measurement  *contextMeasurement
-	DB           *contextDatabase
+	cfg         config.Config
+	values      map[string]interface{}
+	publishMsg  PublishMsgFunc
+	publishAny  PublishAnyFunc
+	reqMsg      *KreNatsMessage
+	Logger      *simplelogger.SimpleLogger
+	ObjectStore *contextObjectStore
+	Prediction  *contextPrediction
+	Measurement *contextMeasurement
+	DB          *contextDatabase
 }
 
 func NewHandlerContext(params *HandlerContextParams) *HandlerContext {
 	return &HandlerContext{
-		cfg:          params.Cfg,
-		values:       map[string]interface{}{},
-		publishMsg:   params.PublishMsg,
-		publishAny:   params.PublishAny,
-		getObject:    params.GetObject,
-		storeObject:  params.StoreObject,
-		deleteObject: params.DeleteObject,
-		Logger:       params.Logger,
-		Prediction:   NewContextPrediction(params.Cfg, params.NC, params.Logger),
-		Measurement:  NewContextMeasurement(params.Cfg, params.Logger),
-		DB:           NewContextDatabase(params.Cfg, params.NC, params.MongoManager, params.Logger),
+		cfg:         params.Cfg,
+		values:      map[string]interface{}{},
+		publishMsg:  params.PublishMsg,
+		publishAny:  params.PublishAny,
+		Logger:      params.Logger,
+		ObjectStore: NewContextObjectStore(params.Cfg, params.Logger, params.ObjectStore),
+		Prediction:  NewContextPrediction(params.Cfg, params.NC, params.Logger),
+		Measurement: NewContextMeasurement(params.Cfg, params.Logger),
+		DB:          NewContextDatabase(params.Cfg, params.NC, params.MongoManager, params.Logger),
 	}
 }
 
@@ -159,21 +150,6 @@ func (c *HandlerContext) SendEarlyReply(response proto.Message, channelOpt ...st
 // with the addition of typing this message as an early exit.
 func (c *HandlerContext) SendEarlyExit(response proto.Message, channelOpt ...string) error {
 	return c.publishMsg(response, c.reqMsg, MessageType_EARLY_EXIT, c.getOptionalString(channelOpt))
-}
-
-// StoreObject stores the given payload in the Object Store with the given key as identifier
-func (c *HandlerContext) StoreObject(key string, payload []byte) error {
-	return c.storeObject(key, payload)
-}
-
-// GetObject retrieves the object stored in the node's object store
-func (c *HandlerContext) GetObject(key string) ([]byte, error) {
-	return c.getObject(key)
-}
-
-// DeleteObject deletes the object stored in the node's object store
-func (c *HandlerContext) DeleteObject(key string) error {
-	return c.deleteObject(key)
 }
 
 func (c *HandlerContext) getOptionalString(values []string) string {
