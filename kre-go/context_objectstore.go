@@ -40,9 +40,12 @@ func initObjectStore(cfg config.Config, logger *simplelogger.SimpleLogger, js na
 			logger.Errorf("error binding the object store: %s", err)
 			os.Exit(1)
 		}
-	}
+		return objStore
 
-	return objStore
+	} else {
+		logger.Info("Object store not defined. Skipping object store initialization.")
+		return nil
+	}
 }
 
 // Save stores the given payload in the Object Store with the given key as identifier
