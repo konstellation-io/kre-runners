@@ -42,10 +42,10 @@ type HandlerContext struct {
 	publishAny  PublishAnyFunc
 	reqMsg      *KreNatsMessage
 	Logger      *simplelogger.SimpleLogger
-	ObjectStore *contextObjectStore
 	Prediction  *contextPrediction
 	Measurement *contextMeasurement
 	DB          *contextDatabase
+	ObjectStore *contextObjectStore
 }
 
 func NewHandlerContext(params *HandlerContextParams) *HandlerContext {
@@ -54,10 +54,10 @@ func NewHandlerContext(params *HandlerContextParams) *HandlerContext {
 		publishMsg:  params.PublishMsg,
 		publishAny:  params.PublishAny,
 		Logger:      params.Logger,
-		ObjectStore: params.ContextObjectStore,
 		Prediction:  NewContextPrediction(params.Cfg, params.NC, params.Logger),
 		Measurement: NewContextMeasurement(params.Cfg, params.Logger),
 		DB:          NewContextDatabase(params.Cfg, params.NC, params.MongoManager, params.Logger),
+		ObjectStore: params.ContextObjectStore,
 	}
 }
 
