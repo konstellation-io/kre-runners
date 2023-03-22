@@ -68,8 +68,8 @@ func NewConfig(logger *simplelogger.SimpleLogger) Config {
 }
 
 func getCfgFromEnv(logger *simplelogger.SimpleLogger, name string) string {
-	val := getOptCfgFromEnv(logger, name)
-	if val == "" {
+	val, ok := os.LookupEnv(name)
+	if !ok {
 		logger.Errorf("Error reading config: the %q env var is missing", name)
 		os.Exit(1)
 	}
