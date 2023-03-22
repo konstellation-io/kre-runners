@@ -19,14 +19,14 @@ const (
 )
 
 type RunnerParams struct {
-	Logger         *simplelogger.SimpleLogger
-	Cfg            config.Config
-	NC             *nats.Conn
-	JS             nats.JetStreamContext
-	ObjStore       nats.ObjectStore
-	HandlerManager *HandlerManager
-	HandlerInit    HandlerInit
-	MongoManager   mongodb.Manager
+	Logger             *simplelogger.SimpleLogger
+	Cfg                config.Config
+	NC                 *nats.Conn
+	JS                 nats.JetStreamContext
+	HandlerManager     *HandlerManager
+	HandlerInit        HandlerInit
+	MongoManager       mongodb.Manager
+	ContextObjectStore *contextObjectStore
 }
 
 type Runner struct {
@@ -54,9 +54,9 @@ func NewRunner(params *RunnerParams) *Runner {
 		params.NC,
 		params.MongoManager,
 		params.Logger,
-		params.ObjStore,
 		runner.publishMsg,
 		runner.publishAny,
+		params.ContextObjectStore,
 	})
 
 	params.HandlerInit(ctx)

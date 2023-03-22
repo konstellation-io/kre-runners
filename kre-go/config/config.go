@@ -32,7 +32,6 @@ type ConfigNATS struct {
 	InputSubjects      []string
 	OutputSubject      string
 	ObjectStoreName    string
-	KeyValueStoreName  string
 	MongoWriterSubject string
 }
 
@@ -55,7 +54,6 @@ func NewConfig(logger *simplelogger.SimpleLogger) Config {
 			InputSubjects:      getSubscriptionsFromEnv(logger, "KRT_NATS_INPUTS"),
 			OutputSubject:      getCfgFromEnv(logger, "KRT_NATS_OUTPUT"),
 			ObjectStoreName:    getOptCfgFromEnv(logger, "KRT_NATS_OBJECT_STORE"),
-			KeyValueStoreName:  getOptCfgFromEnv(logger, "KRT_NATS_KEY_VALUE_STORE"),
 			MongoWriterSubject: getCfgFromEnv(logger, "KRT_NATS_MONGO_WRITER"),
 		},
 		MongoDB: MongoDB{

@@ -27,13 +27,13 @@ type PublishMsgFunc = func(response proto.Message, reqMsg *KreNatsMessage, msgTy
 type PublishAnyFunc = func(response *anypb.Any, reqMsg *KreNatsMessage, msgType MessageType, channel string)
 
 type HandlerContextParams struct {
-	Cfg          config.Config
-	NC           *nats.Conn
-	MongoManager mongodb.Manager
-	Logger       *simplelogger.SimpleLogger
-	ObjectStore  nats.ObjectStore
-	PublishMsg   PublishMsgFunc
-	PublishAny   PublishAnyFunc
+	Cfg                config.Config
+	NC                 *nats.Conn
+	MongoManager       mongodb.Manager
+	Logger             *simplelogger.SimpleLogger
+	PublishMsg         PublishMsgFunc
+	PublishAny         PublishAnyFunc
+	ContextObjectStore *contextObjectStore
 }
 
 type HandlerContext struct {
@@ -54,7 +54,7 @@ func NewHandlerContext(params *HandlerContextParams) *HandlerContext {
 		publishMsg:  params.PublishMsg,
 		publishAny:  params.PublishAny,
 		Logger:      params.Logger,
-		ObjectStore: NewContextObjectStore(params.Cfg, params.Logger, params.ObjectStore),
+		ObjectStore: params.ContextObjectStore,
 		Prediction:  NewContextPrediction(params.Cfg, params.NC, params.Logger),
 		Measurement: NewContextMeasurement(params.Cfg, params.Logger),
 		DB:          NewContextDatabase(params.Cfg, params.NC, params.MongoManager, params.Logger),

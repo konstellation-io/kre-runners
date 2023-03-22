@@ -2,6 +2,7 @@ package kre
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/nats-io/nats.go"
 
@@ -19,13 +20,29 @@ type contextObjectStore struct {
 func NewContextObjectStore(
 	cfg config.Config,
 	logger *simplelogger.SimpleLogger,
-	objStore nats.ObjectStore,
+	js nats.JetStreamContext,
 ) *contextObjectStore {
 	return &contextObjectStore{
 		cfg:      cfg,
 		logger:   logger,
-		objStore: objStore,
+		objStore: initObjectStore(cfg, logger, js),
 	}
+}
+
+func initObjectStore(cfg config.Config, logger *simplelogger.SimpleLogger, js nats.JetStreamContext) nats.ObjectStore {
+	var objStore nats.ObjectStore
+	var err error
+
+	// Connect to ObjectStore (optional)
+	if cfg.NATS.ObjectStoreName != "" {
+		objStore, err = js.ObjectStore(cfg.NATS.ObjectStoreName)
+		if err != nil {
+			logger.Errorf("error binding the object store: %s", err)
+			os.Exit(1)
+		}
+	}
+
+	return objStore
 }
 
 // Save stores the given payload in the Object Store with the given key as identifier
