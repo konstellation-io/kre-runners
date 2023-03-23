@@ -36,9 +36,6 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get -yq install --no-in
             python3.9-dev \
             python3.9-distutils \
             python3-distutils-extra && \
-    curl -L -o nats-cli.deb https://github.com/nats-io/natscli/releases/download/v0.0.35/nats-0.0.35-amd64.deb && \
-    dpkg -i ./nats-cli.deb && \
-    apt-get install -f && \
     curl -o ./get-pip.py https://bootstrap.pypa.io/get-pip.py && \
     python3.9 ./get-pip.py && \
     # Set Python 3.9 as default
@@ -50,6 +47,7 @@ RUN rm --recursive --force -- * && \
         rm -rf /var/lib/{apt,dpkg,cache,log}/
 
 COPY Pipfile* ./
+COPY nats /usr/bin/
 
 RUN python3 -m pip install --upgrade --no-cache-dir  \
         setuptools \
