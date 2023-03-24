@@ -4,7 +4,6 @@ import (
 	"path"
 	"time"
 
-	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 
@@ -28,12 +27,14 @@ type PublishAnyFunc = func(response *anypb.Any, reqMsg *KreNatsMessage, msgType 
 
 type HandlerContextParams struct {
 	Cfg                config.Config
-	NC                 *nats.Conn
 	MongoManager       mongodb.Manager
 	Logger             *simplelogger.SimpleLogger
 	PublishMsg         PublishMsgFunc
 	PublishAny         PublishAnyFunc
 	ContextObjectStore *contextObjectStore
+	Prediction         *contextPrediction
+	Measurement        *contextMeasurement
+	DB                 *contextDatabase
 }
 
 type HandlerContext struct {
@@ -54,9 +55,9 @@ func NewHandlerContext(params *HandlerContextParams) *HandlerContext {
 		publishMsg:  params.PublishMsg,
 		publishAny:  params.PublishAny,
 		Logger:      params.Logger,
-		Prediction:  NewContextPrediction(params.Cfg, params.NC, params.Logger),
-		Measurement: NewContextMeasurement(params.Cfg, params.Logger),
-		DB:          NewContextDatabase(params.Cfg, params.NC, params.MongoManager, params.Logger),
+		Prediction:  params.Prediction,
+		Measurement: params.Measurement,
+		DB:          params.DB,
 		ObjectStore: params.ContextObjectStore,
 	}
 }

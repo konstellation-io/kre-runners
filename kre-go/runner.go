@@ -14,49 +14,54 @@ import (
 	"github.com/konstellation-io/kre-runners/kre-go/v4/mongodb"
 )
 
-const (
-	MessageThreshold = 1024 * 1024
-)
+type MessagingClient interface {
+	PublishResponse(responseMsg proto.Message, channel string)
+}
 
 type RunnerParams struct {
 	Logger             *simplelogger.SimpleLogger
 	Cfg                config.Config
-	NC                 *nats.Conn
-	JS                 nats.JetStreamContext
 	HandlerManager     *HandlerManager
 	HandlerInit        HandlerInit
 	MongoManager       mongodb.Manager
 	ContextObjectStore *contextObjectStore
+	MessagingClient    MessagingClient
+
+	Prediction  *contextPrediction
+	Measurement *contextMeasurement
+	DB          *contextDatabase
 }
 
 type Runner struct {
-	logger         *simplelogger.SimpleLogger
-	cfg            config.Config
-	nc             *nats.Conn
-	js             nats.JetStreamContext
-	handlerContext *HandlerContext
-	handlerManager *HandlerManager
+	logger *simplelogger.SimpleLogger
+	cfg    config.Config
+	//nc     *nats.Conn
+	//js              nats.JetStreamContext
+	handlerContext  *HandlerContext
+	handlerManager  *HandlerManager
+	messagingClient MessagingClient
 }
 
 // NewRunner creates a new Runner instance, initializing a new handler context within and runs
 // the given handler init func.
 func NewRunner(params *RunnerParams) *Runner {
 	runner := &Runner{
-		logger:         params.Logger,
-		cfg:            params.Cfg,
-		nc:             params.NC,
-		js:             params.JS,
-		handlerManager: params.HandlerManager,
+		logger:          params.Logger,
+		cfg:             params.Cfg,
+		handlerManager:  params.HandlerManager,
+		messagingClient: params.MessagingClient,
 	}
 
 	ctx := NewHandlerContext(&HandlerContextParams{
-		params.Cfg,
-		params.NC,
-		params.MongoManager,
-		params.Logger,
-		runner.publishMsg,
-		runner.publishAny,
-		params.ContextObjectStore,
+		Cfg:                params.Cfg,
+		MongoManager:       params.MongoManager,
+		Logger:             params.Logger,
+		PublishMsg:         runner.publishMsg,
+		PublishAny:         runner.publishAny,
+		ContextObjectStore: params.ContextObjectStore,
+		Prediction:         params.Prediction,
+		Measurement:        params.Measurement,
+		DB:                 params.DB,
 	})
 
 	params.HandlerInit(ctx)
@@ -148,14 +153,14 @@ func (r *Runner) publishMsg(msg proto.Message, reqMsg *KreNatsMessage, msgType M
 	}
 	responseMsg := r.newResponseMsg(payload, reqMsg, msgType)
 
-	r.publishResponse(responseMsg, channel)
+	r.messagingClient.PublishResponse(responseMsg, channel)
 
 	return nil
 }
 
 func (r *Runner) publishAny(payload *anypb.Any, reqMsg *KreNatsMessage, msgType MessageType, channel string) {
 	responseMsg := r.newResponseMsg(payload, reqMsg, msgType)
-	r.publishResponse(responseMsg, channel)
+	r.messagingClient.PublishResponse(responseMsg, channel)
 }
 
 func (r *Runner) publishError(requestID, errMsg string) {
@@ -165,7 +170,7 @@ func (r *Runner) publishError(requestID, errMsg string) {
 		FromNode:    r.cfg.NodeName,
 		MessageType: MessageType_ERROR,
 	}
-	r.publishResponse(responseMsg, "")
+	r.messagingClient.PublishResponse(responseMsg, "")
 }
 
 // newResponseMsg creates a KreNatsMessage that keeps previous request ID plus adding the payload we wish to send.
@@ -176,58 +181,6 @@ func (r *Runner) newResponseMsg(payload *anypb.Any, requestMsg *KreNatsMessage, 
 		FromNode:    r.cfg.NodeName,
 		MessageType: msgType,
 	}
-}
-
-func (r *Runner) publishResponse(responseMsg *KreNatsMessage, channel string) {
-	outputSubject := r.getOutputSubject(channel)
-
-	outputMsg, err := proto.Marshal(responseMsg)
-	if err != nil {
-		r.logger.Errorf("Error generating output result because handler result is not a serializable Protobuf: %s", err)
-		return
-	}
-
-	outputMsg, err = r.prepareOutputMessage(outputMsg)
-	if err != nil {
-		r.logger.Errorf("Error preparing output msg: %s", err)
-		return
-	}
-
-	r.logger.Infof("Publishing response to '%s' subject", outputSubject)
-
-	_, err = r.js.Publish(outputSubject, outputMsg)
-	if err != nil {
-		r.logger.Errorf("Error publishing output: %s", err)
-	}
-}
-
-func (r *Runner) getOutputSubject(channel string) string {
-	outputSubject := r.cfg.NATS.OutputSubject
-	if channel != "" {
-		return fmt.Sprintf("%s.%s", outputSubject, channel)
-	}
-	return outputSubject
-}
-
-// prepareOutputMessage will check the length of the message and compress it if necessary.
-// Fails on compressed messages bigger than the threshold.
-func (r *Runner) prepareOutputMessage(msg []byte) ([]byte, error) {
-	if len(msg) <= MessageThreshold {
-		return msg, nil
-	}
-
-	outMsg, err := r.compressData(msg)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(outMsg) > MessageThreshold {
-		return nil, errors.ErrMessageToBig
-	}
-
-	r.logger.Infof("Original message size: %s. Compressed: %s", sizeInKB(msg), sizeInKB(outMsg))
-
-	return outMsg, nil
 }
 
 // saveElapsedTime stores in InfluxDB how much time did it take the node to run the handler,
@@ -245,8 +198,4 @@ func (r *Runner) saveElapsedTime(start time.Time, end time.Time, fromNode string
 	}
 
 	r.handlerContext.Measurement.Save("node_elapsed_time", fields, tags)
-}
-
-func sizeInKB(s []byte) string {
-	return fmt.Sprintf("%.2f KB", float32(len(s))/1024)
 }

@@ -43,7 +43,7 @@ func TestContextDataTestSuite(t *testing.T) {
 }
 
 // SetupSuite will create a logger, setup a config, run a NATS mocked server, then connect a
-// NATS client to it, also create a mock controller and a mock Mongo manager.
+// NATS messagingClient to it, also create a mock controller and a mock Mongo manager.
 // These will be used to create a context data object.
 func (suite *ContextDataTestSuite) SetupSuite() {
 	logger := simplelogger.New(simplelogger.LevelInfo)

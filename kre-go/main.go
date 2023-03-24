@@ -2,6 +2,7 @@ package kre
 
 import (
 	"fmt"
+	"github.com/konstellation-io/kre-runners/kre-go/v4/internal/messaging"
 	"os"
 	"os/signal"
 	"strings"
@@ -70,16 +71,23 @@ func Start(handlerInit HandlerInit, defaultHandler Handler, handlersOpt ...map[s
 	// Create context object store
 	contextObjectStore := NewContextObjectStore(cfg, logger, js)
 
+	predictionContext := NewContextPrediction(cfg, nc, logger)
+	measurementContext := NewContextMeasurement(cfg, logger)
+	dbContext := NewContextDatabase(cfg, nc, mongoManager, logger)
+
 	// Handle incoming messages from NATS
 	runner := NewRunner(&RunnerParams{
 		Logger:             logger,
 		Cfg:                cfg,
-		NC:                 nc,
-		JS:                 js,
 		HandlerManager:     handlerManager,
 		HandlerInit:        handlerInit,
 		MongoManager:       mongoManager,
 		ContextObjectStore: contextObjectStore,
+		MessagingClient:    messaging.NewNatsMessagingClient(cfg, logger, js),
+
+		Prediction:  predictionContext,
+		Measurement: measurementContext,
+		DB:          dbContext,
 	})
 
 	var subscriptions []*nats.Subscription
