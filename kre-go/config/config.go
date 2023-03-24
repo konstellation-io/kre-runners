@@ -31,6 +31,7 @@ type ConfigNATS struct {
 	Stream             string
 	InputSubjects      []string
 	OutputSubject      string
+	ObjectStoreName    string
 	MongoWriterSubject string
 }
 
@@ -52,6 +53,7 @@ func NewConfig(logger *simplelogger.SimpleLogger) Config {
 			Stream:             getCfgFromEnv(logger, "KRT_NATS_STREAM"),
 			InputSubjects:      getSubscriptionsFromEnv(logger, "KRT_NATS_INPUTS"),
 			OutputSubject:      getCfgFromEnv(logger, "KRT_NATS_OUTPUT"),
+			ObjectStoreName:    getOptCfgFromEnv(logger, "KRT_NATS_OBJECT_STORE"),
 			MongoWriterSubject: getCfgFromEnv(logger, "KRT_NATS_MONGO_WRITER"),
 		},
 		MongoDB: MongoDB{
@@ -68,24 +70,30 @@ func NewConfig(logger *simplelogger.SimpleLogger) Config {
 func getCfgFromEnv(logger *simplelogger.SimpleLogger, name string) string {
 	val, ok := os.LookupEnv(name)
 	if !ok {
-		logger.Errorf("Error reading config: the '%s' env var is missing", name)
+		logger.Errorf("Error reading config: the %q env var is missing", name)
 		os.Exit(1)
+	}
+	return val
+}
+
+func getOptCfgFromEnv(logger *simplelogger.SimpleLogger, name string) string {
+	val, ok := os.LookupEnv(name)
+	if !ok {
+		logger.Infof("The %q env var is missing", name)
+		return ""
 	}
 	return val
 }
 
 func getCfgBoolFromEnv(logger *simplelogger.SimpleLogger, name string) bool {
 	val := getCfgFromEnv(logger, name)
-	if val == "true" {
-		return true
-	}
-	return false
+	return val == "true"
 }
 
 func getSubscriptionsFromEnv(logger *simplelogger.SimpleLogger, name string) []string {
 	val, ok := os.LookupEnv(name)
 	if !ok {
-		logger.Errorf("Error reading config: the '%s' env var is missing", name)
+		logger.Errorf("Error reading config: the %q env var is missing", name)
 		os.Exit(1)
 	}
 
