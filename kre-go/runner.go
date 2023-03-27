@@ -19,14 +19,15 @@ const (
 )
 
 type RunnerParams struct {
-	Logger             *simplelogger.SimpleLogger
-	Cfg                config.Config
-	NC                 *nats.Conn
-	JS                 nats.JetStreamContext
-	HandlerManager     *HandlerManager
-	HandlerInit        HandlerInit
-	MongoManager       mongodb.Manager
-	ContextObjectStore *contextObjectStore
+	Logger               *simplelogger.SimpleLogger
+	Cfg                  config.Config
+	NC                   *nats.Conn
+	JS                   nats.JetStreamContext
+	HandlerManager       *HandlerManager
+	HandlerInit          HandlerInit
+	MongoManager         mongodb.Manager
+	ContextObjectStore   *contextObjectStore
+	ContextConfiguration *contextConfiguration
 }
 
 type Runner struct {
@@ -57,6 +58,7 @@ func NewRunner(params *RunnerParams) *Runner {
 		runner.publishMsg,
 		runner.publishAny,
 		params.ContextObjectStore,
+		params.ContextConfiguration,
 	})
 
 	params.HandlerInit(ctx)
@@ -80,7 +82,7 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 		return
 	}
 
-	r.logger.Infof("Received a message from '%s' with requestId '%s'", msg.Subject, requestMsg.RequestId)
+	r.logger.Infof("Received a message from %q with requestId %q", msg.Subject, requestMsg.RequestId)
 
 	// Make a shallow copy of the ctx object to set inside the request msg.
 	hCtx := r.handlerContext
@@ -88,14 +90,14 @@ func (r *Runner) ProcessMessage(msg *nats.Msg) {
 
 	handler := r.handlerManager.GetHandler(requestMsg.FromNode)
 	if handler == nil {
-		errMsg := fmt.Sprintf("Error missing handler for node '%s'", requestMsg.FromNode)
+		errMsg := fmt.Sprintf("Error missing handler for node %q", requestMsg.FromNode)
 		r.processRunnerError(msg, errMsg, requestMsg.RequestId, start, requestMsg.FromNode)
 		return
 	}
 
 	err = handler(hCtx, requestMsg.Payload)
 	if err != nil {
-		errMsg := fmt.Sprintf("Error in node '%s' executing handler for node '%s': %s", r.cfg.NodeName, requestMsg.FromNode, err)
+		errMsg := fmt.Sprintf("Error in node %q executing handler for node %q: %s", r.cfg.NodeName, requestMsg.FromNode, err)
 		r.processRunnerError(msg, errMsg, requestMsg.RequestId, start, requestMsg.FromNode)
 		return
 	}
@@ -193,7 +195,7 @@ func (r *Runner) publishResponse(responseMsg *KreNatsMessage, channel string) {
 		return
 	}
 
-	r.logger.Infof("Publishing response to '%s' subject", outputSubject)
+	r.logger.Infof("Publishing response to %q subject", outputSubject)
 
 	_, err = r.js.Publish(outputSubject, outputMsg)
 	if err != nil {

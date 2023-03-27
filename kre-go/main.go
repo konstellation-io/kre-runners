@@ -44,6 +44,14 @@ func Start(handlerInit HandlerInit, defaultHandler Handler, handlersOpt ...map[s
 
 	handlerManager := NewHandlerManager(defaultHandler, customHandler)
 
+	// Connect to MongoDB
+	mongoManager := mongodb.NewMongoManager(cfg, logger)
+	err := mongoManager.Connect()
+	if err != nil {
+		logger.Errorf("Error connecting to MongoDB: %s", err)
+		os.Exit(1)
+	}
+
 	// Connect to NATS
 	nc, err := nats.Connect(cfg.NATS.Server)
 	if err != nil {
@@ -59,14 +67,6 @@ func Start(handlerInit HandlerInit, defaultHandler Handler, handlersOpt ...map[s
 		os.Exit(1)
 	}
 
-	// Connect to MongoDB
-	mongoManager := mongodb.NewMongoManager(cfg, logger)
-	err = mongoManager.Connect()
-	if err != nil {
-		logger.Errorf("Error connecting to MongoDB: %s", err)
-		os.Exit(1)
-	}
-
 	// Create context object store
 	contextObjectStore, err := NewContextObjectStore(cfg, logger, js)
 	if err != nil {
@@ -74,16 +74,24 @@ func Start(handlerInit HandlerInit, defaultHandler Handler, handlersOpt ...map[s
 		os.Exit(1)
 	}
 
+	// Create context configuration
+	contextConfiguration, err := NewContextConfiguration(cfg, logger, js)
+	if err != nil {
+		logger.Errorf("Error connecting to key value stores: %s", err)
+		os.Exit(1)
+	}
+
 	// Handle incoming messages from NATS
 	runner := NewRunner(&RunnerParams{
-		Logger:             logger,
-		Cfg:                cfg,
-		NC:                 nc,
-		JS:                 js,
-		HandlerManager:     handlerManager,
-		HandlerInit:        handlerInit,
-		MongoManager:       mongoManager,
-		ContextObjectStore: contextObjectStore,
+		Logger:               logger,
+		Cfg:                  cfg,
+		NC:                   nc,
+		JS:                   js,
+		HandlerManager:       handlerManager,
+		HandlerInit:          handlerInit,
+		MongoManager:         mongoManager,
+		ContextObjectStore:   contextObjectStore,
+		ContextConfiguration: contextConfiguration,
 	})
 
 	var subscriptions []*nats.Subscription

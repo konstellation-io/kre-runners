@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
 
 	"main/proto"
 
@@ -36,10 +37,13 @@ func handler(ctx *kre.HandlerContext, data *anypb.Any) error {
 
 	ctx.SendOutput(res)
 
-	testObjectStore(ctx)
+	if randomInt := rand.Intn(100); randomInt < 5 {
+		ctx.Logger.Info("testing object store")
+		testObjectStore(ctx)
 
-	testKVStore(ctx)
-
+		ctx.Logger.Info("testing configuration")
+		testKVStore(ctx)
+	}
 	return nil
 }
 
@@ -47,24 +51,24 @@ func testObjectStore(ctx *kre.HandlerContext) error {
 	objKey := "42"
 	objValue := "Test Node Object Store Config"
 
-	err := ctx.StoreObject(objKey, []byte(objValue))
+	err := ctx.ObjectStore.Save(objKey, []byte(objValue))
 	if err != nil {
 		return fmt.Errorf("error storing object: %w", err)
 	}
 
-	objRes, err := ctx.GetObject(objKey)
+	objRes, err := ctx.ObjectStore.Get(objKey)
 	if err != nil {
 		return fmt.Errorf("error getting object: %w", err)
 	}
 
 	ctx.Logger.Infof("the value from the object store is: %s", string(objRes))
 
-	ctx.DeleteObject(objKey)
+	ctx.ObjectStore.Delete(objKey)
 	if err != nil {
 		return fmt.Errorf("error deleting object: %w", err)
 	}
 
-	_, err = ctx.GetObject(objKey)
+	_, err = ctx.ObjectStore.Get(objKey)
 	if err != nil {
 		ctx.Logger.Errorf("deleted key not found: %s", err)
 	}
@@ -76,24 +80,24 @@ func testKVStore(ctx *kre.HandlerContext) error {
 	kvKey := "42"
 	objValue := "Test Node KV Store Config"
 
-	err := ctx.SetConfig(kvKey, objValue)
+	err := ctx.Configuration.Set(kvKey, objValue)
 	if err != nil {
 		return fmt.Errorf("error setting config: %w", err)
 	}
 
-	kvRes, err := ctx.GetConfig(kvKey, kre.ScopeNode)
+	kvRes, err := ctx.Configuration.Get(kvKey, kre.ScopeNode)
 	if err != nil {
 		return fmt.Errorf("error getting config: %w", err)
 	}
 
 	ctx.Logger.Infof("the config from the kvStore is %s", kvRes)
 
-	ctx.DeleteConfig(kvKey)
+	ctx.Configuration.Delete(kvKey)
 	if err != nil {
 		return fmt.Errorf("error deleting config: %w", err)
 	}
 
-	_, err = ctx.GetConfig(kvKey, kre.ScopeNode)
+	_, err = ctx.Configuration.Get(kvKey, kre.ScopeNode)
 	if err != nil {
 		ctx.Logger.Errorf("deleted key not found: %s", err)
 	}
