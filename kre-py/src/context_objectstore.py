@@ -9,6 +9,10 @@ from logging import Logger
 from config import Config
 
 
+class ContextObjectStoreException(Exception):
+    pass
+
+
 class ContextObjectStore:
     """
     Provides a way to manipulate objects stored in Object Store.
@@ -60,12 +64,12 @@ class ContextObjectStore:
 
         :param key: the object name.
         :param payload: a sequence of bytes.
-        :raises Exception: If the payload is empty or null.
-        :raises Exception: If there is an error while storing the object.
+        :raises ContextObjectStoreException: If the payload is empty or null.
+        :raises ContextObjectStoreException: If there is an error while storing the object.
         """
 
         if not payload:
-            raise Exception("the payload cannot be empty")
+            raise ContextObjectStoreException("the payload cannot be empty")
 
         cmd = self.__put_obj_cmd__.format(obj_name=shlex.quote(key))
         subp = await asyncio.create_subprocess_shell(
@@ -76,7 +80,7 @@ class ContextObjectStore:
         )
         _, stderr = await subp.communicate(input=payload)
         if subp.returncode != 0:
-            raise Exception(f"error storing object with key {key} to the object store: {stderr.decode('utf-8')}")
+            raise ContextObjectStoreException(f"error storing object with key {key} to the object store: {stderr.decode('utf-8')}")
 
         self.__logger__.debug(
             f"File with key {key} successfully stored in object store {self.__config__.nats_object_store}"
@@ -88,7 +92,7 @@ class ContextObjectStore:
 
         :param key: the object name.
         :returns: a sequence of bytes
-        :raises Exception: If there is an error while retrieving the object.
+        :raises ContextObjectStoreException: If there is an error while retrieving the object.
         """
 
         with tempfile.NamedTemporaryFile(mode="rb") as fd:
@@ -101,7 +105,7 @@ class ContextObjectStore:
             )
             _, stderr = await subp.communicate()
             if subp.returncode != 0:
-                raise Exception(
+                raise ContextObjectStoreException(
                     f"error retrieving object with key {key} from the object store: {stderr.decode('utf-8')}"
                 )
 
@@ -117,7 +121,7 @@ class ContextObjectStore:
         Deletes an object from Object Store.
 
         :param key: the object name.
-        :raises Exception: If there is an error while deleting the object.
+        :raises ContextObjectStoreException: If there is an error while deleting the object.
         """
         cmd = self.__del_obj_cmd__.format(obj_name=shlex.quote(key))
         subp = await asyncio.create_subprocess_shell(
@@ -128,7 +132,7 @@ class ContextObjectStore:
         )
         _, stderr = await subp.communicate()
         if subp.returncode != 0:
-            raise Exception(f"error deleting object with key {key} from the object store: {stderr.decode('utf-8')}")
+            raise ContextObjectStoreException(f"error deleting object with key {key} from the object store: {stderr.decode('utf-8')}")
 
         self.__logger__.debug(
             f"File with key {key} successfully deleted from object store {self.__config__.nats_object_store}"
