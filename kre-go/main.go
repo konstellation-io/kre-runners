@@ -68,7 +68,11 @@ func Start(handlerInit HandlerInit, defaultHandler Handler, handlersOpt ...map[s
 	}
 
 	// Create context object store
-	contextObjectStore := NewContextObjectStore(cfg, logger, js)
+	contextObjectStore, err := NewContextObjectStore(cfg, logger, js)
+	if err != nil {
+		logger.Errorf("Error connecting to object stores: %s", err)
+		os.Exit(1)
+	}
 
 	// Handle incoming messages from NATS
 	runner := NewRunner(&RunnerParams{

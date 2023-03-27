@@ -2,7 +2,6 @@ package kre
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/nats-io/nats.go"
 
@@ -21,15 +20,24 @@ func NewContextObjectStore(
 	cfg config.Config,
 	logger *simplelogger.SimpleLogger,
 	js nats.JetStreamContext,
-) *contextObjectStore {
+) (*contextObjectStore, error) {
+
+	objStore, err := initObjectStore(cfg, logger, js)
+	if err != nil {
+		return nil, err
+	}
+
 	return &contextObjectStore{
 		cfg:      cfg,
 		logger:   logger,
-		objStore: initObjectStore(cfg, logger, js),
-	}
+		objStore: objStore,
+	}, nil
 }
 
-func initObjectStore(cfg config.Config, logger *simplelogger.SimpleLogger, js nats.JetStreamContext) nats.ObjectStore {
+func initObjectStore(cfg config.Config,
+	logger *simplelogger.SimpleLogger,
+	js nats.JetStreamContext,
+) (nats.ObjectStore, error) {
 	var objStore nats.ObjectStore
 	var err error
 
@@ -37,14 +45,13 @@ func initObjectStore(cfg config.Config, logger *simplelogger.SimpleLogger, js na
 	if cfg.NATS.ObjectStoreName != "" {
 		objStore, err = js.ObjectStore(cfg.NATS.ObjectStoreName)
 		if err != nil {
-			logger.Errorf("error binding the object store: %s", err)
-			os.Exit(1)
+			return nil, fmt.Errorf("error initializing object store: %w", err)
 		}
-		return objStore
+		return objStore, nil
 
 	} else {
 		logger.Info("Object store not defined. Skipping object store initialization.")
-		return nil
+		return nil, nil
 	}
 }
 
