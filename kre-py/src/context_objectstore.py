@@ -54,7 +54,7 @@ class ContextObjectStore:
 
         self.__logger__.info(f"Successfully bound to Object Store {self.__config__.nats_object_store}")
 
-    async def store_object(self, key: str, payload: bytes):
+    async def save(self, key: str, payload: bytes):
         """
         Stores a payload with the desired key to Object Store.
 
@@ -82,7 +82,7 @@ class ContextObjectStore:
             f"File with key {key} successfully stored in object store {self.__config__.nats_object_store}"
         )
 
-    async def get_object(self, key: str) -> bytes:
+    async def get(self, key: str) -> bytes:
         """
         Retrieves a payload with the desired key from Object Store.
 
@@ -112,7 +112,7 @@ class ContextObjectStore:
         )
         return payload
 
-    async def delete_object(self, key: str):
+    async def delete(self, key: str):
         """
         Deletes an object from Object Store.
 
