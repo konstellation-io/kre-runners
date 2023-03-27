@@ -34,6 +34,7 @@ services:
       dockerfile: "./Dockerfile"
     env_file:
       - env/.env.common
+      - env/.env.nats
     depends_on:
       - nats
   node-a-py:
