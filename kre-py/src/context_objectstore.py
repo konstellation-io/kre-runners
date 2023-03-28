@@ -42,7 +42,7 @@ class ContextObjectStore:
         :raises Exception: If the Object Store configured for this runner does not exist in JetStream.
         """
 
-        self.__logger__.debug("Looking for the nats-cli binary in the system PATH...")
+        self.__logger__.debug("Looking for the nats-cli binary...")
         if shutil.which(self.__nats_bin__) is None:
             self.__logger__.debug("Could not find nats-cli in the system PATH. Is it installed?")
             sys.exit(1)
