@@ -6,6 +6,7 @@ from google.protobuf.message import Message
 from context_measurement import ContextMeasurement
 from context_prediction import ContextPrediction
 from context_data import ContextData
+from context_objectstore import ContextObjectStore
 from kre_nats_msg_pb2 import ERROR, OK, MessageType, EARLY_REPLY, EARLY_EXIT
 
 PublishMsgFunc = Callable[[Message, Any, MessageType, str], Awaitable]
@@ -25,6 +26,9 @@ class HandlerContext:
         self.prediction = ContextPrediction(config, nc, logger)
         self.measurement = ContextMeasurement(config, logger)
         self.db = ContextData(config, nc, mongo_conn, logger)
+
+        if config.nats_object_store is not None:
+            self.object_store = ContextObjectStore(config, logger)
 
     def path(self, relative_path):
         return os.path.join(self.__config__.base_path, relative_path)

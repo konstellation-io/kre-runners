@@ -22,6 +22,8 @@ RUN groupadd ${USER} --gid ${ID} && \
 
 WORKDIR /tmp
 
+COPY nats /usr/bin/
+
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get -yq install --no-install-recommends \
         software-properties-common && \
         add-apt-repository ppa:deadsnakes/ppa -y && \
