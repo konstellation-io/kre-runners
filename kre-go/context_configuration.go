@@ -70,12 +70,12 @@ func (cc *contextConfiguration) Set(key, value string, scopeOpt ...Scope) error 
 
 	kvStore, ok := cc.kvStoresMap[scope]
 	if !ok {
-		return fmt.Errorf("could not find key value store given scope %s", scope)
+		return fmt.Errorf("could not find key value store given scope %q", scope)
 	}
 
 	_, err := kvStore.PutString(key, value)
 	if err != nil {
-		return fmt.Errorf("error storing value with key %s to the key-value store: %w", key, err)
+		return fmt.Errorf("error storing value with key %q to the key-value store: %w", key, err)
 	}
 
 	return nil
@@ -96,7 +96,7 @@ func (cc *contextConfiguration) Get(key string, scopeOpt ...Scope) (string, erro
 			}
 		}
 
-		return "", fmt.Errorf("error retrieving config with key %s, not found in any key-value store", key)
+		return "", fmt.Errorf("error retrieving config with key %q, not found in any key-value store", key)
 	}
 }
 
@@ -104,7 +104,7 @@ func (cc *contextConfiguration) getConfigFromScope(key string, scope Scope) (str
 	value, err := cc.kvStoresMap[scope].Get(key)
 
 	if err != nil {
-		return "", fmt.Errorf("error retrieving config with key %s from the key-value store: %w", key, err)
+		return "", fmt.Errorf("error retrieving config with key %q from the key-value store: %w", key, err)
 	}
 
 	return string(value.Value()), nil
@@ -117,12 +117,12 @@ func (cc *contextConfiguration) Delete(key string, scopeOpt ...Scope) error {
 
 	kvStore, ok := cc.kvStoresMap[scope]
 	if !ok {
-		return fmt.Errorf("could not find key value store given scope %s", scope)
+		return fmt.Errorf("could not find key value store given scope %q", scope)
 	}
 
 	err := kvStore.Delete(key)
 	if err != nil {
-		return fmt.Errorf("error deleting value with key %s from the key-value store: %w", key, err)
+		return fmt.Errorf("error deleting value with key %q from the key-value store: %w", key, err)
 	}
 
 	return nil
