@@ -17,6 +17,9 @@ class Config:
             self.nats_stream = os.environ["KRT_NATS_STREAM"]
             self.nats_mongo_writer = os.environ["KRT_NATS_MONGO_WRITER"]
             self.nats_object_store = os.getenv("KRT_NATS_OBJECT_STORE", default=None)
+            self.nats_key_value_store_project = os.environ["KRT_NATS_KEY_VALUE_STORE_PROJECT"]
+            self.nats_key_value_store_workflow = os.environ["KRT_NATS_KEY_VALUE_STORE_WORKFLOW"]
+            self.nats_key_value_store_node = os.environ["KRT_NATS_KEY_VALUE_STORE_NODE"]
             self.base_path = os.environ["KRT_BASE_PATH"]
             self.handler_path = os.environ["KRT_HANDLER_PATH"]
             self.mongo_data_db_name = "data"
