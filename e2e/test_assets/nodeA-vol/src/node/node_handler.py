@@ -9,7 +9,7 @@ def init(ctx):
     ctx.set("greeting", "Hello")
 
 
-async def default_handler(ctx, data: Any) -> NodeBRequest:
+async def default_handler(ctx, data: Any):
 
     """
     This is the entrypoint handler for the nodeA workflow.

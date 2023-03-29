@@ -7,7 +7,7 @@ def init(ctx):
     print("[worker init]")
 
 
-async def default_handler(ctx, data: Any) -> NodeCRequest:
+async def default_handler(ctx, data: Any):
 
     """
     This is the entrypoint handler for the nodeB workflow.
