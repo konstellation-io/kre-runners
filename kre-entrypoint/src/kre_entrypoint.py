@@ -52,7 +52,7 @@ class EntrypointKRE:
         self.js = self.nc.jetstream()
 
     async def process_grpc_message(
-            self, grpc_stream: Stream, workflow: str, request_id: str
+        self, grpc_stream: Stream, workflow: str, request_id: str
     ) -> None:
         """
         This function is called each time a gRPC message is received.
@@ -116,7 +116,9 @@ class EntrypointKRE:
                     message_recv = True
                     await sub.unsubscribe()
                     response = self.make_response_object(workflow, kre_nats_message)
-                    await self._respond_to_grpc_stream(response, workflow, kre_nats_message.request_id)
+                    await self._respond_to_grpc_stream(
+                        response, workflow, kre_nats_message.request_id
+                    )
 
                 await msg.ack()
 
@@ -167,7 +169,7 @@ class EntrypointKRE:
         return response_msg
 
     async def _respond_to_grpc_stream(
-            self, response: bytes, workflow: str, request_id: str
+        self, response: bytes, workflow: str, request_id: str
     ) -> None:
         """
         Sends a response to the corresponding gRPC stream based on the request id.

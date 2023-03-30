@@ -1,11 +1,12 @@
 from __future__ import annotations
+
 from enum import Enum
 from logging import Logger
 
-from config import Config
-
 from nats.js.client import JetStreamContext
 from nats.js.kv import KeyValue
+
+from config import Config
 
 
 class Scope(Enum):
@@ -35,7 +36,7 @@ class ContextConfiguration:
         await self.init_kv_stores_map()
         return self
 
-    async def init_kv_stores_map(self):
+    async def init_kv_stores_map(self) -> None:
         """
         Initializes the kv_stores_map attribute.
         """

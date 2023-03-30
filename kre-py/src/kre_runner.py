@@ -1,17 +1,22 @@
 import abc
 import asyncio
 import logging
-import time
 import sys
+import time
 import traceback
-import pymongo
+from typing import List
 
+import pymongo
+from nats.aio.client import Client as NatsClient
+from nats.aio.subscription import Subscription
+from nats.js.client import JetStreamContext
+
+from config import Config
 from exceptions import ProcessMessagesNotImplemented
-from nats.aio.client import Client as NATS
 
 
 class Runner:
-    def __init__(self, runner_name, config):
+    def __init__(self, runner_name: str, config: Config):
         logging.basicConfig(
             level=logging.INFO,
             format="%(asctime)s.%(msecs)03dZ %(levelname)s %(message)s",
@@ -25,15 +30,15 @@ class Runner:
 
         self.logger = logging.getLogger(runner_name)
         self.loop = asyncio.get_event_loop()
-        self.nc = NATS()
-        self.js = None
-        self.config = config
-        self.subscription_sids = []
-        self.runner_name = runner_name
+        self.nc: NatsClient = NatsClient()
+        self.js: JetStreamContext
+        self.config: Config = config
+        self.subscription_sids: List[Subscription]
+        self.runner_name: str = runner_name
         self.mongo_conn = None
 
     @staticmethod
-    def _get_stream_name(version_id: str, workflow_name: str):
+    def _get_stream_name(version_id: str, workflow_name: str) -> str:
         return f"{version_id.replace('.', '-')}-{workflow_name}"
 
     def start(self) -> None:

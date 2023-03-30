@@ -2,7 +2,7 @@ import os
 
 
 class Config:
-    def __init__(self):
+    def __init__(self) -> None:
 
         # Mandatory environment variables
         try:
