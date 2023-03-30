@@ -72,6 +72,7 @@ class NodeRunner(Runner):
             self.logger,
             self.__publish_msg__,
             self.__publish_any__,
+            self.configuration,
         )
 
         if not self.handler_init_fn:

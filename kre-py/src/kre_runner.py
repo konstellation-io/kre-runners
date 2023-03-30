@@ -4,15 +4,16 @@ import logging
 import sys
 import time
 import traceback
-from typing import List
-
 import pymongo
+
 from nats.aio.client import Client as NatsClient
-from nats.aio.subscription import Subscription
 from nats.js.client import JetStreamContext
+from logging import Logger
+
 
 from config import Config
 from exceptions import ProcessMessagesNotImplemented
+from context_configuration import ContextConfiguration, new_context_configuration
 
 
 class Runner:
@@ -33,9 +34,10 @@ class Runner:
         self.nc: NatsClient = NatsClient()
         self.js: JetStreamContext
         self.config: Config = config
-        self.subscription_sids: List[Subscription]
+        self.subscription_sids = []
         self.runner_name: str = runner_name
         self.mongo_conn = None
+        self.configuration: ContextConfiguration = None
 
     @staticmethod
     def _get_stream_name(version_id: str, workflow_name: str) -> str:
@@ -72,6 +74,8 @@ class Runner:
         self.logger.info(f"Connecting to NATS {self.config.nats_server}...")
         self.js = self.nc.jetstream()
         await self.nc.connect(self.config.nats_server, name=self.runner_name)
+
+        self.configuration = await new_context_configuration(self.config, self.logger, self.js)
 
     async def stop(self) -> None:
 

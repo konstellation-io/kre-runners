@@ -20,40 +20,45 @@ class Scope(Enum):
     UNDEFINED = "undefined"
 
 
+async def new_context_configuration(
+    config: Config, logger: Logger, js: JetStreamContext
+) -> ContextConfiguration:
+
+    kv_Stores_map: dict[Scope, KeyValue]
+
+    try:
+        kv_store = await js.key_value(config.nats_key_value_store_project)
+        kv_Stores_map[Scope.PROJECT] = kv_store
+
+        kv_store = await js.key_value(config.nats_key_value_store_workflow)
+        kv_Stores_map[Scope.WORKFLOW] = kv_store
+
+        kv_store = await js.key_value(config.nats_key_value_store_node)
+        kv_Stores_map[Scope.NODE] = kv_store
+
+    except Exception as err:
+        logger.error(f"Error while getting the key value store: {err}")
+        raise err
+
+    return ContextConfiguration(config, logger, js, kv_Stores_map)
+
+
 class ContextConfiguration:
     """
     Provides a way to manipulate the jetstream key value store.
     """
 
-    async def new_context_configuration(
-        self, config: Config, logger: Logger, js: JetStreamContext
-    ) -> ContextConfiguration:
+    def __init__(
+        self,
+        config: Config,
+        logger: Logger,
+        js: JetStreamContext,
+        kv_stores_map: dict[Scope, KeyValue],
+    ):
         self.__config__: Config = config
         self.__logger__: Logger = logger
         self.__js__: JetStreamContext = js
-        self.__kv_stores_map__: dict[Scope, KeyValue] = {}
-
-        await self.init_kv_stores_map()
-        return self
-
-    async def init_kv_stores_map(self) -> None:
-        """
-        Initializes the kv_stores_map attribute.
-        """
-
-        try:
-            kv_store = await self.__js__.key_value(self.__config__.nats_key_value_store_project)
-            self.__kv_stores_map__[Scope.PROJECT] = kv_store
-
-            kv_store = await self.__js__.key_value(self.__config__.nats_key_value_store_workflow)
-            self.__kv_stores_map__[Scope.WORKFLOW] = kv_store
-
-            kv_store = await self.__js__.key_value(self.__config__.nats_key_value_store_node)
-            self.__kv_stores_map__[Scope.NODE] = kv_store
-
-        except Exception as err:
-            self.__logger__.error(f"Error while getting the key value store: {err}")
-            raise err
+        self.__kv_stores_map__: dict[Scope, KeyValue] = kv_stores_map
 
     async def set(self, key: str, value: str, scope: Scope = Scope.NODE) -> None:
         """
