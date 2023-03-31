@@ -1,24 +1,23 @@
 import asyncio
 import copy
+import gc
 import importlib.util
 import inspect
 import os
 import sys
 import traceback
-import gc
 from datetime import datetime
 
 from google.protobuf.message import Message
-from nats.js.api import DeliverPolicy, ConsumerConfig
+from nats.errors import ConnectionClosedError, TimeoutError
+from nats.js.api import ConsumerConfig, DeliverPolicy
 
 from compression import compress_if_needed, is_compressed, uncompress
 from config import Config
 from context import HandlerContext
-from kre_nats_msg_pb2 import KreNatsMessage, MessageType, ERROR
-from kre_runner import Runner
 from handlers import HandlerManager
-
-from nats.errors import ConnectionClosedError, TimeoutError
+from kre_nats_msg_pb2 import ERROR, KreNatsMessage, MessageType
+from kre_runner import Runner
 
 
 class NodeRunner(Runner):
@@ -270,4 +269,16 @@ class NodeRunner(Runner):
 
 if __name__ == "__main__":
     runner = NodeRunner()
-    runner.start()
+    runner.loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(runner.loop)
+
+    try:
+        runner.loop.run_until_complete(runner.connect())
+        runner.loop.run_until_complete(runner.process_messages())
+        runner.loop.run_forever()
+    except KeyboardInterrupt:
+        runner.logger.info("process interrupted")
+    finally:
+        runner.loop.run_until_complete(runner.stop())
+        runner.logger.info("closing loop")
+        runner.loop.close()

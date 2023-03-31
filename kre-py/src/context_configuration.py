@@ -24,7 +24,7 @@ async def new_context_configuration(
     config: Config, logger: Logger, js: JetStreamContext
 ) -> ContextConfiguration:
 
-    kv_Stores_map: dict[Scope, KeyValue]
+    kv_Stores_map: dict[Scope, KeyValue] = {}
 
     try:
         kv_store = await js.key_value(config.nats_key_value_store_project)
@@ -40,7 +40,7 @@ async def new_context_configuration(
         logger.error(f"Error while getting the key value store: {err}")
         raise err
 
-    return ContextConfiguration(config, logger, js, kv_Stores_map)
+    return ContextConfiguration(config, logger, kv_Stores_map)
 
 
 class ContextConfiguration:
@@ -52,12 +52,10 @@ class ContextConfiguration:
         self,
         config: Config,
         logger: Logger,
-        js: JetStreamContext,
         kv_stores_map: dict[Scope, KeyValue],
     ):
         self.__config__: Config = config
         self.__logger__: Logger = logger
-        self.__js__: JetStreamContext = js
         self.__kv_stores_map__: dict[Scope, KeyValue] = kv_stores_map
 
     async def set(self, key: str, value: str, scope: Scope = Scope.NODE) -> None:
@@ -87,7 +85,7 @@ class ContextConfiguration:
                 kv_store = self.__kv_stores_map__[scope]
                 entry = await kv_store.get(key)
                 if entry.value is not None:
-                    return str(entry.value)
+                    return entry.value.decode("utf-8")
                 else:
                     raise Exception(f"Error getting the value for key {key}: no value found")
 
@@ -102,7 +100,7 @@ class ContextConfiguration:
                 kv_store = self.__kv_stores_map__[scope]
                 entry = await kv_store.get(key)
                 if entry.value is not None:
-                    return str(entry.value)
+                    return entry.value.decode("utf-8")
 
             except Exception as err:
                 self.__logger__.error(f"Error while getting the value for key {key}: {err}")

@@ -4,9 +4,9 @@ from google.protobuf.any_pb2 import Any
 from public_input_pb2 import Request, NodeBRequest, Response
 
 
-def init(ctx):
+async def init(ctx):
     print("[worker init]")
-    ctx.set("greeting", "Hello")
+    await ctx.configuration.set("greeting", "Hello")
 
 
 async def default_handler(ctx, data: Any) -> NodeBRequest:
@@ -39,7 +39,9 @@ async def default_handler(ctx, data: Any) -> NodeBRequest:
         await ctx.send_early_reply(output)
         time.sleep(0.3)  # let exitpoint finish its requests
 
-    result = f"{ctx.get('greeting')} {req.name}! greetings from nodeA"
+    greeting = str(await ctx.configuration.get("greeting"))
+    ctx.logger.info(f"greeting -> {greeting}")
+    result = f"{greeting} {req.name}! greetings from nodeA"
     ctx.logger.info(f"result -> {result}")
 
     output = NodeBRequest()

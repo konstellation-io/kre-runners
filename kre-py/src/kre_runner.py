@@ -8,8 +8,6 @@ import pymongo
 
 from nats.aio.client import Client as NatsClient
 from nats.js.client import JetStreamContext
-from logging import Logger
-
 
 from config import Config
 from exceptions import ProcessMessagesNotImplemented
@@ -30,7 +28,7 @@ class Runner:
         logging.addLevelName(logging.CRITICAL, "ERROR")
 
         self.logger = logging.getLogger(runner_name)
-        self.loop = asyncio.get_event_loop()
+        self.loop: asyncio.AbstractEventLoop
         self.nc: NatsClient = NatsClient()
         self.js: JetStreamContext
         self.config: Config = config
@@ -43,25 +41,7 @@ class Runner:
     def _get_stream_name(version_id: str, workflow_name: str) -> str:
         return f"{version_id.replace('.', '-')}-{workflow_name}"
 
-    def start(self) -> None:
-
-        """
-        Run the python node service in an asyncio loop and also listen to new NATS messages.
-        """
-
-        try:
-            asyncio.ensure_future(self.connect())
-            asyncio.ensure_future(self.process_messages())
-            self.loop.run_forever()
-        except KeyboardInterrupt:
-            self.logger.info("process interrupted")
-        finally:
-            self.loop.run_until_complete(self.stop())
-            self.logger.info("closing loop")
-            self.loop.close()
-
     async def connect(self) -> None:
-
         """
         Connect to NATS.
         """
@@ -75,6 +55,7 @@ class Runner:
         self.js = self.nc.jetstream()
         await self.nc.connect(self.config.nats_server, name=self.runner_name)
 
+        self.logger.info(f"Creating context configuration...")
         self.configuration = await new_context_configuration(self.config, self.logger, self.js)
 
     async def stop(self) -> None:
