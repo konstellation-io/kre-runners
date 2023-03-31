@@ -4,12 +4,12 @@ from google.protobuf.any_pb2 import Any
 from public_input_pb2 import Request, NodeBRequest, Response
 
 
-async def init(ctx):
+async def init(ctx) -> None:
     print("[worker init]")
     await ctx.configuration.set("greeting", "Hello")
 
 
-async def default_handler(ctx, data: Any) -> NodeBRequest:
+async def default_handler(ctx, data: Any) -> None:
 
     """
     This is the entrypoint handler for the nodeA workflow.
