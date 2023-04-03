@@ -109,20 +109,20 @@ func (suite *ContextConfigurationTestSuite) TestSetProjectConfig() {
 	value := "value"
 
 	// to project bucket
-	err := suite.ctxConfiguration.Set(key, value, ScopeProject)
+	err := suite.ctxConfiguration.Set(key, value, ProjectScope)
 	suite.Require().NoError(err)
 	savedValue := suite.getValueFromKVStore(suite.cfg.NATS.KeyValueStoreProjectName, key)
 	suite.Assert().Equal(value, savedValue)
 
 	// to workflow bucket
-	err = suite.ctxConfiguration.Set(key, value, ScopeWorkflow)
+	err = suite.ctxConfiguration.Set(key, value, WorkflowScope)
 	suite.Require().NoError(err)
 	savedValue = suite.getValueFromKVStore(suite.cfg.NATS.KeyValueStoreWorkflowName, key)
 	suite.Assert().Equal(value, savedValue)
 
 	// to node bucket
 	value = "value2"
-	err = suite.ctxConfiguration.Set(key, value, ScopeNode)
+	err = suite.ctxConfiguration.Set(key, value, NodeScope)
 	suite.Require().NoError(err)
 	savedValue = suite.getValueFromKVStore(suite.cfg.NATS.KeyValueStoreNodeName, key)
 	suite.Assert().Equal(value, savedValue)
@@ -139,23 +139,23 @@ func (suite *ContextConfigurationTestSuite) TestGetProjectConfig() {
 	value := "value"
 
 	// from project bucket
-	err := suite.ctxConfiguration.Set(key, value, ScopeProject)
+	err := suite.ctxConfiguration.Set(key, value, ProjectScope)
 	suite.Require().NoError(err)
-	savedValue, err := suite.ctxConfiguration.Get(key, ScopeProject)
+	savedValue, err := suite.ctxConfiguration.Get(key, ProjectScope)
 	suite.Require().NoError(err)
 	suite.Assert().Equal(value, savedValue)
 
 	// from workflow bucket
-	err = suite.ctxConfiguration.Set(key, value, ScopeWorkflow)
+	err = suite.ctxConfiguration.Set(key, value, WorkflowScope)
 	suite.Require().NoError(err)
-	savedValue, err = suite.ctxConfiguration.Get(key, ScopeWorkflow)
+	savedValue, err = suite.ctxConfiguration.Get(key, WorkflowScope)
 	suite.Require().NoError(err)
 	suite.Assert().Equal(value, savedValue)
 
 	// from node bucket
-	err = suite.ctxConfiguration.Set(key, value, ScopeNode)
+	err = suite.ctxConfiguration.Set(key, value, NodeScope)
 	suite.Require().NoError(err)
-	savedValue, err = suite.ctxConfiguration.Get(key, ScopeNode)
+	savedValue, err = suite.ctxConfiguration.Get(key, NodeScope)
 	suite.Require().NoError(err)
 	suite.Assert().Equal(value, savedValue)
 
@@ -173,27 +173,27 @@ func (suite *ContextConfigurationTestSuite) TestDeleteProjectConfig() {
 	value := "value"
 
 	// from project bucket
-	err := suite.ctxConfiguration.Set(key, value, ScopeProject)
+	err := suite.ctxConfiguration.Set(key, value, ProjectScope)
 	suite.Require().NoError(err)
-	err = suite.ctxConfiguration.Delete(key, ScopeProject)
+	err = suite.ctxConfiguration.Delete(key, ProjectScope)
 	suite.Require().NoError(err)
-	_, err = suite.ctxConfiguration.Get(key, ScopeProject)
+	_, err = suite.ctxConfiguration.Get(key, ProjectScope)
 	suite.Require().Error(err)
 
 	// from workflow bucket
-	err = suite.ctxConfiguration.Set(key, value, ScopeWorkflow)
+	err = suite.ctxConfiguration.Set(key, value, WorkflowScope)
 	suite.Require().NoError(err)
-	err = suite.ctxConfiguration.Delete(key, ScopeWorkflow)
+	err = suite.ctxConfiguration.Delete(key, WorkflowScope)
 	suite.Require().NoError(err)
-	_, err = suite.ctxConfiguration.Get(key, ScopeWorkflow)
+	_, err = suite.ctxConfiguration.Get(key, WorkflowScope)
 	suite.Require().Error(err)
 
 	// from node bucket
-	err = suite.ctxConfiguration.Set(key, value, ScopeNode)
+	err = suite.ctxConfiguration.Set(key, value, NodeScope)
 	suite.Require().NoError(err)
-	err = suite.ctxConfiguration.Delete(key, ScopeNode)
+	err = suite.ctxConfiguration.Delete(key, NodeScope)
 	suite.Require().NoError(err)
-	_, err = suite.ctxConfiguration.Get(key, ScopeNode)
+	_, err = suite.ctxConfiguration.Get(key, NodeScope)
 	suite.Require().Error(err)
 
 	// from default bucket (node)

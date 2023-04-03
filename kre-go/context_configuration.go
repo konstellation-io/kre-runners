@@ -11,9 +11,9 @@ import (
 type Scope string
 
 const (
-	ScopeProject  Scope = "project"
-	ScopeWorkflow Scope = "workflow"
-	ScopeNode     Scope = "node"
+	ProjectScope  Scope = "project"
+	WorkflowScope Scope = "workflow"
+	NodeScope     Scope = "node"
 )
 
 type contextConfiguration struct {
@@ -46,19 +46,19 @@ func initKVStoresMap(
 	if err != nil {
 		return nil, err
 	}
-	kvStoresMap[ScopeProject] = kvStore
+	kvStoresMap[ProjectScope] = kvStore
 
 	kvStore, err = js.KeyValue(cfg.NATS.KeyValueStoreWorkflowName)
 	if err != nil {
 		return nil, err
 	}
-	kvStoresMap[ScopeWorkflow] = kvStore
+	kvStoresMap[WorkflowScope] = kvStore
 
 	kvStore, err = js.KeyValue(cfg.NATS.KeyValueStoreNodeName)
 	if err != nil {
 		return nil, err
 	}
-	kvStoresMap[ScopeNode] = kvStore
+	kvStoresMap[NodeScope] = kvStore
 
 	return kvStoresMap, nil
 }
@@ -66,7 +66,7 @@ func initKVStoresMap(
 // Set set the given key and value to an optional scoped key-value storage,
 // or the default key-value storage (Node's) if not given any.
 func (cc *contextConfiguration) Set(key, value string, scopeOpt ...Scope) error {
-	scope := cc.getOptionalScope(scopeOpt, ScopeNode)
+	scope := cc.getOptionalScope(scopeOpt, NodeScope)
 
 	kvStore, ok := cc.kvStoresMap[scope]
 	if !ok {
@@ -87,7 +87,7 @@ func (cc *contextConfiguration) Get(key string, scopeOpt ...Scope) (string, erro
 	if len(scopeOpt) > 0 {
 		return cc.getConfigFromScope(key, scopeOpt[0])
 	} else {
-		allScopesInOrder := []Scope{ScopeNode, ScopeWorkflow, ScopeProject}
+		allScopesInOrder := []Scope{NodeScope, WorkflowScope, ProjectScope}
 		for _, scope := range allScopesInOrder {
 			config, err := cc.getConfigFromScope(key, scope)
 
@@ -113,7 +113,7 @@ func (cc *contextConfiguration) getConfigFromScope(key string, scope Scope) (str
 // Delete retrieves the configuration given a key from an optional scoped key-value storage,
 // if no key-value storage is given it will use the default one (Node's).
 func (cc *contextConfiguration) Delete(key string, scopeOpt ...Scope) error {
-	scope := cc.getOptionalScope(scopeOpt, ScopeNode)
+	scope := cc.getOptionalScope(scopeOpt, NodeScope)
 
 	kvStore, ok := cc.kvStoresMap[scope]
 	if !ok {

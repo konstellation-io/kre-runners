@@ -86,7 +86,7 @@ func testKVStore(ctx *kre.HandlerContext) error {
 		return err
 	}
 
-	kvRes, err := ctx.Configuration.Get(kvKey, kre.ScopeNode)
+	kvRes, err := ctx.Configuration.Get(kvKey, kre.NodeScope)
 	if err != nil {
 		return err
 	}
