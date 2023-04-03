@@ -35,9 +35,7 @@ func handler(ctx *kre.HandlerContext, data *anypb.Any) error {
 
 	res.Greeting = result
 
-	ctx.SendOutput(res)
-
-	if randomInt := rand.Intn(100); randomInt < 5 {
+	if req.Testing.TestStores {
 		ctx.Logger.Info("testing object store")
 		err = testObjectStore(ctx)
 		if err != nil {
@@ -50,6 +48,13 @@ func handler(ctx *kre.HandlerContext, data *anypb.Any) error {
 			return fmt.Errorf("error during test key value store: %w", err)
 		}
 	}
+
+	testingResults := &proto.TestingResults{
+		TestStoresSuccess: true,
+	}
+	res.TestingResults = testingResults
+	ctx.SendOutput(res)
+
 	return nil
 }
 
@@ -67,7 +72,9 @@ func testObjectStore(ctx *kre.HandlerContext) error {
 		return err
 	}
 
-	ctx.Logger.Infof("the value from the object store is: %s", string(objRes))
+	if string(objRes) != objValue {
+		return fmt.Errorf("the value from the object store is not the same as the saved one")
+	}
 
 	ctx.ObjectStore.Delete(objKey)
 	if err != nil {
@@ -91,7 +98,9 @@ func testKVStore(ctx *kre.HandlerContext) error {
 		return err
 	}
 
-	ctx.Logger.Infof("the config from the kvStore is: %s", kvRes)
+	if kvRes != objValue {
+		return fmt.Errorf("the value from the kvStore is not the same as the saved one")
+	}
 
 	ctx.Configuration.Delete(kvKey)
 	if err != nil {

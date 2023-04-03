@@ -4,12 +4,12 @@ from google.protobuf.any_pb2 import Any
 from public_input_pb2 import Request, NodeBRequest, Response
 
 
-def init(ctx):
+def init(ctx) -> None:
     print("[worker init]")
     ctx.set("greeting", "Hello")
 
 
-async def default_handler(ctx, data: Any) -> NodeBRequest:
+async def default_handler(ctx, data: Any) -> None:
 
     """
     This is the entrypoint handler for the nodeA workflow.
@@ -25,18 +25,18 @@ async def default_handler(ctx, data: Any) -> NodeBRequest:
     req = Request()
     data.Unpack(req)
 
-    if req.name == "early exit":
-        ctx.logger.info(f"sleeping")
-        output = Response()
-        output.greeting = req.name
-        await ctx.send_early_exit(output)
+    if req.testing.is_early_reply:
+        ctx.logger.info(f"early reply recieved")
+        output_er = Response()
+        output_er.greeting = req.name
+        await ctx.send_early_exit(output_er)
         return
 
-    if req.name == "early reply":
-        ctx.logger.info(f"sleeping")
-        output = Response()
-        output.greeting = req.name
-        await ctx.send_early_reply(output)
+    if req.testing.is_early_exit:
+        ctx.logger.info(f"early exit recieved")
+        output_ee = Response()
+        output_ee.greeting = req.name
+        await ctx.send_early_reply(output_ee)
         time.sleep(0.3)  # let exitpoint finish its requests
 
     result = f"{ctx.get('greeting')} {req.name}! greetings from nodeA"
@@ -44,5 +44,6 @@ async def default_handler(ctx, data: Any) -> NodeBRequest:
 
     output = NodeBRequest()
     output.greeting = result
+    output.testing.CopyFrom(req.testing)
 
     await ctx.send_output(output)
