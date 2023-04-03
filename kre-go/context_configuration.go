@@ -122,7 +122,7 @@ func (cc *contextConfiguration) Delete(key string, scopeOpt ...Scope) error {
 
 	err := kvStore.Delete(key)
 	if err != nil {
-		return fmt.Errorf("error deleting value with key %q from the key-value store: %w", key, err)
+		return fmt.Errorf("error deleting value with key %q from the configuration: %w", key, err)
 	}
 
 	return nil
