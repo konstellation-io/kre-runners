@@ -75,7 +75,7 @@ func (cc *contextConfiguration) Set(key, value string, scopeOpt ...Scope) error 
 
 	_, err := kvStore.PutString(key, value)
 	if err != nil {
-		return fmt.Errorf("error storing value with key %q to the key-value store: %w", key, err)
+		return fmt.Errorf("error storing value with key %q to the configuration: %w", key, err)
 	}
 
 	return nil
