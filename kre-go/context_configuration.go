@@ -104,7 +104,7 @@ func (cc *contextConfiguration) getConfigFromScope(key string, scope Scope) (str
 	value, err := cc.kvStoresMap[scope].Get(key)
 
 	if err != nil {
-		return "", fmt.Errorf("error retrieving config with key %q from the key-value store: %w", key, err)
+		return "", fmt.Errorf("error retrieving config with key %q from the configuration: %w", key, err)
 	}
 
 	return string(value.Value()), nil
