@@ -117,7 +117,7 @@ func (cc *contextConfiguration) Delete(key string, scopeOpt ...Scope) error {
 
 	kvStore, ok := cc.kvStoresMap[scope]
 	if !ok {
-		return fmt.Errorf("could not find key value store given scope %q", scope)
+		return fmt.Errorf("could not find the configuration for the given scope %q", scope)
 	}
 
 	err := kvStore.Delete(key)
