@@ -70,7 +70,7 @@ func (cc *contextConfiguration) Set(key, value string, scopeOpt ...Scope) error 
 
 	kvStore, ok := cc.kvStoresMap[scope]
 	if !ok {
-		return fmt.Errorf("could not find key value store given scope %q", scope)
+		return fmt.Errorf("could not find a configuration for the given scope %q", scope)
 	}
 
 	_, err := kvStore.PutString(key, value)
