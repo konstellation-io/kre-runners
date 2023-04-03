@@ -96,7 +96,7 @@ func (cc *contextConfiguration) Get(key string, scopeOpt ...Scope) (string, erro
 			}
 		}
 
-		return "", fmt.Errorf("error retrieving config with key %q, not found in any key-value store", key)
+		return "", fmt.Errorf("error retrieving config with key %q, not found in any configuration scope", key)
 	}
 }
 
