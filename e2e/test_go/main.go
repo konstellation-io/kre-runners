@@ -18,8 +18,8 @@ var wg sync.WaitGroup
 var counterMutex sync.Mutex
 var totalRequests int = 0
 var totalFails int = 0
-var numberOfClients int = 1
-var numberOfRequestsPerClient = 5 // try different loads! (min 10 for testing purposes)
+var numberOfClients int = 5
+var numberOfRequestsPerClient = 100 // try different loads! (min 10 for testing purposes)
 
 const (
 	earlyReply = "early reply"
