@@ -108,7 +108,7 @@ class ContextConfiguration:
 
         raise Exception(f"Error while getting the value for key {key}: no value found")
 
-    def delete(self, key: str, scope: Scope = Scope.NODE) -> None:
+    async def delete(self, key: str, scope: Scope = Scope.NODE) -> None:
         """
         Deletes a value from the key value store by given scope.
         If no scope is given, the default scope (node) is used.
@@ -116,7 +116,7 @@ class ContextConfiguration:
 
         try:
             kv_store = self.__kv_stores_map__[scope]
-            kv_store.delete(key)
+            await kv_store.delete(key)
 
         except Exception as err:
             self.__logger__.error(f"Error while deleting the value for key {key}: {err}")
