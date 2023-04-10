@@ -215,7 +215,7 @@ async def test_get_configuration_node_scope_expect_ok(  # type: ignore
 async def test_get_configuration_default_scope_expect_not_found(  # type: ignore
     context_configuration: ContextConfiguration, kv_map_mock: MagicMock
 ):
-    # GIVEN a configuration to get
+    # GIVEN a configuration to get: no value added in any scope
     key = "test_key"
     kv_map_mock[Scope.NODE].get = AsyncMock(
         return_value=Entry(key=key, value=None, bucket="node_bucket")
@@ -228,16 +228,20 @@ async def test_get_configuration_default_scope_expect_not_found(  # type: ignore
     )
 
     # WHEN the get method is called with no scope
-    with pytest.raises(Exception):
-        result = await context_configuration.get(key)
+    with patch.object(context_configuration.__logger__, "error") as mock_logger_error:
+        with pytest.raises(Exception) as exception:
+            await context_configuration.get(key)
 
-        # THEN expect the configuration search for value in all scopes
-        # Until it finaly doesn't encounter it and raises an exception
-        kv_map_mock[Scope.NODE].get.assert_called_with(key)
-        kv_map_mock[Scope.WORKFLOW].get.assert_called_with(key)
-        kv_map_mock[Scope.PROJECT].get.assert_called_with(key)
+    # THEN expect the configuration search for value in all scopes
+    kv_map_mock[Scope.NODE].get.assert_called_with(key)
+    kv_map_mock[Scope.WORKFLOW].get.assert_called_with(key)
+    kv_map_mock[Scope.PROJECT].get.assert_called_with(key)
 
-        assert result is None
+    # Until it finaly doesn't encounter it and raises an exception
+    assert exception.match("No value found")
+    mock_logger_error.assert_called_with(
+        f"Error while getting the value for key test_key in all scopes: No value found"
+    )
 
 
 @pytest.mark.unittest
@@ -245,62 +249,25 @@ async def test_get_configuration_default_scope_expect_not_found(  # type: ignore
 async def test_get_configuration_project_scope_expect_not_found(  # type: ignore
     context_configuration: ContextConfiguration, kv_map_mock: MagicMock
 ):
-    # GIVEN a configuration to get
+    # GIVEN a configuration to get: a key with no value
     key = "test_key"
     kv_map_mock[Scope.PROJECT].get = AsyncMock(
         return_value=Entry(key=key, value=None, bucket="project_bucket")
     )
 
     # WHEN the get method is called with project scope
-    with pytest.raises(Exception):
-        result = await context_configuration.get(key, Scope.PROJECT)
+    with patch.object(context_configuration.__logger__, "error") as mock_logger_error:
+        with pytest.raises(Exception) as exception:
+            await context_configuration.get(key, Scope.PROJECT)
 
-        # THEN expect the configuration to be get in project scope
-        kv_map_mock[Scope.PROJECT].get.assert_called_with(key)
+    # THEN expect the configuration to try and get the value in project scope
+    kv_map_mock[Scope.PROJECT].get.assert_called_with(key)
 
-        assert result is None
-
-
-@pytest.mark.unittest
-@pytest.mark.asyncio
-async def test_get_configuration_workflow_scope_expect_not_found(  # type: ignore
-    context_configuration: ContextConfiguration, kv_map_mock: MagicMock
-):
-    # GIVEN a configuration to get
-    key = "test_key"
-    kv_map_mock[Scope.WORKFLOW].get = AsyncMock(
-        return_value=Entry(key=key, value=None, bucket="workflow_bucket")
+    # It doesn't encounter it and raises an exception
+    assert exception.match("No value found")
+    mock_logger_error.assert_called_with(
+        f"Error while getting the value for key test_key: No value found"
     )
-
-    # WHEN the get method is called with workflow scope
-    with pytest.raises(Exception):
-        result = await context_configuration.get(key, Scope.WORKFLOW)
-
-        # THEN expect the configuration to be get in workflow scope
-        kv_map_mock[Scope.WORKFLOW].get.assert_called_with(key)
-
-        assert result is None
-
-
-@pytest.mark.unittest
-@pytest.mark.asyncio
-async def test_get_configuration_node_scope_expect_not_found(  # type: ignore
-    context_configuration: ContextConfiguration, kv_map_mock: MagicMock
-):
-    # GIVEN a configuration to get
-    key = "test_key"
-    kv_map_mock[Scope.NODE].get = AsyncMock(
-        return_value=Entry(key=key, value=None, bucket="node_bucket")
-    )
-
-    # WHEN the get method is called with node scope
-    with pytest.raises(Exception):
-        result = await context_configuration.get(key, Scope.NODE)
-
-        # THEN expect the configuration to be get in node scope
-        kv_map_mock[Scope.NODE].get.assert_called_with(key)
-
-        assert result is None
 
 
 @pytest.mark.unittest
@@ -377,9 +344,14 @@ async def test_delete_configuration_default_scope_expect_not_found(  # type: ign
     kv_map_mock[Scope.NODE].delete = AsyncMock(side_effect=Exception("Not found"))
 
     # WHEN the delete method is called with no scope
-    with pytest.raises(Exception):
-        await context_configuration.delete(key)
+    # THEN expect the configuration to try to delete key in node scope
+    # AND an exception is raised
+    with patch.object(context_configuration.__logger__, "error") as mock_logger_error:
+        with pytest.raises(Exception) as exception:
+            await context_configuration.delete(key)
 
-        # THEN expect the configuration to not be deleted in node scope
-        # AND an exception is raised
-        kv_map_mock[Scope.NODE].delete.assert_called_with(key)
+    kv_map_mock[Scope.NODE].delete.assert_called_with(key)
+    assert exception.match("Not found")
+    mock_logger_error.assert_called_with(
+        f"Error while deleting the value for key test_key: Not found"
+    )

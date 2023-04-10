@@ -111,16 +111,16 @@ class HandlerContext:
 
     def is_message_ok(self) -> bool:
         """is_message_ok returns true if incoming message is of message type OK."""
-        return bool(self.__request_msg__.message_type == OK)
+        return self.__request_msg__.message_type == OK
 
     def is_message_error(self) -> bool:
         """is_message_error returns true if incoming message is of message type ERROR."""
-        return bool(self.__request_msg__.message_type == ERROR)
+        return self.__request_msg__.message_type == ERROR
 
     def is_message_early_reply(self) -> bool:
         """is_message_early_reply returns true if incoming message is of message type EARLY_REPLY."""
-        return bool(self.__request_msg__.message_type == EARLY_REPLY)
+        return self.__request_msg__.message_type == EARLY_REPLY
 
     def is_message_early_exit(self) -> bool:
         """is_message_early_exit returns true if incoming message is of message type EARLY_EXIT."""
-        return bool(self.__request_msg__.message_type == EARLY_EXIT)
+        return self.__request_msg__.message_type == EARLY_EXIT

@@ -87,7 +87,7 @@ class ContextConfiguration:
                 if entry.value is not None:
                     return entry.value.decode("utf-8")
                 else:
-                    raise Exception(f"Error getting the value for key {key}: no value found")
+                    raise Exception(f"No value found")
 
             except Exception as err:
                 self.__logger__.error(f"Error while getting the value for key {key}: {err}")
@@ -106,7 +106,10 @@ class ContextConfiguration:
                 self.__logger__.error(f"Error while getting the value for key {key}: {err}")
                 continue
 
-        raise Exception(f"Error while getting the value for key {key}: no value found")
+        self.__logger__.error(
+            f"Error while getting the value for key {key} in all scopes: No value found"
+        )
+        raise Exception("No value found")
 
     async def delete(self, key: str, scope: Scope = Scope.NODE) -> None:
         """
