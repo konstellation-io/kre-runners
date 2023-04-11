@@ -42,7 +42,7 @@ func initKVStoresMap(
 	logger *simplelogger.SimpleLogger,
 	js nats.JetStreamContext,
 ) (map[Scope]nats.KeyValue, error) {
-	wrapErr := utilErrors.Wrapper("configuration init:")
+	wrapErr := utilErrors.Wrapper("configuration init: %w")
 	kvStoresMap := make(map[Scope]nats.KeyValue, 3)
 
 	kvStore, err := js.KeyValue(cfg.NATS.KeyValueStoreProjectName)
@@ -69,7 +69,7 @@ func initKVStoresMap(
 // Set set the given key and value to an optional scoped key-value storage,
 // or the default key-value storage (Node) if not given any.
 func (cc *contextConfiguration) Set(key, value string, scopeOpt ...Scope) error {
-	wrapErr := utilErrors.Wrapper("configuration set:")
+	wrapErr := utilErrors.Wrapper("configuration set: %w")
 	scope := cc.getOptionalScope(scopeOpt)
 
 	kvStore, ok := cc.kvStoresMap[scope]
@@ -88,7 +88,7 @@ func (cc *contextConfiguration) Set(key, value string, scopeOpt ...Scope) error 
 // Get retrieves the configuration given a key from an optional scoped key-value storage,
 // if no scoped key-value storage is given it will search in all the scopes starting by Node then upwards.
 func (cc *contextConfiguration) Get(key string, scopeOpt ...Scope) (string, error) {
-	wrapErr := utilErrors.Wrapper("configuration get:")
+	wrapErr := utilErrors.Wrapper("configuration get: %w")
 
 	if len(scopeOpt) > 0 {
 		config, err := cc.getConfigFromScope(key, scopeOpt[0])
@@ -102,7 +102,7 @@ func (cc *contextConfiguration) Get(key string, scopeOpt ...Scope) (string, erro
 		for _, scope := range allScopesInOrder {
 			config, err := cc.getConfigFromScope(key, scope)
 
-			if !errors.Is(err, nats.ErrKeyNotFound) {
+			if err != nil && !errors.Is(err, nats.ErrKeyNotFound) {
 				return "", wrapErr(err)
 			}
 
@@ -128,7 +128,7 @@ func (cc *contextConfiguration) getConfigFromScope(key string, scope Scope) (str
 // Delete retrieves the configuration given a key from an optional scoped key-value storage,
 // if no key-value storage is given it will use the default one (Node).
 func (cc *contextConfiguration) Delete(key string, scopeOpt ...Scope) error {
-	wrapErr := utilErrors.Wrapper("configuration delete:")
+	wrapErr := utilErrors.Wrapper("configuration delete: %w")
 	scope := cc.getOptionalScope(scopeOpt)
 
 	kvStore, ok := cc.kvStoresMap[scope]

@@ -14,6 +14,11 @@ import (
 	"github.com/konstellation-io/kre/libs/simplelogger"
 )
 
+var (
+	testKey   = "key"
+	testValue = "value"
+)
+
 type ContextConfigurationTestSuite struct {
 	suite.Suite
 	tServer          *server.Server
@@ -51,7 +56,6 @@ func (suite *ContextConfigurationTestSuite) SetupSuite() {
 	suite.js, err = suite.nc.JetStream()
 	suite.Require().NoError(err)
 
-	suite.createKVStores(suite.cfg)
 }
 
 func (suite *ContextConfigurationTestSuite) TearDownSuite() {
@@ -61,7 +65,21 @@ func (suite *ContextConfigurationTestSuite) TearDownSuite() {
 
 func (suite *ContextConfigurationTestSuite) SetupTest() {
 	var err error
+
+	suite.createKVStores(suite.cfg)
+
 	suite.ctxConfiguration, err = NewContextConfiguration(suite.cfg, suite.logger, suite.js)
+	suite.Require().NoError(err)
+}
+
+func (suite *ContextConfigurationTestSuite) TearDownTest() {
+	err := suite.js.DeleteKeyValue(suite.cfg.NATS.KeyValueStoreProjectName)
+	suite.Require().NoError(err)
+
+	err = suite.js.DeleteKeyValue(suite.cfg.NATS.KeyValueStoreWorkflowName)
+	suite.Require().NoError(err)
+
+	err = suite.js.DeleteKeyValue(suite.cfg.NATS.KeyValueStoreNodeName)
 	suite.Require().NoError(err)
 }
 
@@ -98,103 +116,115 @@ func (suite *ContextConfigurationTestSuite) TestNewContextConfiguration() {
 	suite.Require().Len(suite.ctxConfiguration.kvStoresMap, 3)
 }
 
-func (suite *ContextConfigurationTestSuite) TestSetProjectConfig() {
-	key := "key"
-	value := "value"
-
-	// to project bucket
-	err := suite.ctxConfiguration.Set(key, value, ProjectScope)
+func (suite *ContextConfigurationTestSuite) TestSetConfigProjectScope() {
+	err := suite.ctxConfiguration.Set(testKey, testValue, ProjectScope)
 	suite.Require().NoError(err)
-	savedValue := suite.getValueFromKVStore(suite.cfg.NATS.KeyValueStoreProjectName, key)
-	suite.Assert().Equal(value, savedValue)
-
-	// to workflow bucket
-	err = suite.ctxConfiguration.Set(key, value, WorkflowScope)
-	suite.Require().NoError(err)
-	savedValue = suite.getValueFromKVStore(suite.cfg.NATS.KeyValueStoreWorkflowName, key)
-	suite.Assert().Equal(value, savedValue)
-
-	// to node bucket
-	value = "value2"
-	err = suite.ctxConfiguration.Set(key, value, NodeScope)
-	suite.Require().NoError(err)
-	savedValue = suite.getValueFromKVStore(suite.cfg.NATS.KeyValueStoreNodeName, key)
-	suite.Assert().Equal(value, savedValue)
-
-	// to deafult bucket (node)
-	err = suite.ctxConfiguration.Set(key, value)
-	suite.Require().NoError(err)
-	savedValue = suite.getValueFromKVStore(suite.cfg.NATS.KeyValueStoreNodeName, key)
-	suite.Assert().Equal(value, savedValue)
+	savedValue := suite.getValueFromKVStore(suite.cfg.NATS.KeyValueStoreProjectName, testKey)
+	suite.Assert().Equal(testValue, savedValue)
 }
 
-func (suite *ContextConfigurationTestSuite) TestGetProjectConfig() {
-	key := "key"
-	value := "value"
-
-	// from project bucket
-	err := suite.ctxConfiguration.Set(key, value, ProjectScope)
+func (suite *ContextConfigurationTestSuite) TestSetConfigWorkflowScope() {
+	err := suite.ctxConfiguration.Set(testKey, testValue, WorkflowScope)
 	suite.Require().NoError(err)
-	savedValue, err := suite.ctxConfiguration.Get(key, ProjectScope)
-	suite.Require().NoError(err)
-	suite.Assert().Equal(value, savedValue)
-
-	// from workflow bucket
-	err = suite.ctxConfiguration.Set(key, value, WorkflowScope)
-	suite.Require().NoError(err)
-	savedValue, err = suite.ctxConfiguration.Get(key, WorkflowScope)
-	suite.Require().NoError(err)
-	suite.Assert().Equal(value, savedValue)
-
-	// from node bucket
-	err = suite.ctxConfiguration.Set(key, value, NodeScope)
-	suite.Require().NoError(err)
-	savedValue, err = suite.ctxConfiguration.Get(key, NodeScope)
-	suite.Require().NoError(err)
-	suite.Assert().Equal(value, savedValue)
-
-	// from default bucket (node)
-	value = "value2"
-	err = suite.ctxConfiguration.Set(key, value)
-	suite.Require().NoError(err)
-	savedValue, err = suite.ctxConfiguration.Get(key)
-	suite.Require().NoError(err)
-	suite.Assert().Equal(value, savedValue)
+	savedValue := suite.getValueFromKVStore(suite.cfg.NATS.KeyValueStoreWorkflowName, testKey)
+	suite.Assert().Equal(testValue, savedValue)
 }
 
-func (suite *ContextConfigurationTestSuite) TestDeleteProjectConfig() {
-	key := "key"
-	value := "value"
+func (suite *ContextConfigurationTestSuite) TestSetConfigNodeScope() {
+	err := suite.ctxConfiguration.Set(testKey, testValue, NodeScope)
+	suite.Require().NoError(err)
+	savedValue := suite.getValueFromKVStore(suite.cfg.NATS.KeyValueStoreNodeName, testKey)
+	suite.Assert().Equal(testValue, savedValue)
+}
 
+func (suite *ContextConfigurationTestSuite) TestSetConfigScopeDefault() {
+	err := suite.ctxConfiguration.Set(testKey, testValue)
+	suite.Require().NoError(err)
+	savedValue := suite.getValueFromKVStore(suite.cfg.NATS.KeyValueStoreNodeName, testKey)
+	suite.Assert().Equal(testValue, savedValue)
+}
+
+func (suite *ContextConfigurationTestSuite) TestGetConfigProjectScope() {
 	// from project bucket
-	err := suite.ctxConfiguration.Set(key, value, ProjectScope)
+	err := suite.ctxConfiguration.Set(testKey, testValue, ProjectScope)
 	suite.Require().NoError(err)
-	err = suite.ctxConfiguration.Delete(key, ProjectScope)
+	savedValue, err := suite.ctxConfiguration.Get(testKey, ProjectScope)
 	suite.Require().NoError(err)
-	_, err = suite.ctxConfiguration.Get(key, ProjectScope)
-	suite.Require().Error(err)
+	suite.Assert().Equal(testValue, savedValue)
+}
 
-	// from workflow bucket
-	err = suite.ctxConfiguration.Set(key, value, WorkflowScope)
+func (suite *ContextConfigurationTestSuite) TestGetConfigWorkflowScope() {
+	err := suite.ctxConfiguration.Set(testKey, testValue, WorkflowScope)
 	suite.Require().NoError(err)
-	err = suite.ctxConfiguration.Delete(key, WorkflowScope)
+	savedValue, err := suite.ctxConfiguration.Get(testKey, WorkflowScope)
 	suite.Require().NoError(err)
-	_, err = suite.ctxConfiguration.Get(key, WorkflowScope)
-	suite.Require().Error(err)
+	suite.Assert().Equal(testValue, savedValue)
+}
 
-	// from node bucket
-	err = suite.ctxConfiguration.Set(key, value, NodeScope)
+func (suite *ContextConfigurationTestSuite) TestGetConfigNodeScope() {
+	err := suite.ctxConfiguration.Set(testKey, testValue, NodeScope)
 	suite.Require().NoError(err)
-	err = suite.ctxConfiguration.Delete(key, NodeScope)
+	savedValue, err := suite.ctxConfiguration.Get(testKey, NodeScope)
 	suite.Require().NoError(err)
-	_, err = suite.ctxConfiguration.Get(key, NodeScope)
-	suite.Require().Error(err)
+	suite.Assert().Equal(testValue, savedValue)
+}
 
-	// from default bucket (node)
-	err = suite.ctxConfiguration.Set(key, value)
+func (suite *ContextConfigurationTestSuite) TestGetConfigScopeDefault() {
+	nodeValue := "node"
+	workflowValue := "workflow"
+	projectValue := "project"
+
+	err := suite.ctxConfiguration.Set(testKey, projectValue, ProjectScope)
 	suite.Require().NoError(err)
-	err = suite.ctxConfiguration.Delete(key)
+	savedValue, err := suite.ctxConfiguration.Get(testKey)
 	suite.Require().NoError(err)
-	_, err = suite.ctxConfiguration.Get(key)
+	suite.Assert().Equal(projectValue, savedValue)
+
+	err = suite.ctxConfiguration.Set(testKey, workflowValue, WorkflowScope)
+	suite.Require().NoError(err)
+	savedValue, err = suite.ctxConfiguration.Get(testKey)
+	suite.Require().NoError(err)
+	suite.Assert().Equal(workflowValue, savedValue)
+
+	err = suite.ctxConfiguration.Set(testKey, nodeValue, NodeScope)
+	suite.Require().NoError(err)
+	savedValue, err = suite.ctxConfiguration.Get(testKey)
+	suite.Require().NoError(err)
+	suite.Assert().Equal(nodeValue, savedValue)
+}
+
+func (suite *ContextConfigurationTestSuite) TestDeleteConfigProjectScope() {
+	err := suite.ctxConfiguration.Set(testKey, testValue, ProjectScope)
+	suite.Require().NoError(err)
+	err = suite.ctxConfiguration.Delete(testKey, ProjectScope)
+	suite.Require().NoError(err)
+	_, err = suite.ctxConfiguration.Get(testKey, ProjectScope)
+	suite.Require().Error(err)
+}
+
+func (suite *ContextConfigurationTestSuite) TestDeleteConfigWorkflowScope() {
+	err := suite.ctxConfiguration.Set(testKey, testValue, WorkflowScope)
+	suite.Require().NoError(err)
+	err = suite.ctxConfiguration.Delete(testKey, WorkflowScope)
+	suite.Require().NoError(err)
+	_, err = suite.ctxConfiguration.Get(testKey, WorkflowScope)
+	suite.Require().Error(err)
+}
+
+func (suite *ContextConfigurationTestSuite) TestDeleteConfigNodeScope() {
+	err := suite.ctxConfiguration.Set(testKey, testValue, NodeScope)
+	suite.Require().NoError(err)
+	err = suite.ctxConfiguration.Delete(testKey, NodeScope)
+	suite.Require().NoError(err)
+	_, err = suite.ctxConfiguration.Get(testKey, NodeScope)
+	suite.Require().Error(err)
+}
+
+func (suite *ContextConfigurationTestSuite) TestDeleteConfigScopeDefault() {
+	err := suite.ctxConfiguration.Set(testKey, testValue)
+	suite.Require().NoError(err)
+	err = suite.ctxConfiguration.Delete(testKey)
+	suite.Require().NoError(err)
+	_, err = suite.ctxConfiguration.Get(testKey)
 	suite.Require().Error(err)
 }
