@@ -15,8 +15,9 @@ import (
 )
 
 var (
-	testKey   = "key"
-	testValue = "value"
+	testKey     = "key"
+	testValue   = "value"
+	allKVStores = make([]string, 3)
 )
 
 type ContextConfigurationTestSuite struct {
@@ -43,6 +44,12 @@ func (suite *ContextConfigurationTestSuite) SetupSuite() {
 		},
 	}
 
+	allKVStores = []string{
+		suite.cfg.NATS.KeyValueStoreProjectName,
+		suite.cfg.NATS.KeyValueStoreWorkflowName,
+		suite.cfg.NATS.KeyValueStoreNodeName,
+	}
+
 	testPort := 8331
 	opts := testserver.DefaultTestOptions
 	opts.Port = testPort
@@ -55,7 +62,6 @@ func (suite *ContextConfigurationTestSuite) SetupSuite() {
 
 	suite.js, err = suite.nc.JetStream()
 	suite.Require().NoError(err)
-
 }
 
 func (suite *ContextConfigurationTestSuite) TearDownSuite() {
@@ -66,36 +72,30 @@ func (suite *ContextConfigurationTestSuite) TearDownSuite() {
 func (suite *ContextConfigurationTestSuite) SetupTest() {
 	var err error
 
-	suite.createKVStores(suite.cfg)
+	suite.createKVStores()
 
 	suite.ctxConfiguration, err = NewContextConfiguration(suite.cfg, suite.logger, suite.js)
 	suite.Require().NoError(err)
 }
 
 func (suite *ContextConfigurationTestSuite) TearDownTest() {
-	err := suite.js.DeleteKeyValue(suite.cfg.NATS.KeyValueStoreProjectName)
-	suite.Require().NoError(err)
-
-	err = suite.js.DeleteKeyValue(suite.cfg.NATS.KeyValueStoreWorkflowName)
-	suite.Require().NoError(err)
-
-	err = suite.js.DeleteKeyValue(suite.cfg.NATS.KeyValueStoreNodeName)
-	suite.Require().NoError(err)
+	suite.deleteKVStores()
 }
 
-func (suite *ContextConfigurationTestSuite) createKVStores(cfg config.Config) {
-	allKVStores := []string{
-		cfg.NATS.KeyValueStoreProjectName,
-		cfg.NATS.KeyValueStoreWorkflowName,
-		cfg.NATS.KeyValueStoreNodeName,
-	}
-
+func (suite *ContextConfigurationTestSuite) createKVStores() {
 	for _, kvStore := range allKVStores {
 		cfg := nats.KeyValueConfig{
 			Bucket:  kvStore,
 			Storage: nats.FileStorage,
 		}
 		_, err := suite.js.CreateKeyValue(&cfg)
+		suite.Require().NoError(err)
+	}
+}
+
+func (suite *ContextConfigurationTestSuite) deleteKVStores() {
+	for _, kvStore := range allKVStores {
+		err := suite.js.DeleteKeyValue(kvStore)
 		suite.Require().NoError(err)
 	}
 }
