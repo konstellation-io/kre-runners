@@ -28,10 +28,6 @@ func TestContextConfigurationTestSuite(t *testing.T) {
 	suite.Run(t, new(ContextConfigurationTestSuite))
 }
 
-// SetupSuite will create a logger, setup a config, run a NATS mocked server,
-// then connect a NATS client to it to get a JetStream context.
-//
-// These will be used to create a context configuration object.
 func (suite *ContextConfigurationTestSuite) SetupSuite() {
 	suite.logger = simplelogger.New(simplelogger.LevelInfo)
 	suite.cfg = config.Config{
@@ -58,13 +54,11 @@ func (suite *ContextConfigurationTestSuite) SetupSuite() {
 	suite.createKVStores(suite.cfg)
 }
 
-// TearDownSuite will close the mock controller, close the NATS connection and shutdown the mocked server
 func (suite *ContextConfigurationTestSuite) TearDownSuite() {
 	suite.nc.Close()
 	suite.tServer.Shutdown()
 }
 
-// SetupTest will run before each test
 func (suite *ContextConfigurationTestSuite) SetupTest() {
 	var err error
 	suite.ctxConfiguration, err = NewContextConfiguration(suite.cfg, suite.logger, suite.js)

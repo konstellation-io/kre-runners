@@ -44,7 +44,6 @@ func Start(handlerInit HandlerInit, defaultHandler Handler, handlersOpt ...map[s
 
 	handlerManager := NewHandlerManager(defaultHandler, customHandler)
 
-	// Connect to MongoDB
 	mongoManager := mongodb.NewMongoManager(cfg, logger)
 	err := mongoManager.Connect()
 	if err != nil {
@@ -52,7 +51,6 @@ func Start(handlerInit HandlerInit, defaultHandler Handler, handlersOpt ...map[s
 		os.Exit(1)
 	}
 
-	// Connect to NATS
 	nc, err := nats.Connect(cfg.NATS.Server)
 	if err != nil {
 		logger.Errorf("Error connecting to NATS: %s", err)
@@ -60,21 +58,18 @@ func Start(handlerInit HandlerInit, defaultHandler Handler, handlersOpt ...map[s
 	}
 	defer nc.Close()
 
-	// Connect to JetStream
 	js, err := nc.JetStream()
 	if err != nil {
 		logger.Errorf("Error connecting to JetStream: %s", err)
 		os.Exit(1)
 	}
 
-	// Create context object store
 	contextObjectStore, err := NewContextObjectStore(cfg, logger, js)
 	if err != nil {
 		logger.Errorf("Error connecting to object stores: %s", err)
 		os.Exit(1)
 	}
 
-	// Create context configuration
 	contextConfiguration, err := NewContextConfiguration(cfg, logger, js)
 	if err != nil {
 		logger.Errorf("Error connecting to key value stores: %s", err)
