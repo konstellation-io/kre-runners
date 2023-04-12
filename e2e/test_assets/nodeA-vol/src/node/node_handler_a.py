@@ -10,7 +10,6 @@ async def init(ctx) -> None:
 
 
 async def default_handler(ctx, data: Any) -> None:
-
     """
     This is the entrypoint handler for the nodeA workflow.
 
@@ -39,7 +38,7 @@ async def default_handler(ctx, data: Any) -> None:
         await ctx.send_early_reply(output_ee)
         time.sleep(0.3)  # let exitpoint finish its requests
 
-    greeting = str(await ctx.configuration.get("greeting"))
+    greeting = await ctx.configuration.get("greeting")
     ctx.logger.info(f"greeting -> {greeting}")
     result = f"{greeting} {req.name}! greetings from nodeA"
     ctx.logger.info(f"result -> {result}")
