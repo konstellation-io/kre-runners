@@ -1,17 +1,21 @@
 import abc
 import asyncio
 import logging
-import time
 import sys
+import time
 import traceback
 import pymongo
 
+from nats.aio.client import Client as NatsClient
+from nats.js.client import JetStreamContext
+
+from config import Config
 from exceptions import ProcessMessagesNotImplemented
-from nats.aio.client import Client as NATS
+from context_configuration import ContextConfiguration, new_context_configuration
 
 
 class Runner:
-    def __init__(self, runner_name, config):
+    def __init__(self, runner_name: str, config: Config):
         logging.basicConfig(
             level=logging.INFO,
             format="%(asctime)s.%(msecs)03dZ %(levelname)s %(message)s",
@@ -24,37 +28,20 @@ class Runner:
         logging.addLevelName(logging.CRITICAL, "ERROR")
 
         self.logger = logging.getLogger(runner_name)
-        self.loop = asyncio.get_event_loop()
-        self.nc = NATS()
-        self.js = None
-        self.config = config
+        self.loop: asyncio.AbstractEventLoop
+        self.nc: NatsClient = NatsClient()
+        self.js: JetStreamContext
+        self.config: Config = config
         self.subscription_sids = []
-        self.runner_name = runner_name
+        self.runner_name: str = runner_name
         self.mongo_conn = None
+        self.configuration: ContextConfiguration = None
 
     @staticmethod
-    def _get_stream_name(version_id: str, workflow_name: str):
+    def _get_stream_name(version_id: str, workflow_name: str) -> str:
         return f"{version_id.replace('.', '-')}-{workflow_name}"
 
-    def start(self) -> None:
-
-        """
-        Run the python node service in an asyncio loop and also listen to new NATS messages.
-        """
-
-        try:
-            asyncio.ensure_future(self.connect())
-            asyncio.ensure_future(self.process_messages())
-            self.loop.run_forever()
-        except KeyboardInterrupt:
-            self.logger.info("process interrupted")
-        finally:
-            self.loop.run_until_complete(self.stop())
-            self.logger.info("closing loop")
-            self.loop.close()
-
     async def connect(self) -> None:
-
         """
         Connect to NATS.
         """
@@ -67,6 +54,9 @@ class Runner:
         self.logger.info(f"Connecting to NATS {self.config.nats_server}...")
         self.js = self.nc.jetstream()
         await self.nc.connect(self.config.nats_server, name=self.runner_name)
+
+        self.logger.info(f"Creating context configuration...")
+        self.configuration = await new_context_configuration(self.config, self.logger, self.js)
 
     async def stop(self) -> None:
 

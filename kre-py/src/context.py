@@ -1,31 +1,45 @@
 import os
-from typing import Callable, Any, Awaitable
+from logging import Logger
+from typing import Any, Awaitable, Callable
 
-from google.protobuf.message import Message
+from google.protobuf.message import Message as ProtobufMessage
+from nats.aio.client import Client as NatsClient
+from pymongo import MongoClient
 
-from context_measurement import ContextMeasurement
-from context_prediction import ContextPrediction
+from config import Config
+from context_configuration import ContextConfiguration
 from context_data import ContextData
+from context_measurement import ContextMeasurement
 from context_objectstore import ContextObjectStore
-from kre_nats_msg_pb2 import ERROR, OK, MessageType, EARLY_REPLY, EARLY_EXIT
+from context_prediction import ContextPrediction
+from kre_nats_msg_pb2 import EARLY_EXIT, EARLY_REPLY, ERROR, OK, KreNatsMessage, MessageType
 
-PublishMsgFunc = Callable[[Message, Any, MessageType, str], Awaitable]
-PublishAnyFunc = Callable[[Message, Any, MessageType, str], Awaitable]
+PublishMsgFunc = Callable[[ProtobufMessage, Any, MessageType, str], Awaitable]
+PublishAnyFunc = Callable[[ProtobufMessage, Any, MessageType, str], Awaitable]
 
 DEFAULT_CHANNEL = ""
 
 
 class HandlerContext:
-    def __init__(self, config, nc, mongo_conn, logger, publish_msg: PublishMsgFunc, publish_any: PublishAnyFunc):
-        self.__data__ = lambda: None
-        self.__config__ = config
+    def __init__(
+        self,
+        config: Config,
+        nc: NatsClient,
+        mongo_conn: MongoClient,
+        logger: Logger,
+        publish_msg: PublishMsgFunc,
+        publish_any: PublishAnyFunc,
+        configuration: ContextConfiguration,
+    ):
+        self.__config__: Config = config
         self.__publish_msg__ = publish_msg
         self.__publish_any__ = publish_any
-        self.__request_msg__ = None
+        self.__request_msg__: KreNatsMessage
         self.logger = logger
         self.prediction = ContextPrediction(config, nc, logger)
         self.measurement = ContextMeasurement(config, logger)
         self.db = ContextData(config, nc, mongo_conn, logger)
+        self.configuration = configuration
 
         if config.nats_object_store is not None:
             self.object_store = ContextObjectStore(config, logger)
@@ -33,20 +47,14 @@ class HandlerContext:
     def path(self, relative_path):
         return os.path.join(self.__config__.base_path, relative_path)
 
-    def set(self, key: str, value: any):
-        setattr(self.__data__, key, value)
-
-    def get(self, key: str) -> any:
-        return getattr(self.__data__, key)
-
     def set_request_msg(self, request_msg):
         self.__request_msg__ = request_msg
 
     def get_request_id(self) -> str:
         """get_request_id will return the payload's original request ID."""
-        return self.__request_msg__.request_id
+        return str(self.__request_msg__.request_id)
 
-    async def send_output(self, message: Message, channel: str = DEFAULT_CHANNEL):
+    async def send_output(self, message: ProtobufMessage, channel: str = DEFAULT_CHANNEL) -> None:
         """
         send_output will send a desired typed proto payload to the node's subject.
         By specifying a channel, the message will be sent to that subject's subtopic.
@@ -62,7 +70,7 @@ class HandlerContext:
         """
         await self.__publish_msg__(message, self.__request_msg__, OK, channel)
 
-    async def send_any(self, message, channel: str = DEFAULT_CHANNEL):
+    async def send_any(self, message: ProtobufMessage, channel: str = DEFAULT_CHANNEL) -> None:
         """
         send_any will send any type of proto payload to the node's subject.
         By specifying a channel, the message will be sent to that subject's subtopic.
@@ -77,7 +85,9 @@ class HandlerContext:
         """
         await self.__publish_any__(message, self.__request_msg__, OK, channel)
 
-    async def send_early_reply(self, message, channel: str = DEFAULT_CHANNEL):
+    async def send_early_reply(
+        self, message: ProtobufMessage, channel: str = DEFAULT_CHANNEL
+    ) -> None:
         """
         send_early_reply works as the SendOutput functionality
         with the addition of typing this message as an early reply.
@@ -87,7 +97,9 @@ class HandlerContext:
         """
         await self.__publish_msg__(message, self.__request_msg__, EARLY_REPLY, channel)
 
-    async def send_early_exit(self, message, channel: str = DEFAULT_CHANNEL):
+    async def send_early_exit(
+        self, message: ProtobufMessage, channel: str = DEFAULT_CHANNEL
+    ) -> None:
         """
         send_early_exit works as the SendOutput functionality
         with the addition of typing this message as an early exit.

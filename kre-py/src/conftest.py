@@ -5,14 +5,14 @@ import pytest
 
 
 @pytest.fixture
-def simple_logger():
+def simple_logger() -> logging.Logger:
     logging.basicConfig(level=logging.DEBUG)
     logging.getLogger().setLevel(logging.DEBUG)
     return logging.getLogger("Tests")
 
 
 @pytest.fixture
-def config():
+def config() -> MagicMock:
     config = MagicMock()
     config.krt_version = "test_version"
     config.krt_runtime_id = "test"

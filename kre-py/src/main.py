@@ -1,29 +1,28 @@
 import asyncio
 import copy
+import gc
 import importlib.util
 import inspect
 import os
 import sys
 import traceback
-import gc
 from datetime import datetime
 
 from google.protobuf.message import Message
-from nats.js.api import DeliverPolicy, ConsumerConfig
+from nats.errors import ConnectionClosedError, TimeoutError
+from nats.js.api import ConsumerConfig, DeliverPolicy
 
 from compression import compress_if_needed, is_compressed, uncompress
 from config import Config
 from context import HandlerContext
-from kre_nats_msg_pb2 import KreNatsMessage, MessageType, ERROR
-from kre_runner import Runner
 from handlers import HandlerManager
-
-from nats.errors import ConnectionClosedError, TimeoutError
+from kre_nats_msg_pb2 import ERROR, KreNatsMessage, MessageType
+from kre_runner import Runner
 
 
 class NodeRunner(Runner):
     def __init__(self):
-        config = Config()
+        config: Config = Config()
         name = f"{config.krt_version}-{config.krt_node_name}"
         Runner.__init__(self, name, config)
         self.handler_ctx = None
@@ -72,6 +71,7 @@ class NodeRunner(Runner):
             self.logger,
             self.__publish_msg__,
             self.__publish_any__,
+            self.configuration,
         )
 
         if not self.handler_init_fn:
@@ -101,13 +101,11 @@ class NodeRunner(Runner):
                     manual_ack=True,
                 )
                 self.subscription_sids.append(sub)
-                self.logger.info( f"Listening to '{subject}' subject with queue group '{queue}'")
+                self.logger.info(f"Listening to '{subject}' subject with queue group '{queue}'")
 
             except Exception as err:
                 tb = traceback.format_exc()
-                self.logger.error(
-                    f"Error subscribing to NATS subject {subject}: {err}\n\n{tb}"
-                )
+                self.logger.error(f"Error subscribing to NATS subject {subject}: {err}\n\n{tb}")
                 sys.exit(1)
 
         await self.execute_handler_init()
@@ -124,7 +122,9 @@ class NodeRunner(Runner):
 
             request_msg = self.new_request_msg(msg.data)
 
-            self.logger.info(f"Received a message from {msg.subject} with requestID {request_msg.request_id}")
+            self.logger.info(
+                f"Received a message from {msg.subject} with requestID {request_msg.request_id}"
+            )
 
             try:
                 # Make a shallow copy of the ctx object to set inside the request msg
@@ -162,12 +162,20 @@ class NodeRunner(Runner):
 
         return request_msg
 
-    async def __publish_msg__(self, response_payload: Message, request_msg: KreNatsMessage, msg_type: MessageType, channel: str):
+    async def __publish_msg__(
+        self,
+        response_payload: Message,
+        request_msg: KreNatsMessage,
+        msg_type: MessageType,
+        channel: str,
+    ):
         response_msg = self.new_response_msg(request_msg, msg_type)
         response_msg.payload.Pack(response_payload)
         await self.publish_response(response_msg, channel)
 
-    async def __publish_any__(self, response_payload, request_msg: KreNatsMessage, msg_type: MessageType, channel: str):
+    async def __publish_any__(
+        self, response_payload, request_msg: KreNatsMessage, msg_type: MessageType, channel: str
+    ):
         response_msg = self.new_response_msg(request_msg, msg_type)
         response_msg.payload.CopyFrom(response_payload)
         await self.publish_response(response_msg, channel)
@@ -181,7 +189,9 @@ class NodeRunner(Runner):
 
         await self.publish_response(msg, channel)
 
-    def new_response_msg(self, request_msg: KreNatsMessage, msg_type: MessageType) -> KreNatsMessage:
+    def new_response_msg(
+        self, request_msg: KreNatsMessage, msg_type: MessageType
+    ) -> KreNatsMessage:
         """
         Creates a KreNatsMessage that keeps previous request ID plus adding the payload we wish to send.
 
@@ -229,9 +239,11 @@ class NodeRunner(Runner):
         output_subject = self.config.nats_output
         if channel == "":
             return output_subject
-        return f'{output_subject}.{channel}'
+        return f"{output_subject}.{channel}"
 
-    def save_elapsed_time(self, start: datetime, end: datetime, from_node: str, success: bool) -> None:
+    def save_elapsed_time(
+        self, start: datetime, end: datetime, from_node: str, success: bool
+    ) -> None:
         """
         Stores in InfluxDB how much time did it take the node to run the handler
         also saves if the request was succesfully processed.
@@ -257,4 +269,16 @@ class NodeRunner(Runner):
 
 if __name__ == "__main__":
     runner = NodeRunner()
-    runner.start()
+    runner.loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(runner.loop)
+
+    try:
+        runner.loop.run_until_complete(runner.connect())
+        runner.loop.run_until_complete(runner.process_messages())
+        runner.loop.run_forever()
+    except KeyboardInterrupt:
+        runner.logger.info("process interrupted")
+    finally:
+        runner.loop.run_until_complete(runner.stop())
+        runner.logger.info("closing loop")
+        runner.loop.close()
