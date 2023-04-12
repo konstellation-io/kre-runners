@@ -19,7 +19,12 @@ var counterMutex sync.Mutex
 var totalRequests int = 0
 var totalFails int = 0
 var numberOfClients int = 5
-var numberOfRequestsPerClient = 100 // try different loads!
+var numberOfRequestsPerClient = 100 // try different loads! (min 10 for testing purposes)
+
+const (
+	earlyReply = "early reply"
+	earlyExit  = "early exit"
+)
 
 func increaseTotalRequestCounter() {
 	counterMutex.Lock()
@@ -65,14 +70,21 @@ func sendRequests(numberOfRequests int) {
 	myCounter := 0
 
 	for i := 0; i < numberOfRequests; i++ {
-		generatedRequest, expectedResponse := generateRequest()
+		generatedRequest, expectedResponse := generateRequest(i)
 
-		resp, err := client.Greet(context.Background(), &proto.Request{Name: generatedRequest})
+		resp, err := client.Greet(context.Background(), generatedRequest)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-		if expectedResponse != resp.Greeting {
+
+		if resp.Testing != nil && resp.Testing.TestStores {
+			if !resp.TestingResults.TestStoresSuccess {
+				fmt.Println("TestStores failed")
+				fails++
+				increaseTotalFailCounter()
+			}
+		} else if expectedResponse != resp.Greeting {
 			fmt.Println(expectedResponse, "---", resp.Greeting)
 			fails++
 			increaseTotalFailCounter()
@@ -92,22 +104,30 @@ func sendRequests(numberOfRequests int) {
 	wg.Done()
 }
 
-func generateRequest() (string, string) {
-	var (
-		generatedRequest = ""
-		expectedResponse = ""
-	)
+func generateRequest(requestNumber int) (*proto.Request, string) {
+	var expectedResponse = ""
 
-	if randomInt := rand.Intn(20); randomInt == 0 {
-		generatedRequest = "early exit"
-		expectedResponse = "early exit"
-	} else if randomInt == 1 {
-		generatedRequest = "early reply"
-		expectedResponse = "early reply"
-	} else {
-		generatedRequest = fmt.Sprintf("Alex-%d", (rand.Intn(10000)))
-		expectedResponse = fmt.Sprintf("Hello %s! greetings from nodeA, nodeB and nodeC!", generatedRequest)
+	testing := proto.Testing{}
+	request := proto.Request{}
+
+	switch requestNumber {
+	case 0:
+		testing.IsEarlyReply = true
+		request.Name = earlyReply
+		expectedResponse = earlyReply
+	case 1:
+		testing.IsEarlyExit = true
+		request.Name = earlyReply
+		expectedResponse = earlyReply
+	default:
+		if requestNumber == 2 {
+			testing.TestStores = true
+		}
+		generatedName := fmt.Sprintf("Alex-%d", (rand.Intn(10000)))
+		request.Name = generatedName
+		expectedResponse = fmt.Sprintf("Hello %s! greetings from nodeA, nodeB and nodeC!", generatedName)
 	}
 
-	return generatedRequest, expectedResponse
+	request.Testing = &testing
+	return &request, expectedResponse
 }

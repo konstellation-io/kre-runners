@@ -4,20 +4,37 @@ package main;
 
 option go_package = "./proto";
 
+message Testing{
+  bool is_early_reply = 1;
+  bool is_early_exit = 2;
+  bool test_stores = 3;
+}
+
+message TestingResults{
+  bool test_stores_success = 1;
+}
+
 message Request {
   string name = 1;
+  Testing testing = 2;
 }
 
 message NodeBRequest {
   string greeting = 1;
+  Testing testing = 2;
+  TestingResults testing_results = 3;
 }
 
 message NodeCRequest {
   string greeting = 1;
+  Testing testing = 2;
+  TestingResults testing_results = 3;
 }
 
 message Response {
   string greeting = 1;
+  Testing testing = 2;
+  TestingResults testing_results = 3;
 }
 
 service Entrypoint {

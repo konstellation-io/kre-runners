@@ -72,7 +72,7 @@ func Start(handlerInit HandlerInit, defaultHandler Handler, handlersOpt ...map[s
 
 	contextConfiguration, err := NewContextConfiguration(cfg, logger, js)
 	if err != nil {
-		logger.Errorf("Error connecting to key value stores: %s", err)
+		logger.Errorf("Error connecting to configuration: %s", err)
 		os.Exit(1)
 	}
 

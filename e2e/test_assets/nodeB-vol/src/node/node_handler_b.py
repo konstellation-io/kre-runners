@@ -3,11 +3,11 @@ from google.protobuf.any_pb2 import Any
 from public_input_pb2 import NodeBRequest, NodeCRequest
 
 
-def init(ctx):
+def init(ctx) -> None:
     print("[worker init]")
 
 
-async def default_handler(ctx, data: Any) -> NodeCRequest:
+async def default_handler(ctx, data: Any) -> None:
 
     """
     This is the entrypoint handler for the nodeB workflow.
@@ -31,5 +31,6 @@ async def default_handler(ctx, data: Any) -> NodeCRequest:
 
     output = NodeCRequest()
     output.greeting = result
+    output.testing.CopyFrom(req.testing)
 
     await ctx.send_output(output)

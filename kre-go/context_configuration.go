@@ -13,9 +13,9 @@ import (
 type Scope string
 
 const (
-	ScopeProject  Scope = "project"
-	ScopeWorkflow Scope = "workflow"
-	ScopeNode     Scope = "node"
+	ProjectScope  Scope = "project"
+	WorkflowScope Scope = "workflow"
+	NodeScope     Scope = "node"
 )
 
 type contextConfiguration struct {
@@ -49,19 +49,19 @@ func initKVStoresMap(
 	if err != nil {
 		return nil, wrapErr(err)
 	}
-	kvStoresMap[ScopeProject] = kvStore
+	kvStoresMap[ProjectScope] = kvStore
 
 	kvStore, err = js.KeyValue(cfg.NATS.KeyValueStoreWorkflowName)
 	if err != nil {
 		return nil, wrapErr(err)
 	}
-	kvStoresMap[ScopeWorkflow] = kvStore
+	kvStoresMap[WorkflowScope] = kvStore
 
 	kvStore, err = js.KeyValue(cfg.NATS.KeyValueStoreNodeName)
 	if err != nil {
 		return nil, wrapErr(err)
 	}
-	kvStoresMap[ScopeNode] = kvStore
+	kvStoresMap[NodeScope] = kvStore
 
 	return kvStoresMap, nil
 }
@@ -70,7 +70,7 @@ func initKVStoresMap(
 // or the default key-value storage (Node) if not given any.
 func (cc *contextConfiguration) Set(key, value string, scopeOpt ...Scope) error {
 	wrapErr := utilErrors.Wrapper("configuration set: %w")
-	scope := cc.getOptionalScope(scopeOpt, ScopeNode)
+	scope := cc.getOptionalScope(scopeOpt)
 
 	kvStore, ok := cc.kvStoresMap[scope]
 	if !ok {
@@ -98,7 +98,7 @@ func (cc *contextConfiguration) Get(key string, scopeOpt ...Scope) (string, erro
 		return config, nil
 
 	} else {
-		allScopesInOrder := []Scope{ScopeNode, ScopeWorkflow, ScopeProject}
+		allScopesInOrder := []Scope{NodeScope, WorkflowScope, ProjectScope}
 		for _, scope := range allScopesInOrder {
 			config, err := cc.getConfigFromScope(key, scope)
 
@@ -119,7 +119,7 @@ func (cc *contextConfiguration) getConfigFromScope(key string, scope Scope) (str
 	value, err := cc.kvStoresMap[scope].Get(key)
 
 	if err != nil {
-		return "", fmt.Errorf("error retrieving config with key %q from the key-value store: %w", key, err)
+		return "", fmt.Errorf("error retrieving config with key %q from the configuration: %w", key, err)
 	}
 
 	return string(value.Value()), nil
@@ -129,7 +129,7 @@ func (cc *contextConfiguration) getConfigFromScope(key string, scope Scope) (str
 // if no key-value storage is given it will use the default one (Node).
 func (cc *contextConfiguration) Delete(key string, scopeOpt ...Scope) error {
 	wrapErr := utilErrors.Wrapper("configuration delete: %w")
-	scope := cc.getOptionalScope(scopeOpt, ScopeNode)
+	scope := cc.getOptionalScope(scopeOpt)
 
 	kvStore, ok := cc.kvStoresMap[scope]
 	if !ok {
@@ -144,9 +144,9 @@ func (cc *contextConfiguration) Delete(key string, scopeOpt ...Scope) error {
 	return nil
 }
 
-func (cc *contextConfiguration) getOptionalScope(scopes []Scope, defaultScope Scope) Scope {
+func (cc *contextConfiguration) getOptionalScope(scopes []Scope) Scope {
 	if len(scopes) > 0 {
 		return scopes[0]
 	}
-	return defaultScope
+	return NodeScope
 }
