@@ -29,7 +29,7 @@ require (
 	github.com/rogpeppe/go-internal v1.8.1 // indirect
 	github.com/stretchr/testify v1.8.2 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	github.com/valyala/fasttemplate v1.1.0 // indirect
+	github.com/valyala/fasttemplate v1.2.1 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.0.2 // indirect
 	github.com/xdg-go/stringprep v1.0.2 // indirect
