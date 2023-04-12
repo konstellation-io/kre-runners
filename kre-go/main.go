@@ -44,7 +44,13 @@ func Start(handlerInit HandlerInit, defaultHandler Handler, handlersOpt ...map[s
 
 	handlerManager := NewHandlerManager(defaultHandler, customHandler)
 
-	// Connect to NATS
+	mongoManager := mongodb.NewMongoManager(cfg, logger)
+	err := mongoManager.Connect()
+	if err != nil {
+		logger.Errorf("Error connecting to MongoDB: %s", err)
+		os.Exit(1)
+	}
+
 	nc, err := nats.Connect(cfg.NATS.Server)
 	if err != nil {
 		logger.Errorf("Error connecting to NATS: %s", err)
@@ -52,34 +58,35 @@ func Start(handlerInit HandlerInit, defaultHandler Handler, handlersOpt ...map[s
 	}
 	defer nc.Close()
 
-	// Connect to JetStream
 	js, err := nc.JetStream()
 	if err != nil {
 		logger.Errorf("Error connecting to JetStream: %s", err)
 		os.Exit(1)
 	}
 
-	// Connect to MongoDB
-	mongoManager := mongodb.NewMongoManager(cfg, logger)
-	err = mongoManager.Connect()
+	contextObjectStore, err := NewContextObjectStore(cfg, logger, js)
 	if err != nil {
-		logger.Errorf("Error connecting to MongoDB: %s", err)
+		logger.Errorf("Error connecting to object stores: %s", err)
 		os.Exit(1)
 	}
 
-	// Create context object store
-	contextObjectStore := NewContextObjectStore(cfg, logger, js)
+	contextConfiguration, err := NewContextConfiguration(cfg, logger, js)
+	if err != nil {
+		logger.Errorf("Error connecting to configuration: %s", err)
+		os.Exit(1)
+	}
 
 	// Handle incoming messages from NATS
 	runner := NewRunner(&RunnerParams{
-		Logger:             logger,
-		Cfg:                cfg,
-		NC:                 nc,
-		JS:                 js,
-		HandlerManager:     handlerManager,
-		HandlerInit:        handlerInit,
-		MongoManager:       mongoManager,
-		ContextObjectStore: contextObjectStore,
+		Logger:               logger,
+		Cfg:                  cfg,
+		NC:                   nc,
+		JS:                   js,
+		HandlerManager:       handlerManager,
+		HandlerInit:          handlerInit,
+		MongoManager:         mongoManager,
+		ContextObjectStore:   contextObjectStore,
+		ContextConfiguration: contextConfiguration,
 	})
 
 	var subscriptions []*nats.Subscription

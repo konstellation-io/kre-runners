@@ -27,37 +27,40 @@ type PublishMsgFunc = func(response proto.Message, reqMsg *KreNatsMessage, msgTy
 type PublishAnyFunc = func(response *anypb.Any, reqMsg *KreNatsMessage, msgType MessageType, channel string)
 
 type HandlerContextParams struct {
-	Cfg                config.Config
-	NC                 *nats.Conn
-	MongoManager       mongodb.Manager
-	Logger             *simplelogger.SimpleLogger
-	PublishMsg         PublishMsgFunc
-	PublishAny         PublishAnyFunc
-	ContextObjectStore *contextObjectStore
+	Cfg                  config.Config
+	NC                   *nats.Conn
+	MongoManager         mongodb.Manager
+	Logger               *simplelogger.SimpleLogger
+	PublishMsg           PublishMsgFunc
+	PublishAny           PublishAnyFunc
+	ContextObjectStore   *contextObjectStore
+	ContextConfiguration *contextConfiguration
 }
 
 type HandlerContext struct {
-	cfg         config.Config
-	publishMsg  PublishMsgFunc
-	publishAny  PublishAnyFunc
-	reqMsg      *KreNatsMessage
-	Logger      *simplelogger.SimpleLogger
-	Prediction  *contextPrediction
-	Measurement *contextMeasurement
-	DB          *contextDatabase
-	ObjectStore *contextObjectStore
+	cfg           config.Config
+	publishMsg    PublishMsgFunc
+	publishAny    PublishAnyFunc
+	reqMsg        *KreNatsMessage
+	Logger        *simplelogger.SimpleLogger
+	Prediction    *contextPrediction
+	Measurement   *contextMeasurement
+	DB            *contextDatabase
+	ObjectStore   *contextObjectStore
+	Configuration *contextConfiguration
 }
 
 func NewHandlerContext(params *HandlerContextParams) *HandlerContext {
 	return &HandlerContext{
-		cfg:         params.Cfg,
-		publishMsg:  params.PublishMsg,
-		publishAny:  params.PublishAny,
-		Logger:      params.Logger,
-		Prediction:  NewContextPrediction(params.Cfg, params.NC, params.Logger),
-		Measurement: NewContextMeasurement(params.Cfg, params.Logger),
-		DB:          NewContextDatabase(params.Cfg, params.NC, params.MongoManager, params.Logger),
-		ObjectStore: params.ContextObjectStore,
+		cfg:           params.Cfg,
+		publishMsg:    params.PublishMsg,
+		publishAny:    params.PublishAny,
+		Logger:        params.Logger,
+		Prediction:    NewContextPrediction(params.Cfg, params.NC, params.Logger),
+		Measurement:   NewContextMeasurement(params.Cfg, params.Logger),
+		DB:            NewContextDatabase(params.Cfg, params.NC, params.MongoManager, params.Logger),
+		ObjectStore:   params.ContextObjectStore,
+		Configuration: params.ContextConfiguration,
 	}
 }
 

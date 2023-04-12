@@ -14,7 +14,6 @@ type Config struct {
 	Version      string
 	NodeName     string
 	BasePath     string
-	IsExitpoint  bool
 	NATS         ConfigNATS
 	MongoDB      MongoDB
 	InfluxDB     InfluxDB
@@ -27,12 +26,15 @@ type MongoDB struct {
 }
 
 type ConfigNATS struct {
-	Server             string
-	Stream             string
-	InputSubjects      []string
-	OutputSubject      string
-	ObjectStoreName    string
-	MongoWriterSubject string
+	Server                    string
+	Stream                    string
+	InputSubjects             []string
+	OutputSubject             string
+	ObjectStoreName           string
+	KeyValueStoreProjectName  string
+	KeyValueStoreWorkflowName string
+	KeyValueStoreNodeName     string
+	MongoWriterSubject        string
 }
 
 type InfluxDB struct {
@@ -47,14 +49,16 @@ func NewConfig(logger *simplelogger.SimpleLogger) Config {
 		Version:      getCfgFromEnv(logger, "KRT_VERSION"),
 		NodeName:     getCfgFromEnv(logger, "KRT_NODE_NAME"),
 		BasePath:     getCfgFromEnv(logger, "KRT_BASE_PATH"),
-		IsExitpoint:  getCfgBoolFromEnv(logger, "KRT_IS_EXITPOINT"),
 		NATS: ConfigNATS{
-			Server:             getCfgFromEnv(logger, "KRT_NATS_SERVER"),
-			Stream:             getCfgFromEnv(logger, "KRT_NATS_STREAM"),
-			InputSubjects:      getSubscriptionsFromEnv(logger, "KRT_NATS_INPUTS"),
-			OutputSubject:      getCfgFromEnv(logger, "KRT_NATS_OUTPUT"),
-			ObjectStoreName:    getOptCfgFromEnv(logger, "KRT_NATS_OBJECT_STORE"),
-			MongoWriterSubject: getCfgFromEnv(logger, "KRT_NATS_MONGO_WRITER"),
+			Server:                    getCfgFromEnv(logger, "KRT_NATS_SERVER"),
+			Stream:                    getCfgFromEnv(logger, "KRT_NATS_STREAM"),
+			InputSubjects:             getSubscriptionsFromEnv(logger, "KRT_NATS_INPUTS"),
+			OutputSubject:             getCfgFromEnv(logger, "KRT_NATS_OUTPUT"),
+			ObjectStoreName:           getOptCfgFromEnv(logger, "KRT_NATS_OBJECT_STORE"),
+			KeyValueStoreProjectName:  getCfgFromEnv(logger, "KRT_NATS_KEY_VALUE_STORE_PROJECT"),
+			KeyValueStoreWorkflowName: getCfgFromEnv(logger, "KRT_NATS_KEY_VALUE_STORE_WORKFLOW"),
+			KeyValueStoreNodeName:     getCfgFromEnv(logger, "KRT_NATS_KEY_VALUE_STORE_NODE"),
+			MongoWriterSubject:        getCfgFromEnv(logger, "KRT_NATS_MONGO_WRITER"),
 		},
 		MongoDB: MongoDB{
 			Address:     getCfgFromEnv(logger, "KRT_MONGO_URI"),
@@ -83,11 +87,6 @@ func getOptCfgFromEnv(logger *simplelogger.SimpleLogger, name string) string {
 		return ""
 	}
 	return val
-}
-
-func getCfgBoolFromEnv(logger *simplelogger.SimpleLogger, name string) bool {
-	val := getCfgFromEnv(logger, name)
-	return val == "true"
 }
 
 func getSubscriptionsFromEnv(logger *simplelogger.SimpleLogger, name string) []string {

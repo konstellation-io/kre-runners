@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"reflect"
 
 	"nats_init/config"
 
@@ -35,6 +36,25 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed creating Stream: %v", err)
 		os.Exit(1)
+	}
+
+	v := reflect.ValueOf(cfg.KvsConfigs)
+
+	_, err = js.CreateObjectStore(&nats.ObjectStoreConfig{Bucket: cfg.ObjectStore, Storage: nats.FileStorage})
+	if err != nil {
+		log.Fatalf("Failed creating ObjectStore %q: %v", cfg.ObjectStore, err)
+		os.Exit(1)
+	}
+
+	for i := 0; i < v.NumField(); i++ {
+		value := v.Field(i).String()
+		_, err := js.CreateKeyValue(&nats.KeyValueConfig{
+			Bucket: value,
+		})
+		if err != nil {
+			log.Fatalf("Failed creating KVStore %q: %v", value, err)
+			os.Exit(1)
+		}
 	}
 
 	log.Default().Printf("Stream %s created succesfully", cfg.Stream)

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"exitpoint/proto"
+
 	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/konstellation-io/kre-runners/kre-go/v4"
@@ -34,6 +36,12 @@ func nodeA_handler(ctx *kre.HandlerContext, data *anypb.Any) error {
 
 func nodeC_handler(ctx *kre.HandlerContext, data *anypb.Any) error {
 	ctx.Logger.Info("[worker handler for nodeC]")
+
+	if ctx.IsMessageError() {
+		res := &proto.Response{}
+		res.Greeting = "Error during execution, please check previous logs"
+		ctx.SendOutput(res)
+	}
 
 	if !attendedRequests[ctx.GetRequestID()] {
 		ctx.SendAny(data)
