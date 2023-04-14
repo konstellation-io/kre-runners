@@ -1,13 +1,13 @@
 package main
 
 import (
-	context "context"
+	"context"
 	"fmt"
 	"main/proto"
 	"math"
 	"math/rand"
 	"os"
-	sync "sync"
+	"sync"
 	"time"
 
 	"google.golang.org/grpc"
@@ -25,6 +25,16 @@ const (
 	earlyReply = "early reply"
 	earlyExit  = "early exit"
 )
+
+const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+func randStringBytes(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+	}
+	return string(b)
+}
 
 func increaseTotalRequestCounter() {
 	counterMutex.Lock()
@@ -72,7 +82,7 @@ func sendRequests(numberOfRequests int) {
 	for i := 0; i < numberOfRequests; i++ {
 		generatedRequest, expectedResponse := generateRequest(i)
 
-		resp, err := client.Greet(context.Background(), generatedRequest)
+		resp, err := client.Greet(context.Background(), generatedRequest, grpc.MaxCallRecvMsgSize(10*1024*1024))
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -125,8 +135,8 @@ func generateRequest(requestNumber int) (*proto.Request, string) {
 		if requestNumber == 2 {
 			testing.TestStores = true
 		}
-		generatedName := fmt.Sprintf("Alex-%d", (rand.Intn(10000)))
-		request.Name = generatedName
+		generatedName := fmt.Sprintf("Alex-%d", rand.Intn(10000))
+		request.Name = randStringBytes(5 * 1024 * 1024)
 		expectedResponse = fmt.Sprintf("Hello %s! greetings from nodeA, nodeB and nodeC!", generatedName)
 	}
 
