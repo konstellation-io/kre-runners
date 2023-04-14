@@ -39,7 +39,7 @@ def mongodb_mock():
 
 @pytest.fixture
 def context_data(config, nats_mock, jetstream_mock, mongodb_mock, simple_logger):
-    context_measurement = ContextData(config, nats_mock, mongodb_mock, simple_logger)
+    context_measurement = ContextData(config, nats_mock, jetstream_mock, mongodb_mock, simple_logger)
     return context_measurement
 
 
