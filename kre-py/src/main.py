@@ -225,10 +225,6 @@ class NodeRunner(Runner):
             min(stream_max_size, server_max_size) if stream_max_size != -1 else server_max_size
         )
 
-        # TODO: DELETE THIS
-        self.logger.info(f"Max size for message: {(max_size / 1024):.2f} KB")
-        self.logger.info(f"-----------------------------------")
-
         serialized_response_msg = compress_if_needed(
             response_msg.SerializeToString(), max_size=max_size, logger=self.logger
         )
