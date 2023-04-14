@@ -12,6 +12,16 @@ import (
 	"github.com/konstellation-io/kre-runners/kre-go/v4"
 )
 
+const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+func randStringBytes(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+	}
+	return string(b)
+}
+
 func handlerInit(ctx *kre.HandlerContext) {
 	ctx.Logger.Info("[worker init]")
 }
@@ -52,8 +62,15 @@ func handler(ctx *kre.HandlerContext, data *anypb.Any) error {
 	testingResults := &proto.TestingResults{
 		TestStoresSuccess: true,
 	}
+
+	//res.Greeting = randStringBytes(512 * 1024)
+	res.Greeting = req.Greeting
 	res.TestingResults = testingResults
-	ctx.SendOutput(res)
+	err = ctx.SendOutput(res)
+	if err != nil {
+		ctx.Logger.Errorf("Error sending output: %s", err)
+		return err
+	}
 
 	return nil
 }

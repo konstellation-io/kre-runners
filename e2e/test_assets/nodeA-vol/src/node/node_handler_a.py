@@ -1,5 +1,3 @@
-import random
-import string
 import time
 from google.protobuf.any_pb2 import Any
 
@@ -44,9 +42,6 @@ async def default_handler(ctx, data: Any) -> None:
     ctx.logger.info(f"greeting -> {greeting}")
     result = f"{greeting} {req.name}! greetings from nodeA"
     ctx.logger.info(f"result -> {result}")
-
-    # TODO DELETE THIS
-    result += "".join(random.choices(string.ascii_letters + string.digits, k=15 * 1024 * 1024))
 
     output = NodeBRequest()
     output.greeting = result
