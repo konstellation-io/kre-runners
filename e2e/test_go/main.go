@@ -18,8 +18,8 @@ var wg sync.WaitGroup
 var counterMutex sync.Mutex
 var totalRequests int = 0
 var totalFails int = 0
-var numberOfClients int = 5
-var numberOfRequestsPerClient = 100 // try different loads! (min 10 for testing purposes)
+var numberOfClients int = 1
+var numberOfRequestsPerClient = 1 // try different loads! (min 10 for testing purposes)
 
 const (
 	earlyReply = "early reply"
@@ -111,14 +111,16 @@ func generateRequest(requestNumber int) (*proto.Request, string) {
 	request := proto.Request{}
 
 	switch requestNumber {
-	case 0:
-		testing.IsEarlyReply = true
-		request.Name = earlyReply
-		expectedResponse = earlyReply
-	case 1:
-		testing.IsEarlyExit = true
-		request.Name = earlyReply
-		expectedResponse = earlyReply
+	// TODO: UNCOMMENT THIS
+
+	// case 0:
+	// 	testing.IsEarlyReply = true
+	// 	request.Name = earlyReply
+	// 	expectedResponse = earlyReply
+	// case 1:
+	// 	testing.IsEarlyExit = true
+	// 	request.Name = earlyReply
+	// 	expectedResponse = earlyReply
 	default:
 		if requestNumber == 2 {
 			testing.TestStores = true

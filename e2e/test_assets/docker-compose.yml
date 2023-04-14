@@ -20,13 +20,20 @@ services:
       "INFLUXDB_DB": "runtime1"
       "INFLUXDB_META_DIR": "/var/lib/influxdb/meta2"
 
+    logging:
+      driver: none
+
   nats:
     image: "nats:2.8.1"
     command:
       - "-js"
+      - "--config"
+      - "/etc/nats/nats.conf"
     ports:
       - "4222:4222"
       - "8222:8222"
+    volumes:
+      - "./config:/etc/nats"
 
   nats_init:
     build:
@@ -60,6 +67,8 @@ services:
       - env/.env.nodeB
     depends_on:
       - nats_init
+    logging:
+      driver: none
 
   node-c-go:
     build:

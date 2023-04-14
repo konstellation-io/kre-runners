@@ -4,6 +4,7 @@ from typing import Any, Awaitable, Callable
 
 from google.protobuf.message import Message as ProtobufMessage
 from nats.aio.client import Client as NatsClient
+from nats.js.client import JetStreamContext
 from pymongo import MongoClient
 
 from config import Config
@@ -25,6 +26,7 @@ class HandlerContext:
         self,
         config: Config,
         nc: NatsClient,
+        js: JetStreamContext,
         mongo_conn: MongoClient,
         logger: Logger,
         publish_msg: PublishMsgFunc,
@@ -38,7 +40,7 @@ class HandlerContext:
         self.logger = logger
         self.prediction = ContextPrediction(config, nc, logger)
         self.measurement = ContextMeasurement(config, logger)
-        self.db = ContextData(config, nc, mongo_conn, logger)
+        self.db = ContextData(config, nc, js, mongo_conn, logger)
         self.configuration = configuration
 
         if config.nats_object_store is not None:
