@@ -63,7 +63,6 @@ func handler(ctx *kre.HandlerContext, data *anypb.Any) error {
 		TestStoresSuccess: true,
 	}
 
-	//res.Greeting = randStringBytes(512 * 1024)
 	res.Greeting = req.Greeting
 	res.TestingResults = testingResults
 	err = ctx.SendOutput(res)

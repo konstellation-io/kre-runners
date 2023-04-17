@@ -31,8 +31,6 @@ func main() {
 		Description: "e2e stream",
 		Subjects:    []string{cfg.Stream + ".*"},
 		Retention:   nats.InterestPolicy,
-		//TODO: DELETE THIS
-		//MaxMsgSize: 2 * 1024 * 1024,
 	}
 	_, err = js.AddStream(streamCfg)
 	if err != nil {
