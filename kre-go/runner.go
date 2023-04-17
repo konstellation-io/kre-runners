@@ -214,7 +214,12 @@ func (r *Runner) getOutputSubject(channel string) string {
 // prepareOutputMessage will check the length of the message and compress it if necessary.
 // Fails on compressed messages bigger than the threshold.
 func (r *Runner) prepareOutputMessage(msg []byte) ([]byte, error) {
-	if len(msg) <= MessageThreshold {
+	maxSize, err := r.getMaxMessageSize()
+	if err != nil {
+		return nil, fmt.Errorf("error getting max message size: %s", err)
+	}
+
+	if int64(len(msg)) <= maxSize {
 		return msg, nil
 	}
 
@@ -223,7 +228,7 @@ func (r *Runner) prepareOutputMessage(msg []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	if len(outMsg) > MessageThreshold {
+	if int64(len(outMsg)) > maxSize {
 		return nil, errors.ErrMessageToBig
 	}
 
@@ -247,6 +252,26 @@ func (r *Runner) saveElapsedTime(start time.Time, end time.Time, fromNode string
 	}
 
 	r.handlerContext.Measurement.Save("node_elapsed_time", fields, tags)
+}
+
+func (r *Runner) getMaxMessageSize() (int64, error) {
+	streamInfo, err := r.js.StreamInfo(r.cfg.NATS.Stream)
+	if err != nil {
+		return 0, fmt.Errorf("error getting stream's max message size: %w", err)
+	}
+
+	streamMaxSize := int64(streamInfo.Config.MaxMsgSize)
+	serverMaxSize := r.nc.MaxPayload()
+
+	if streamMaxSize == -1 {
+		return serverMaxSize, nil
+	}
+
+	if streamMaxSize < serverMaxSize {
+		return streamMaxSize, nil
+	}
+
+	return serverMaxSize, nil
 }
 
 func sizeInKB(s []byte) string {
