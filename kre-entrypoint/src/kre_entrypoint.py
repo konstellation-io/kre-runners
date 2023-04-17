@@ -2,6 +2,8 @@ import abc
 import gzip
 import traceback
 
+from exceptions.exceptions import CompressedMessageTooLargeException
+
 from grpclib.server import Stream
 from grpclib import GRPCError
 from grpclib.const import Status
@@ -11,7 +13,6 @@ from nats.aio.client import Client as NATS
 from kre_nats_msg_pb2 import KreNatsMessage, OK
 
 COMPRESS_LEVEL = 9
-MESSAGE_THRESHOLD = 1024 * 1024
 GZIP_HEADER = b"\x1f\x8b"
 
 
@@ -83,8 +84,16 @@ class EntrypointKRE:
             input_subject = self.jetstream_data[workflow]["input_subject"]
             output_subject = self.jetstream_data[workflow]["output_subject"]
 
+            stream_info = await self.js.stream_info(stream)
+            stream_max_size = stream_info.config.max_msg_size or -1
+            server_max_size = self.nc.max_payload
+
+            max_msg_size = (
+                min(stream_max_size, server_max_size) if stream_max_size != -1 else server_max_size
+            )
+
             # Creates the msg to be sent to the NATS server
-            request_msg = self._create_kre_request_message(grpc_raw_msg, request_id)
+            request_msg = self._create_kre_request_message(grpc_raw_msg, request_id, max_msg_size)
 
             # Create an ephemeral subscription for the request
             sub = await self.js.subscribe(
@@ -130,7 +139,7 @@ class EntrypointKRE:
             if isinstance(err, GRPCError):
                 raise err
 
-    def _create_kre_request_message(self, raw_msg: bytes, request_id: str) -> bytes:
+    def _create_kre_request_message(self, raw_msg: bytes, request_id: str, max_msg_size: int) -> bytes:
         """
         Creates a KreNatsMessage that packages the grpc request (raw_msg) and adds the required
         info needed to send the request to the NATS server.
@@ -146,7 +155,7 @@ class EntrypointKRE:
         request_msg.request_id = request_id
         request_msg.from_node = self.config.krt_node_name
         request_msg.message_type = OK
-        return self._prepare_nats_request(request_msg.SerializeToString())
+        return self._prepare_nats_request(request_msg.SerializeToString(), max_msg_size)
 
     def _create_grpc_response(self, message_data: bytes) -> KreNatsMessage:
         """
@@ -183,7 +192,7 @@ class EntrypointKRE:
         await grpc_stream.send_message(response)
         self.logger.info(f"gRPC request '{request_id}' response successfully sent")
 
-    def _prepare_nats_request(self, msg: bytes) -> bytes:
+    def _prepare_nats_request(self, msg: bytes, max_msg_size: int) -> bytes:
         """
         Prepares the message to be sent to the NATS server by compressing it if needed.
 
@@ -191,13 +200,13 @@ class EntrypointKRE:
 
         :return: the message to be sent to the NATS server compressed.
         """
-        if len(msg) <= MESSAGE_THRESHOLD:
+        if len(msg) <= max_msg_size:
             return msg
 
         out = gzip.compress(msg, compresslevel=COMPRESS_LEVEL)
 
-        if len(out) > MESSAGE_THRESHOLD:
-            raise Exception("compressed message exceeds maximum size allowed of 1 MB.")
+        if len(out) > max_msg_size:
+            raise CompressedMessageTooLargeException("compressed message exceeds maximum size allowed.")
 
         self.logger.debug(
             f"Original message size: {size_in_kb(msg)}. Compressed: {size_in_kb(out)}"
