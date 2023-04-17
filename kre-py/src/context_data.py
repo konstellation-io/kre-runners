@@ -1,14 +1,18 @@
 import json
 
+from nats.aio.client import Client as NatsClient
 from nats.errors import TimeoutError
+from nats.js.client import JetStreamContext
+from config import Config
 
 from compression import compress_if_needed
 
 
 class ContextData:
-    def __init__(self, config, nc, mongo_conn, logger):
-        self.__config__ = config
-        self.__nc__ = nc
+    def __init__(self, config, nc, js, mongo_conn, logger):
+        self.__config__: Config = config
+        self.__nc__: NatsClient = nc
+        self.__js__: JetStreamContext = js
         self.__mongo_conn__ = mongo_conn
         self.__logger__ = logger
 
@@ -18,10 +22,18 @@ class ContextData:
                 f"[ctx.db.save] invalid 'collection'='{coll}', must be a nonempty string"
             )
 
+        stream_info = await self.__js__.stream_info(self.__config__.nats_stream)
+        stream_max_size = stream_info.config.max_msg_size or -1
+        server_max_size = self.__nc__.max_payload
+
+        max_size = (
+            min(stream_max_size, server_max_size) if stream_max_size != -1 else server_max_size
+        )
+
         try:
             subject = self.__config__.nats_mongo_writer
             payload = bytes(json.dumps({"coll": coll, "doc": data}), encoding="utf-8")
-            out = compress_if_needed(payload, logger=self.__logger__)
+            out = compress_if_needed(payload, max_size=max_size, logger=self.__logger__)
             response = await self.__nc__.request(subject, out, timeout=60)
             res_json = json.loads(response.data.decode())
             if not res_json["success"]:

@@ -1,27 +1,45 @@
 import json
+from datetime import datetime
 from unittest import mock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
-from datetime import datetime
-from unittest.mock import MagicMock, AsyncMock
-
-from nats.aio.client import Client
+from nats.aio.client import Client as NatsClient
 from nats.aio.msg import Msg
 from nats.errors import TimeoutError
+from nats.js.client import JetStreamContext
 from pymongo import MongoClient
 from pymongo.collection import Collection
 
 from context_data import ContextData
 
-DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
+DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 
 
 @pytest.fixture()
 def nats_mock():
-    nats_mock = MagicMock(Client)
-
+    nats_mock = MagicMock(NatsClient)
+    nats_mock.max_payload = 2097152
     return nats_mock
+
+
+@pytest.fixture()
+def jetstream_mock():
+    jetstream_mock = MagicMock()
+
+    # create a mock for the stream_info method
+    stream_info_mock = AsyncMock()
+
+    # set the return value of the mock to a MagicMock object
+    stream_info_mock.return_value = MagicMock()
+    
+    # set the max_msg_size attribute of the MagicMock object
+    stream_info_mock.return_value.config.max_msg_size = 1048576
+    # set the stream_info method of the jetstream_mock object to the mock
+    jetstream_mock.stream_info = stream_info_mock
+
+    # return the modified jetstream_mock object
+    return jetstream_mock
 
 
 @pytest.fixture()
@@ -32,8 +50,8 @@ def mongodb_mock():
 
 
 @pytest.fixture
-def context_data(config, nats_mock, mongodb_mock, simple_logger):
-    context_measurement = ContextData(config, nats_mock, mongodb_mock, simple_logger)
+def context_data(config, nats_mock, jetstream_mock, mongodb_mock, simple_logger):
+    context_measurement = ContextData(config, nats_mock, jetstream_mock, mongodb_mock, simple_logger)
     return context_measurement
 
 
@@ -46,13 +64,16 @@ async def test_save_successful_response_expect_ok(context_data, simple_logger, c
     context_data.__nc__.request = AsyncMock(return_value=msg)
 
     # WHEN the save method is called
-    with mock.patch.object(simple_logger, 'error') as mock_logger_error:
-        await context_data.save("test_collection", {
-            "Time": datetime.utcnow().strftime(DATETIME_FORMAT),
-            "Result": "Tested",
-            "TicketID": "1234",
-            "Asset": "A12345C",
-        })
+    with mock.patch.object(simple_logger, "error") as mock_logger_error:
+        await context_data.save(
+            "test_collection",
+            {
+                "Time": datetime.utcnow().strftime(DATETIME_FORMAT),
+                "Result": "Tested",
+                "TicketID": "1234",
+                "Asset": "A12345C",
+            },
+        )
 
         # THEN expect no error logs to be written
         mock_logger_error.assert_not_called()
@@ -67,13 +88,16 @@ async def test_save_unsuccessful_response_expect_ok(context_data, config, simple
     context_data.__nc__.request = AsyncMock(return_value=msg)
 
     # WHEN the save method is called
-    with mock.patch.object(simple_logger, 'error') as mock_logger_error:
-        await context_data.save("test_collection", {
-            "Time": datetime.utcnow().strftime(DATETIME_FORMAT),
-            "Result": "Tested",
-            "TicketID": "1234",
-            "Asset": "A12345C",
-        })
+    with mock.patch.object(simple_logger, "error") as mock_logger_error:
+        await context_data.save(
+            "test_collection",
+            {
+                "Time": datetime.utcnow().strftime(DATETIME_FORMAT),
+                "Result": "Tested",
+                "TicketID": "1234",
+                "Asset": "A12345C",
+            },
+        )
 
         # THEN expect an error log is written with the given prompt
         mock_logger_error.assert_called_with("Unexpected error saving data")
@@ -87,12 +111,15 @@ async def test_save_wrong_collection_type_expect_exception(context_data, config,
     # WHEN the save method is called,
     # THEN assert an exception is thrown
     with pytest.raises(Exception):
-        await context_data.save(collection_name, {
-            "Time": datetime.utcnow().strftime(DATETIME_FORMAT),
-            "Result": "Tested",
-            "TicketID": "1234",
-            "Asset": "A12345C",
-        })
+        await context_data.save(
+            collection_name,
+            {
+                "Time": datetime.utcnow().strftime(DATETIME_FORMAT),
+                "Result": "Tested",
+                "TicketID": "1234",
+                "Asset": "A12345C",
+            },
+        )
 
 
 @pytest.mark.unittest
@@ -102,13 +129,16 @@ async def test_save_expect_timeout_exception(context_data, config, simple_logger
     context_data.__nc__.request = AsyncMock(side_effect=TimeoutError)
 
     # WHEN the save method is called
-    with mock.patch.object(simple_logger, 'error') as mock_logger_error:
-        await context_data.save("test", {
-            "Time": datetime.utcnow().strftime(DATETIME_FORMAT),
-            "Result": "Tested",
-            "TicketID": "1234",
-            "Asset": "A12345C",
-        })
+    with mock.patch.object(simple_logger, "error") as mock_logger_error:
+        await context_data.save(
+            "test",
+            {
+                "Time": datetime.utcnow().strftime(DATETIME_FORMAT),
+                "Result": "Tested",
+                "TicketID": "1234",
+                "Asset": "A12345C",
+            },
+        )
 
         # THEN expect an error log is written with the given prompt
         mock_logger_error.assert_called_with("Error saving data: request timed out")
@@ -124,10 +154,13 @@ async def test_find_expect_ok(context_data, config):
     context_data.__mongo_conn__ = {f"{config.mongo_data_db_name}": {coll: collection_mock}}
 
     # WHEN the find method is called
-    response = await context_data.find(coll, {
-        "TicketID": "1234",
-        "Asset": "A5678",
-    })
+    response = await context_data.find(
+        coll,
+        {
+            "TicketID": "1234",
+            "Asset": "A5678",
+        },
+    )
 
     # THEN assert the response contains the two mocked elements
     assert len(response) == 2
@@ -138,10 +171,19 @@ async def test_find_expect_ok(context_data, config):
 
 
 @pytest.mark.unittest
-@pytest.mark.parametrize("collection_name, query", [(1234, {
-    "TicketID": "1234",
-    "Asset": "A5678",
-}), ("collection_test", "some wrong query string")])
+@pytest.mark.parametrize(
+    "collection_name, query",
+    [
+        (
+            1234,
+            {
+                "TicketID": "1234",
+                "Asset": "A5678",
+            },
+        ),
+        ("collection_test", "some wrong query string"),
+    ],
+)
 @pytest.mark.asyncio
 async def test_find_wrong_type_expect_exception(context_data, config, collection_name, query):
     # GIVEN a wrong collection_name or query types
@@ -163,7 +205,10 @@ async def test_find_expect_exception(context_data, config):
     # WHEN the find method is called
     # THEN expect an Exception to be thrown
     with pytest.raises(Exception):
-        await context_data.find(coll, {
-            "TicketID": "1234",
-            "Asset": "A5678",
-        })
+        await context_data.find(
+            coll,
+            {
+                "TicketID": "1234",
+                "Asset": "A5678",
+            },
+        )

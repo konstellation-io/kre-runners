@@ -52,8 +52,13 @@ func handler(ctx *kre.HandlerContext, data *anypb.Any) error {
 	testingResults := &proto.TestingResults{
 		TestStoresSuccess: true,
 	}
+
 	res.TestingResults = testingResults
-	ctx.SendOutput(res)
+	err = ctx.SendOutput(res)
+	if err != nil {
+		ctx.Logger.Errorf("Error sending output: %s", err)
+		return err
+	}
 
 	return nil
 }

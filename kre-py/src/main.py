@@ -67,6 +67,7 @@ class NodeRunner(Runner):
         self.handler_ctx = HandlerContext(
             self.config,
             self.nc,
+            self.js,
             self.mongo_conn,
             self.logger,
             self.__publish_msg__,
@@ -216,8 +217,16 @@ class NodeRunner(Runner):
         :return: None.
         """
 
+        stream_info = await self.js.stream_info(self.config.nats_stream)
+        stream_max_size = stream_info.config.max_msg_size or -1
+        server_max_size = self.nc.max_payload
+
+        max_size = (
+            min(stream_max_size, server_max_size) if stream_max_size != -1 else server_max_size
+        )
+
         serialized_response_msg = compress_if_needed(
-            response_msg.SerializeToString(), logger=self.logger
+            response_msg.SerializeToString(), max_size=max_size, logger=self.logger
         )
 
         subject = self.__get_output_subject__(channel)

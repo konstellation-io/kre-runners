@@ -1,9 +1,6 @@
 import gzip
 import logging
 
-# The message threshold is 1MB because this is limit publishing messages in NATS.
-MESSAGE_THRESHOLD = 1024 * 1024
-
 # The compresslevel argument is an integer from 0 to 9 controlling the level of compression;
 # 1 is fastest and produces the least compression, and 9 is slowest and produces the most compression.
 # 0 is no compression.
@@ -75,8 +72,8 @@ def uncompress(data: bytes) -> bytes:
 
 def compress_if_needed(
     data: bytes,
+    max_size: int,
     logger: logging.Logger = logging.getLogger(),
-    max_size: int = MESSAGE_THRESHOLD,
 ) -> bytes:
     """If the msg is bigger than the allowed max_size, compresses the msg.
     In other case returns the data without any modifications.

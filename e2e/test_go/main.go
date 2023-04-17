@@ -1,16 +1,17 @@
 package main
 
 import (
-	context "context"
+	"context"
 	"fmt"
 	"main/proto"
 	"math"
 	"math/rand"
 	"os"
-	sync "sync"
+	"sync"
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 // WaitGroup is used to wait for the program to finish goroutines.
@@ -56,7 +57,7 @@ func main() {
 
 func sendRequests(numberOfRequests int) {
 	start := time.Now()
-	conn, err := grpc.Dial("localhost:9000", grpc.WithInsecure())
+	conn, err := grpc.Dial("localhost:9000", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		os.Exit(1)
 	}
@@ -72,7 +73,7 @@ func sendRequests(numberOfRequests int) {
 	for i := 0; i < numberOfRequests; i++ {
 		generatedRequest, expectedResponse := generateRequest(i)
 
-		resp, err := client.Greet(context.Background(), generatedRequest)
+		resp, err := client.Greet(context.Background(), generatedRequest, grpc.MaxCallRecvMsgSize(10*1024*1024))
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -123,7 +124,7 @@ func generateRequest(requestNumber int) (*proto.Request, string) {
 		if requestNumber == 2 {
 			testing.TestStores = true
 		}
-		generatedName := fmt.Sprintf("Alex-%d", (rand.Intn(10000)))
+		generatedName := fmt.Sprintf("Alex-%d", rand.Intn(10000))
 		request.Name = generatedName
 		expectedResponse = fmt.Sprintf("Hello %s! greetings from nodeA, nodeB and nodeC!", generatedName)
 	}
