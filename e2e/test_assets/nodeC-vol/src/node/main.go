@@ -12,16 +12,6 @@ import (
 	"github.com/konstellation-io/kre-runners/kre-go/v4"
 )
 
-const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-
-func randStringBytes(n int) string {
-	b := make([]byte, n)
-	for i := range b {
-		b[i] = letterBytes[rand.Intn(len(letterBytes))]
-	}
-	return string(b)
-}
-
 func handlerInit(ctx *kre.HandlerContext) {
 	ctx.Logger.Info("[worker init]")
 }
