@@ -53,7 +53,6 @@ func handler(ctx *kre.HandlerContext, data *anypb.Any) error {
 		TestStoresSuccess: true,
 	}
 
-	res.Greeting = req.Greeting
 	res.TestingResults = testingResults
 	err = ctx.SendOutput(res)
 	if err != nil {

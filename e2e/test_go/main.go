@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 // WaitGroup is used to wait for the program to finish goroutines.
@@ -66,7 +67,7 @@ func main() {
 
 func sendRequests(numberOfRequests int) {
 	start := time.Now()
-	conn, err := grpc.Dial("localhost:9000", grpc.WithInsecure())
+	conn, err := grpc.Dial("localhost:9000", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		os.Exit(1)
 	}
@@ -134,7 +135,7 @@ func generateRequest(requestNumber int) (*proto.Request, string) {
 			testing.TestStores = true
 		}
 		generatedName := fmt.Sprintf("Alex-%d", rand.Intn(10000))
-		request.Name = randStringBytes(5 * 1024 * 1024)
+		request.Name = generatedName
 		expectedResponse = fmt.Sprintf("Hello %s! greetings from nodeA, nodeB and nodeC!", generatedName)
 	}
 
