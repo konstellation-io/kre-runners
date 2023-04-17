@@ -2,6 +2,8 @@ import abc
 import gzip
 import traceback
 
+from exceptions.exceptions import CompressedMessageTooLargeException
+
 from grpclib.server import Stream
 from grpclib import GRPCError
 from grpclib.const import Status
@@ -204,7 +206,7 @@ class EntrypointKRE:
         out = gzip.compress(msg, compresslevel=COMPRESS_LEVEL)
 
         if len(out) > max_msg_size:
-            raise Exception("compressed message exceeds maximum size allowed.")
+            raise CompressedMessageTooLargeException("compressed message exceeds maximum size allowed.")
 
         self.logger.debug(
             f"Original message size: {size_in_kb(msg)}. Compressed: {size_in_kb(out)}"
