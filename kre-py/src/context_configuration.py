@@ -17,23 +17,23 @@ async def new_context_configuration(
     config: Config, logger: Logger, js: JetStreamContext
 ) -> ContextConfiguration:
 
-    kv_Stores_map: dict[str, KeyValue] = {}
+    kv_stores_map: dict[str, KeyValue] = {}
 
     try:
         kv_store = await js.key_value(config.nats_key_value_store_project)
-        kv_Stores_map[ScopeProject] = kv_store
+        kv_stores_map[ScopeProject] = kv_store
 
         kv_store = await js.key_value(config.nats_key_value_store_workflow)
-        kv_Stores_map[ScopeWorkflow] = kv_store
+        kv_stores_map[ScopeWorkflow] = kv_store
 
         kv_store = await js.key_value(config.nats_key_value_store_node)
-        kv_Stores_map[ScopeNode] = kv_store
+        kv_stores_map[ScopeNode] = kv_store
 
     except Exception as err:
         logger.error(f"Error while getting the key value store: {err}")
         raise err
 
-    return ContextConfiguration(config, logger, kv_Stores_map)
+    return ContextConfiguration(config, logger, kv_stores_map)
 
 
 class ContextConfiguration:
