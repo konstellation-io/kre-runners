@@ -19,14 +19,26 @@ DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 @pytest.fixture()
 def nats_mock():
     nats_mock = MagicMock(NatsClient)
-
+    nats_mock.max_payload = 2097152
     return nats_mock
 
 
 @pytest.fixture()
 def jetstream_mock():
-    jetstream_mock = MagicMock(JetStreamContext)
+    jetstream_mock = MagicMock()
 
+    # create a mock for the stream_info method
+    stream_info_mock = AsyncMock()
+
+    # set the return value of the mock to a MagicMock object
+    stream_info_mock.return_value = MagicMock()
+    
+    # set the max_msg_size attribute of the MagicMock object
+    stream_info_mock.return_value.config.max_msg_size = 1048576
+    # set the stream_info method of the jetstream_mock object to the mock
+    jetstream_mock.stream_info = stream_info_mock
+
+    # return the modified jetstream_mock object
     return jetstream_mock
 
 
