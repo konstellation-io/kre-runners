@@ -229,6 +229,7 @@ func (r *Runner) prepareOutputMessage(msg []byte) ([]byte, error) {
 	}
 
 	if int64(len(outMsg)) > maxSize {
+		r.logger.Errorf("Compressed message is bigger than the threshold: %s vs %.2f KB", sizeInKB(outMsg), maxSize)
 		return nil, errors.ErrMessageToBig
 	}
 
