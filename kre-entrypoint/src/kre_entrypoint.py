@@ -211,12 +211,11 @@ class EntrypointKRE:
 
         if len(out) > max_msg_size:
             raise CompressedMessageTooLargeException(
-                "compressed message exceeds maximum size allowed."
+                "compressed message exceeds maximum size allowed"
             )
 
-        self.logger.debug(
-            f"Original message size: {size_in_kb(msg)}. Compressed: {size_in_kb(out)}"
-        )
+        self.logger.debug("compressed message exceeds maximum size allowed: current" +
+                f"message size {bytes_to_mb(data)}MB, max allowed size {bytes_to_mb(out)}MB")
 
         return out
 
@@ -230,3 +229,6 @@ class EntrypointKRE:
 
 def size_in_kb(s: bytes) -> str:
     return f"{(len(s) / 1024):.2f} KB"
+
+def bytes_to_mb(size_in_bytes: int) -> float:
+    return float("{.1f}".format(size_in_bytes/1024/1024))
