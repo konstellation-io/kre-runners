@@ -219,7 +219,8 @@ func (r *Runner) prepareOutputMessage(msg []byte) ([]byte, error) {
 		return nil, fmt.Errorf("error getting max message size: %s", err)
 	}
 
-	if int64(len(msg)) <= maxSize {
+	lenMsg := int64(len(msg))
+	if lenMsg <= maxSize {
 		return msg, nil
 	}
 
@@ -228,11 +229,13 @@ func (r *Runner) prepareOutputMessage(msg []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	if int64(len(outMsg)) > maxSize {
+	lenOutMsg := int64(len(outMsg))
+	if lenOutMsg > maxSize {
+		r.logger.Debugf("compressed message exceeds maximum size allowed: current message size %s, max allowed size %s", sizeInMB(lenOutMsg), sizeInMB(maxSize))
 		return nil, errors.ErrMessageToBig
 	}
 
-	r.logger.Infof("Original message size: %s. Compressed: %s", sizeInKB(msg), sizeInKB(outMsg))
+	r.logger.Infof("Original message size: %s. Compressed: %s", sizeInMB(lenMsg), sizeInMB(lenOutMsg))
 
 	return outMsg, nil
 }
@@ -274,6 +277,6 @@ func (r *Runner) getMaxMessageSize() (int64, error) {
 	return serverMaxSize, nil
 }
 
-func sizeInKB(s []byte) string {
-	return fmt.Sprintf("%.2f KB", float32(len(s))/1024)
+func sizeInMB(size int64) string {
+	return fmt.Sprintf("%.1f MB", float32(size)/1024/1024)
 }
