@@ -95,13 +95,16 @@ def compress_if_needed(
     out = compress(data)
 
     if len(out) > max_size:
+        data_size_mb = bytes_to_mb(len(data))
+        max_size_mb = bytes_to_mb(len(max_size))
+        logger.debug("compressed message exceeds maximum size allowed: current" +
+                f"message size {data_size_mb}MB, max allowed size {max_size_mb}MB")
+
         raise Exception("compressed message exceeds maximum size allowed")
 
-    logger.debug("compressed message exceeds maximum size allowed: current" +
-                f"message size {bytes_to_mb(data)}MB, max allowed size {bytes_to_mb(out)}MB")
+    logger.info(f"Original message size: {size_in_kb(data)}. Compressed{size_in_kb(out)}")
 
     return out
 
 def bytes_to_mb(size_in_bytes: int) -> float:
-    return float("{.1f}".format(size_in_bytes/1024/1024))
-
+    return float("{:.1f}".format(size_in_bytes/1024/1024))
