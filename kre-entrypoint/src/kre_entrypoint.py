@@ -215,7 +215,7 @@ class EntrypointKRE:
             )
 
         self.logger.debug("compressed message exceeds maximum size allowed: current" +
-                f"message size {bytes_to_mb(data)}MB, max allowed size {bytes_to_mb(out)}MB")
+                f"message size {bytes_to_mb(len(data))}MB, max allowed size {bytes_to_mb(len(out))}MB")
 
         return out
 
@@ -231,4 +231,4 @@ def size_in_kb(s: bytes) -> str:
     return f"{(len(s) / 1024):.2f} KB"
 
 def bytes_to_mb(size_in_bytes: int) -> float:
-    return float("{.1f}".format(size_in_bytes/1024/1024))
+    return float("{.1f}".format(size_in_byties/1024/1024))
