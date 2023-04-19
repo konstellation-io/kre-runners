@@ -210,12 +210,13 @@ class EntrypointKRE:
         out = gzip.compress(msg, compresslevel=COMPRESS_LEVEL)
 
         if len(out) > max_msg_size:
+            self.logger.debug("compressed message exceeds maximum size allowed: current" +
+                f"message size {bytes_to_mb(len(data))}MB, max allowed size {bytes_to_mb(len(out))}MB")
+
+
             raise CompressedMessageTooLargeException(
                 "compressed message exceeds maximum size allowed"
             )
-
-        self.logger.debug("compressed message exceeds maximum size allowed: current" +
-                f"message size {bytes_to_mb(len(data))}MB, max allowed size {bytes_to_mb(len(out))}MB")
 
         return out
 
