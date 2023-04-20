@@ -7,6 +7,8 @@ on:
       - "kre-go Tests"
       - "kre-entrypoint Tests"
       - "krt-files-downloader Tests"
+    types:
+      - "completed"
     branches: [ main ]
   push:
     paths:
