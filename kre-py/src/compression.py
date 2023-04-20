@@ -1,6 +1,8 @@
 import gzip
 import logging
 
+from exceptions import CompressedMessageTooLargeException
+
 # The compresslevel argument is an integer from 0 to 9 controlling the level of compression;
 # 1 is fastest and produces the least compression, and 9 is slowest and produces the most compression.
 # 0 is no compression.
@@ -95,11 +97,17 @@ def compress_if_needed(
     out = compress(data)
 
     if len(out) > max_size:
-        raise Exception(
-            f"compressed message {size_in_kb(out)} exceeds "
-            f"maximum size allowed of {bytes_to_kb(max_size)}."
-        )
+        data_size_mb = bytes_to_mb(len(data))
+        max_size_mb = bytes_to_mb(len(max_size))
+        logger.debug("compressed message exceeds maximum size allowed: current" +
+                    f"message size {data_size_mb}MB, max allowed size {max_size_mb}MB")
 
-    logger.info("Original message size: %s. Compressed: %s", size_in_kb(data), size_in_kb(out))
+        raise CompressedMessageTooLargeException("compressed message exceeds maximum size allowed")
+
+    logger.info(f"Original message size: {size_in_kb(data)}. Compressed{size_in_kb(out)}")
 
     return out
+
+
+def bytes_to_mb(size_in_bytes: int) -> float:
+    return float("{:.1f}".format(size_in_bytes / 1024 / 1024))
