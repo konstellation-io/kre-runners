@@ -86,6 +86,8 @@ class NodeRunner(Runner):
             self.handler_init_fn(self.handler_ctx)
 
     async def process_messages(self) -> None:
+        await self.execute_handler_init()
+
         for subject in self.config.nats_inputs:
             queue = f'{subject.replace(".", "-")}-{self.config.krt_node_name}'
             try:
@@ -109,7 +111,6 @@ class NodeRunner(Runner):
                 self.logger.error(f"Error subscribing to NATS subject {subject}: {err}\n\n{tb}")
                 sys.exit(1)
 
-        await self.execute_handler_init()
 
     def create_message_cb(self) -> callable:
         async def message_cb(msg) -> None:
