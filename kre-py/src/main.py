@@ -86,6 +86,8 @@ class NodeRunner(Runner):
             self.handler_init_fn(self.handler_ctx)
 
     async def process_messages(self) -> None:
+        await self.execute_handler_init()
+
         for subject in self.config.nats_inputs:
             queue = f'{subject.replace(".", "-")}-{self.config.krt_node_name}'
             try:
@@ -108,8 +110,6 @@ class NodeRunner(Runner):
                 tb = traceback.format_exc()
                 self.logger.error(f"Error subscribing to NATS subject {subject}: {err}\n\n{tb}")
                 sys.exit(1)
-
-        await self.execute_handler_init()
 
     def create_message_cb(self) -> callable:
         async def message_cb(msg) -> None:
@@ -164,18 +164,18 @@ class NodeRunner(Runner):
         return request_msg
 
     async def __publish_msg__(
-        self,
-        response_payload: Message,
-        request_msg: KreNatsMessage,
-        msg_type: MessageType,
-        channel: str,
+            self,
+            response_payload: Message,
+            request_msg: KreNatsMessage,
+            msg_type: MessageType,
+            channel: str,
     ):
         response_msg = self.new_response_msg(request_msg, msg_type)
         response_msg.payload.Pack(response_payload)
         await self.publish_response(response_msg, channel)
 
     async def __publish_any__(
-        self, response_payload, request_msg: KreNatsMessage, msg_type: MessageType, channel: str
+            self, response_payload, request_msg: KreNatsMessage, msg_type: MessageType, channel: str
     ):
         response_msg = self.new_response_msg(request_msg, msg_type)
         response_msg.payload.CopyFrom(response_payload)
@@ -191,7 +191,7 @@ class NodeRunner(Runner):
         await self.publish_response(msg, channel)
 
     def new_response_msg(
-        self, request_msg: KreNatsMessage, msg_type: MessageType
+            self, request_msg: KreNatsMessage, msg_type: MessageType
     ) -> KreNatsMessage:
         """
         Creates a KreNatsMessage that keeps previous request ID plus adding the payload we wish to send.
@@ -251,7 +251,7 @@ class NodeRunner(Runner):
         return f"{output_subject}.{channel}"
 
     def save_elapsed_time(
-        self, start: datetime, end: datetime, from_node: str, success: bool
+            self, start: datetime, end: datetime, from_node: str, success: bool
     ) -> None:
         """
         Stores in InfluxDB how much time did it take the node to run the handler
