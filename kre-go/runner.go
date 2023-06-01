@@ -61,7 +61,9 @@ func NewRunner(params *RunnerParams) *Runner {
 		params.ContextConfiguration,
 	})
 
-	params.HandlerInit(ctx)
+	if params.HandlerInit != nil {
+		params.HandlerInit(ctx)
+	}
 
 	runner.handlerContext = ctx
 
