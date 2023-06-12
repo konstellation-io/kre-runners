@@ -1,7 +1,7 @@
 syntax = "proto3";
 import "google/protobuf/any.proto";
 
-option go_package = "./kre";
+option go_package = "./kai";
 
 enum MessageType {
   UNDEFINED = 0;
@@ -11,7 +11,7 @@ enum MessageType {
   EARLY_EXIT = 4;
 }
 
-message KreNatsMessage { 
+message KaiNatsMessage {
   string request_id = 1;
   google.protobuf.Any payload = 2;
   string error = 3;

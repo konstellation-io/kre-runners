@@ -1,0 +1,19 @@
+
+# Process metadata
+KRT_PROCESS_NAME: Test process
+KRT_WORKFLOW_NAME: Test workflow
+KRT_PRODUCT_NAME: Test product
+KRT_VERSION: Test version v1.0.0
+KRT_BASE_PATH: "/Some/Path"
+
+# Communication with NATS
+KRT_NATS_URL: "nats://localhost:4222"
+KRT_NATS_OBJECT_STORE: test
+KRT_NATS_STREAM: test-stream
+KRT_NATS_INPUTS:
+  - test-input
+  - test-output
+KRT_NATS_OUTPUT: test-output
+KRT_NATS_KEY_VALUE_STORE_PRODUCT: test1
+KRT_NATS_KEY_VALUE_STORE_WORKFLOW: test2
+KRT_NATS_KEY_VALUE_STORE_PROCESS: test3
