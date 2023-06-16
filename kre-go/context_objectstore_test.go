@@ -4,11 +4,11 @@ package kre
 
 import (
 	"context"
+	"github.com/nats-io/nats.go"
+	"github.com/testcontainers/testcontainers-go"
 	"testing"
 
-	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/suite"
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 
 	"github.com/konstellation-io/kre-runners/kre-go/v4/config"
@@ -73,7 +73,9 @@ func (s *ContextObjectStoreTestSuite) TearDownSuite() {
 // SetupTest will run before each test
 func (s *ContextObjectStoreTestSuite) SetupTest() {
 	s.createObjectStore(s.cfg)
-	s.ctxObjectStore = NewContextObjectStore(s.cfg, s.logger, s.js)
+	objStore, err := NewContextObjectStore(s.cfg, s.logger, s.js)
+	s.Require().NoError(err)
+	s.ctxObjectStore = objStore
 }
 
 func (s *ContextObjectStoreTestSuite) TearDownTest() {
@@ -110,9 +112,9 @@ func (s *ContextObjectStoreTestSuite) TestNewContextObjectStore() {
 	// during setup test an object store is created
 	s.Require().NotNil(s.ctxObjectStore.objStore)
 
-	// if a iven configuration with object store name empty, the context object store should be nil
+	// if a given configuration with object store name empty, the context object store should be nil
 	emptyCfg := config.Config{}
-	emptyCtxObjectStore := NewContextObjectStore(emptyCfg, s.logger, s.js)
+	emptyCtxObjectStore, _ := NewContextObjectStore(emptyCfg, s.logger, s.js)
 	s.Require().Nil(emptyCtxObjectStore.objStore)
 }
 
@@ -130,6 +132,82 @@ func (s *ContextObjectStoreTestSuite) TestObjectStoreSave() {
 	entry, err := s.getValueFromObjectStore(bucket, key)
 	s.Require().NoError(err)
 	s.Require().Equal(value, entry)
+}
+
+func (s *ContextObjectStoreTestSuite) TestObjectStoreList() {
+	// given
+	keys := []string{"key1", "key2"}
+	value := []byte("value")
+
+	// when
+	for _, key := range keys {
+		err := s.ctxObjectStore.Save(key, value)
+		s.Require().NoError(err)
+	}
+
+	// then
+	buckets, err := s.ctxObjectStore.List()
+	s.Require().NoError(err)
+	s.Require().Equal(keys, buckets)
+}
+
+func (s *ContextObjectStoreTestSuite) TestObjectStoreListWithFilter() {
+	// given
+	keys := []string{"key1", "key2", "test1", "test2"}
+	expected := []string{"test1", "test2"}
+	value := []byte("value")
+
+	// when
+	for _, key := range keys {
+		err := s.ctxObjectStore.Save(key, value)
+		s.Require().NoError(err)
+	}
+
+	// then
+	buckets, err := s.ctxObjectStore.List("test*")
+	s.Require().NoError(err)
+	s.Require().Equal(expected, buckets)
+}
+
+func (s *ContextObjectStoreTestSuite) TestObjectStorePurge() {
+	// given
+	keys := []string{"key1", "key2"}
+	value := []byte("value")
+
+	// when
+	for _, key := range keys {
+		err := s.ctxObjectStore.Save(key, value)
+		s.Require().NoError(err)
+	}
+
+	// then
+	err := s.ctxObjectStore.Purge()
+	s.Require().NoError(err)
+
+	buckets, err := s.ctxObjectStore.List()
+	s.Require().Error(err)
+	s.Require().Empty(buckets)
+}
+
+func (s *ContextObjectStoreTestSuite) TestObjectStorePurgeWithFilter() {
+	// given
+	keys := []string{"key1", "key2", "test1", "test2"}
+	expected := []string{"key1", "key2"}
+	value := []byte("value")
+
+	// when
+	for _, key := range keys {
+		err := s.ctxObjectStore.Save(key, value)
+		s.Require().NoError(err)
+	}
+
+	// then
+	err := s.ctxObjectStore.Purge("test*")
+	s.Require().NoError(err)
+
+	buckets, err := s.ctxObjectStore.List()
+	s.Require().NoError(err)
+	s.Require().Equal(expected, buckets)
 }
 
 func (s *ContextObjectStoreTestSuite) TestObjectStoreSaveWithEmptyKey() {
@@ -237,7 +315,7 @@ func (s *ContextObjectStoreTestSuite) TestObjectStoreDelete() {
 	entry, err = s.ctxObjectStore.Get(key)
 
 	// then
-	s.Assert().NoError(err)
+	s.Assert().Error(err)
 	s.Assert().Empty(entry)
 }
 
