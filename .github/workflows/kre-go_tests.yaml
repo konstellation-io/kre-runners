@@ -46,7 +46,6 @@ jobs:
           path: |
             kre-go/coverage-unit.out
             kre-go/coverage-integration.out
-            
 
   sonarcloud:
     name: SonarCloud
