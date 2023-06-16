@@ -122,10 +122,6 @@ func (c *contextObjectStore) Purge(regexp ...string) error {
 		}
 	}
 
-	if err != nil {
-		return fmt.Errorf("error purging objects from the object store: %w", err)
-	}
-
 	c.logger.Debugf("Files successfully purged from object store %q", c.cfg.NATS.ObjectStoreName)
 
 	return nil
