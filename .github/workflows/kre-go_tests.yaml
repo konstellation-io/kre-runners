@@ -20,7 +20,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v4
         with:
-          go-version: 1.20.x
+          go-version: 1.18.x
       - name: Run unit tests
         run: go test ./... -cover -v -coverprofile=coverage-unit.out --tags=unit
         working-directory: ./kre-go
