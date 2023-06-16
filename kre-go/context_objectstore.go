@@ -106,16 +106,16 @@ func (c *contextObjectStore) Purge(regexp ...string) error {
 		pattern = pat
 	}
 
-	buckets, err := c.List()
+	objects, err := c.List()
 	if err != nil {
 		return fmt.Errorf("error listing objects from the object store: %w", err)
 	}
 
-	for _, bucket := range buckets {
-		if pattern == nil || pattern.MatchString(bucket) {
-			err := c.objStore.Delete(bucket)
+	for _, objectName := range objects {
+		if pattern == nil || pattern.MatchString(objectName) {
+			err := c.objStore.Delete(objectName)
 
-			c.logger.Debugf("Deleting bucket %q", bucket)
+			c.logger.Debugf("Deleting object %q", objectName)
 			if err != nil {
 				return fmt.Errorf("error purging objects from the object store: %w", err)
 			}
