@@ -2,8 +2,8 @@ package kre
 
 import (
 	"fmt"
-
 	"github.com/nats-io/nats.go"
+	regexp2 "regexp"
 
 	"github.com/konstellation-io/kre-runners/kre-go/v4/config"
 	"github.com/konstellation-io/kre-runners/kre-go/v4/internal/errors"
@@ -86,6 +86,81 @@ func (c *contextObjectStore) Get(key string) ([]byte, error) {
 	}
 
 	c.logger.Debugf("File with key %q successfully retrieved from object store %q", key, c.cfg.NATS.ObjectStoreName)
+
+	return response, nil
+}
+
+func (c *contextObjectStore) Purge(regexp ...string) error {
+	if c.objStore == nil {
+		return errors.ErrUndefinedObjectStore
+	}
+
+	var pattern *regexp2.Regexp
+
+	if len(regexp) > 0 && regexp[0] != "" {
+		pat, err := regexp2.Compile(regexp[0])
+		if err != nil {
+			return fmt.Errorf("error compiling regexp: %w", err)
+		}
+
+		pattern = pat
+	}
+
+	buckets, err := c.List()
+	if err != nil {
+		return fmt.Errorf("error listing objects from the object store: %w", err)
+	}
+
+	for _, bucket := range buckets {
+		if pattern == nil || pattern.MatchString(bucket) {
+			err := c.objStore.Delete(bucket)
+
+			c.logger.Debugf("Deleting bucket %q", bucket)
+			if err != nil {
+				return fmt.Errorf("error purging objects from the object store: %w", err)
+			}
+		}
+	}
+
+	if err != nil {
+		return fmt.Errorf("error purging objects from the object store: %w", err)
+	}
+
+	c.logger.Debugf("Files successfully purged from object store %q", c.cfg.NATS.ObjectStoreName)
+
+	return nil
+}
+
+func (c *contextObjectStore) List(regexp ...string) ([]string, error) {
+	if c.objStore == nil {
+		return nil, errors.ErrUndefinedObjectStore
+	}
+
+	objStoreList, err := c.objStore.List()
+	if err != nil {
+		return nil, fmt.Errorf("error listing objects from the object store: %w", err)
+	}
+
+	var pattern *regexp2.Regexp
+
+	if len(regexp) > 0 && regexp[0] != "" {
+		pat, err := regexp2.Compile(regexp[0])
+		if err != nil {
+			return nil, fmt.Errorf("error compiling regexp: %w", err)
+		}
+
+		pattern = pat
+	}
+
+	response := []string{}
+
+	for _, objName := range objStoreList {
+		if pattern == nil || pattern.MatchString(objName.Name) {
+			response = append(response, objName.Name)
+		}
+	}
+
+	c.logger.Debugf("Files successfully listed from object store %q", c.cfg.NATS.ObjectStoreName)
 
 	return response, nil
 }
