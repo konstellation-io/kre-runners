@@ -26,8 +26,8 @@ type RunnerParams struct {
 	HandlerManager       *HandlerManager
 	HandlerInit          HandlerInit
 	MongoManager         mongodb.Manager
-	ContextObjectStore   *contextObjectStore
-	ContextConfiguration *contextConfiguration
+	ContextObjectStore   ContextObjectStore
+	ContextConfiguration ContextConfiguration
 }
 
 type Runner struct {

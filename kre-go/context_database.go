@@ -20,6 +20,11 @@ type SaveDataMsg struct {
 	Doc  interface{} `json:"doc"`
 }
 
+type ContextDatabase interface {
+	Find(collection string, query QueryData, res interface{}) error
+	Save(collection string, data interface{}) error
+}
+
 type contextDatabase struct {
 	cfg    config.Config
 	nc     *nats.Conn
@@ -32,7 +37,7 @@ func NewContextDatabase(
 	nc *nats.Conn,
 	mongoM mongodb.Manager,
 	logger *simplelogger.SimpleLogger,
-) *contextDatabase {
+) ContextDatabase {
 	return &contextDatabase{
 		cfg:    cfg,
 		nc:     nc,

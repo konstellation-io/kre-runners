@@ -4,9 +4,10 @@ package kre
 
 import (
 	"context"
+	"testing"
+
 	"github.com/nats-io/nats.go"
 	"github.com/testcontainers/testcontainers-go"
-	"testing"
 
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go/wait"

@@ -19,13 +19,17 @@ const (
 	token = "" // we don't need authentication
 )
 
+type ContextMeasurement interface {
+	Save(measurement string, fields map[string]interface{}, tags map[string]string)
+}
+
 type contextMeasurement struct {
 	cfg      config.Config
 	logger   *simplelogger.SimpleLogger
 	writeAPI api.WriteAPI
 }
 
-func NewContextMeasurement(cfg config.Config, logger *simplelogger.SimpleLogger) *contextMeasurement {
+func NewContextMeasurement(cfg config.Config, logger *simplelogger.SimpleLogger) ContextMeasurement {
 	influxCli := influxdb2.NewClient(cfg.InfluxDB.URI, token)
 	writeAPI := influxCli.WriteAPI(org, cfg.RuntimeID)
 

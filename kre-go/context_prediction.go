@@ -41,6 +41,11 @@ type SaveMetricMsgDoc struct {
 	VersionName    string `json:"versionName"`
 }
 
+type ContextPrediction interface {
+	Save(date time.Time, predictedValue, trueValue string)
+	SaveError(saveMetricErr SaveMetricErr)
+}
+
 type contextPrediction struct {
 	cfg    config.Config
 	nc     *nats2.Conn
@@ -51,7 +56,7 @@ func NewContextPrediction(
 	cfg config.Config,
 	nc *nats2.Conn,
 	logger *simplelogger.SimpleLogger,
-) *contextPrediction {
+) ContextPrediction {
 	return &contextPrediction{
 		cfg:    cfg,
 		nc:     nc,
