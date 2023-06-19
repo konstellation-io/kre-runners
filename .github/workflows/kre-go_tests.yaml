@@ -22,13 +22,7 @@ jobs:
         with:
           go-version: 1.18.x
       - name: Run unit tests
-        env:
-          # TODO: add nats mock or service
-          KRT_MONGO_URI: "mongodb"
-          KRT_INFLUX_URI: "influx"
-          KRT_VERSION_ID: "test"
-          KRT_RUNTIME_ID: "test"
-        run: go test ./... -cover -v -coverprofile=coverage-unit.out -covermode=atomic -coverpkg=./... --tags=unit
+        run: go test ./... -cover -v -coverprofile=coverage-unit.out --tags=unit
         working-directory: ./kre-go
       - name: Run integration tests
         env:
@@ -37,7 +31,7 @@ jobs:
           KRT_INFLUX_URI: "influx"
           KRT_VERSION_ID: "test"
           KRT_RUNTIME_ID: "test"
-        run: go test ./... -cover -v -coverprofile=coverage-integration.out -covermode=atomic -coverpkg=./... --tags=integration
+        run: go test ./... -cover -v -coverprofile=coverage-integration.out --tags=integration
         working-directory: ./kre-go
       - name: Archive code coverage results
         uses: actions/upload-artifact@v3
@@ -59,9 +53,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: coverage-report
-          path: |
-            kre-go/coverage-unit.out
-            kre-go/coverage-integration.out
+          path: kre-go
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         with:
