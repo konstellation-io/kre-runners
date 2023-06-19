@@ -19,6 +19,10 @@ const (
 	token = "" // we don't need authentication
 )
 
+type ContextMeasurement interface {
+	Save(measurement string, fields map[string]interface{}, tags map[string]string)
+}
+
 type contextMeasurement struct {
 	cfg      config.Config
 	logger   *simplelogger.SimpleLogger

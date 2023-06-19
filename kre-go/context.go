@@ -33,8 +33,8 @@ type HandlerContextParams struct {
 	Logger               *simplelogger.SimpleLogger
 	PublishMsg           PublishMsgFunc
 	PublishAny           PublishAnyFunc
-	ContextObjectStore   *contextObjectStore
-	ContextConfiguration *contextConfiguration
+	ContextObjectStore   ContextObjectStore
+	ContextConfiguration ContextConfiguration
 }
 
 type HandlerContext struct {
@@ -43,11 +43,11 @@ type HandlerContext struct {
 	publishAny    PublishAnyFunc
 	reqMsg        *KreNatsMessage
 	Logger        *simplelogger.SimpleLogger
-	Prediction    *contextPrediction
-	Measurement   *contextMeasurement
-	DB            *contextDatabase
-	ObjectStore   *contextObjectStore
-	Configuration *contextConfiguration
+	Prediction    ContextPrediction
+	Measurement   ContextMeasurement
+	DB            ContextDatabase
+	ObjectStore   ContextObjectStore
+	Configuration ContextConfiguration
 }
 
 func NewHandlerContext(params *HandlerContextParams) *HandlerContext {

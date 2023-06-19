@@ -2,13 +2,22 @@ package kre
 
 import (
 	"fmt"
-	"github.com/nats-io/nats.go"
 	regexp2 "regexp"
+
+	"github.com/nats-io/nats.go"
 
 	"github.com/konstellation-io/kre-runners/kre-go/v4/config"
 	"github.com/konstellation-io/kre-runners/kre-go/v4/internal/errors"
 	"github.com/konstellation-io/kre/libs/simplelogger"
 )
+
+type ContextObjectStore interface {
+	Save(key string, payload []byte) error
+	Get(key string) ([]byte, error)
+	Purge(regexp ...string) error
+	List(regexp ...string) ([]string, error)
+	Delete(key string) error
+}
 
 type contextObjectStore struct {
 	cfg      config.Config

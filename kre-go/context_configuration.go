@@ -18,6 +18,12 @@ const (
 	NodeScope     Scope = "node"
 )
 
+type ContextConfiguration interface {
+	Set(key, value string, scopeOpt ...Scope) error
+	Get(key string, scopeOpt ...Scope) (string, error)
+	Delete(key string, scopeOpt ...Scope) error
+}
+
 type contextConfiguration struct {
 	kvStoresMap map[Scope]nats.KeyValue
 }

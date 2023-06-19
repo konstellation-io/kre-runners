@@ -35,7 +35,7 @@ type ContextDataTestSuite struct {
 	nc      *nats.Conn
 	mongoM  *mocks.MockManager
 	ctrl    *gomock.Controller
-	ctxData *contextDatabase
+	ctxData ContextDatabase
 }
 
 const mongoWriterSubject = "mongo_writer"
