@@ -37,7 +37,7 @@ func NewContextDatabase(
 	nc *nats.Conn,
 	mongoM mongodb.Manager,
 	logger *simplelogger.SimpleLogger,
-) ContextDatabase {
+) *contextDatabase {
 	return &contextDatabase{
 		cfg:    cfg,
 		nc:     nc,

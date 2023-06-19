@@ -56,7 +56,7 @@ func NewContextPrediction(
 	cfg config.Config,
 	nc *nats2.Conn,
 	logger *simplelogger.SimpleLogger,
-) ContextPrediction {
+) *contextPrediction {
 	return &contextPrediction{
 		cfg:    cfg,
 		nc:     nc,

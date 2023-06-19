@@ -29,7 +29,7 @@ type contextMeasurement struct {
 	writeAPI api.WriteAPI
 }
 
-func NewContextMeasurement(cfg config.Config, logger *simplelogger.SimpleLogger) ContextMeasurement {
+func NewContextMeasurement(cfg config.Config, logger *simplelogger.SimpleLogger) *contextMeasurement {
 	influxCli := influxdb2.NewClient(cfg.InfluxDB.URI, token)
 	writeAPI := influxCli.WriteAPI(org, cfg.RuntimeID)
 
