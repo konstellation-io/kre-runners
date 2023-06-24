@@ -22,6 +22,6 @@
     "tagFormat": "${name}/v${version}"
   },
   "dependencies": {
-    "@qiwi/multi-semantic-release": "^6.5.1"
+    "@qiwi/multi-semantic-release": "^7.0.0"
   }
 }
