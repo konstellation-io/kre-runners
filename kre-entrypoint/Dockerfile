@@ -46,7 +46,8 @@ ENV PYTHONUNBUFFERED=1
 RUN apt update && \
     apt -y install python3.7 python3-pip python3.7-dev && \
     update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.7 1 && \
-    update-alternatives --set python3 /usr/bin/python3.7
+    update-alternatives --set python3 /usr/bin/python3.7 && \
+    python3 -m pip install --upgrade pip
 
 WORKDIR /app
 
