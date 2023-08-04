@@ -4,6 +4,7 @@ import os
 class Config:
     def __init__(self):
         self.request_timeout = int(os.getenv("KRT_REQUEST_TIMEOUT", 30000))
+        self.js_request_timeout = int(os.getenv("KRT_JS_REQUEST_TIMEOUT", 30000))
 
         # Mandatory environment variables
         try:

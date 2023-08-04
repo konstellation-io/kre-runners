@@ -52,7 +52,7 @@ class Runner:
         )
 
         self.logger.info(f"Connecting to NATS {self.config.nats_server}...")
-        self.js = self.nc.jetstream()
+        self.js = self.nc.jetstream(timeout=self.config.js_request_timeout)
         await self.nc.connect(self.config.nats_server, name=self.runner_name)
 
         self.logger.info(f"Creating context configuration...")

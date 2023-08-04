@@ -50,7 +50,7 @@ class EntrypointKRE:
         )
 
         await self.nc.connect(self.config.nats_server, name=self.config.runner_name)
-        self.js = self.nc.jetstream()
+        self.js = self.nc.jetstream(timeout=self.config.js_request_timeout)
 
     async def process_grpc_message(
         self, grpc_stream: Stream, workflow: str, request_id: str
