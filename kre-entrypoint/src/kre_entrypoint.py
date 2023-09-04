@@ -65,6 +65,7 @@ class EntrypointKRE:
         :param request_id: The gRPC request id.
         """
 
+        msg = None
         try:
             # As multiple requests can be sent to the same workflow, we need to track each
             # open gRPC stream to send the response to the correct gRPC stream
@@ -122,16 +123,17 @@ class EntrypointKRE:
                 kre_nats_message = self._create_grpc_response(msg.data)
 
                 if kre_nats_message.request_id == request_id:
-                    message_recv = True
-                    await sub.unsubscribe()
                     response = self.make_response_object(workflow, kre_nats_message)
                     await self._respond_to_grpc_stream(
                         response, workflow, kre_nats_message.request_id
                     )
-
-                await msg.ack()
+                    await msg.ack()
+                    await sub.unsubscribe()
+                    message_recv = True
 
         except Exception as err:
+            if msg:
+                await msg.ack()
             err_msg = f"Exception on gRPC call : {err}"
             self.logger.error(err_msg)
             traceback.print_exc()
@@ -212,15 +214,18 @@ class EntrypointKRE:
         if len(out) > max_msg_size:
             data_size_mb = bytes_to_mb(len(msg))
             max_size_mb = bytes_to_mb(max_msg_size)
-            self.logger.debug("Compressed message exceeds maximum size allowed: current" +
-                f"message size {data_size_mb}MB, max allowed size {max_size_mb}MB")
-
+            self.logger.debug(
+                "Compressed message exceeds maximum size allowed: current"
+                + f"message size {data_size_mb}MB, max allowed size {max_size_mb}MB"
+            )
 
             raise CompressedMessageTooLargeException(
                 "compressed message exceeds maximum size allowed"
             )
 
-        self.logger.debug(f"Original message size: {size_in_kb(msg)}. Compressed: {size_in_kb(out)}")
+        self.logger.debug(
+            f"Original message size: {size_in_kb(msg)}. Compressed: {size_in_kb(out)}"
+        )
 
         return out
 
@@ -235,5 +240,6 @@ class EntrypointKRE:
 def size_in_kb(s: bytes) -> str:
     return f"{(len(s) / 1024):.2f} KB"
 
+
 def bytes_to_mb(size_in_bytes: int) -> float:
-    return float("{:.1f}".format(size_in_bytes/1024/1024))
+    return float("{:.1f}".format(size_in_bytes / 1024 / 1024))
