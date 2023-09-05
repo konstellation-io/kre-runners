@@ -128,9 +128,10 @@ class EntrypointKRE:
                     await self._respond_to_grpc_stream(
                         response, workflow, kre_nats_message.request_id
                     )
-                    await msg.ack()
                     await sub.unsubscribe()
                     message_recv = True
+                    
+                await msg.ack()
 
         except Exception as err:
             if msg:
