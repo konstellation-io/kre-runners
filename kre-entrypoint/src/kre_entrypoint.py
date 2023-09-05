@@ -128,10 +128,12 @@ class EntrypointKRE:
                     await self._respond_to_grpc_stream(
                         response, workflow, kre_nats_message.request_id
                     )
+                    await msg.ack()
                     await sub.unsubscribe()
                     message_recv = True
-                    
-                await msg.ack()
+
+                else:
+                    await msg.ack()
 
         except Exception as err:
             if msg:
@@ -218,15 +220,18 @@ class EntrypointKRE:
         if len(out) > max_msg_size:
             data_size_mb = bytes_to_mb(len(msg))
             max_size_mb = bytes_to_mb(max_msg_size)
-            self.logger.debug("Compressed message exceeds maximum size allowed: current" +
-                f"message size {data_size_mb}MB, max allowed size {max_size_mb}MB")
-
+            self.logger.debug(
+                "Compressed message exceeds maximum size allowed: current"
+                + f"message size {data_size_mb}MB, max allowed size {max_size_mb}MB"
+            )
 
             raise CompressedMessageTooLargeException(
                 "compressed message exceeds maximum size allowed"
             )
 
-        self.logger.debug(f"Original message size: {size_in_kb(msg)}. Compressed: {size_in_kb(out)}")
+        self.logger.debug(
+            f"Original message size: {size_in_kb(msg)}. Compressed: {size_in_kb(out)}"
+        )
 
         return out
 
@@ -241,5 +246,6 @@ class EntrypointKRE:
 def size_in_kb(s: bytes) -> str:
     return f"{(len(s) / 1024):.2f} KB"
 
+
 def bytes_to_mb(size_in_bytes: int) -> float:
-    return float("{:.1f}".format(size_in_bytes/1024/1024))
+    return float("{:.1f}".format(size_in_bytes / 1024 / 1024))
