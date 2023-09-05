@@ -66,6 +66,7 @@ class EntrypointKRE:
         """
 
         msg = None
+        sub = None
         try:
             # As multiple requests can be sent to the same workflow, we need to track each
             # open gRPC stream to send the response to the correct gRPC stream
@@ -134,6 +135,8 @@ class EntrypointKRE:
         except Exception as err:
             if msg:
                 await msg.ack()
+            if sub:
+                await sub.unsubscribe()
             err_msg = f"Exception on gRPC call : {err}"
             self.logger.error(err_msg)
             traceback.print_exc()
