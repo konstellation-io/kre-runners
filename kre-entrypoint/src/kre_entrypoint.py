@@ -136,13 +136,22 @@ class EntrypointKRE:
                     await msg.ack()
 
         except Exception as err:
-            if msg:
-                await msg.ack()
-            if sub:
-                await sub.unsubscribe()
             err_msg = f"Exception on gRPC call : {err}"
             self.logger.error(err_msg)
             traceback.print_exc()
+
+            try:
+                if msg:
+                    await msg.ack()
+            except Exception as ackError:
+                err_msg = f"Exception on ack exception handling : {ackError}"
+                self.logger.error(err_msg)
+                traceback.print_exc()
+                if sub:
+                    await sub.unsubscribe()
+            
+            if sub:
+                await sub.unsubscribe()
 
             if isinstance(err, GRPCError):
                 raise err
