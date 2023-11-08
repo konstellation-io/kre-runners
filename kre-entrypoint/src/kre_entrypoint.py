@@ -132,7 +132,7 @@ class EntrypointKRE:
                     await sub.unsubscribe()
                     message_recv = True
 
-                else:    
+                else:
                     await msg.ack()
 
         except Exception as err:
@@ -147,9 +147,7 @@ class EntrypointKRE:
                 err_msg = f"Exception on ack exception handling : {ackError}"
                 self.logger.error(err_msg)
                 traceback.print_exc()
-                if sub:
-                    await sub.unsubscribe()
-            
+
             if sub:
                 await sub.unsubscribe()
 
