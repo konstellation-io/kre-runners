@@ -1,6 +1,7 @@
 import abc
 import gzip
 import traceback
+import datetime
 
 from exceptions.exceptions import CompressedMessageTooLargeException
 
@@ -108,18 +109,20 @@ class EntrypointKRE:
                 manual_ack=True,
             )
 
+            self.logger.info(f"Pre publish: '{datetime.datetime.now()}'")
             await self.js.publish(stream=stream, subject=output_subject, payload=request_msg)
             self.logger.info(
-                f"Message published to NATS subject: '{output_subject}' from stream: '{stream}'"
+                f"Message published to NATS subject : '{output_subject}' from stream: '{stream}' at {datetime.datetime.now()}"
             )
 
             # Wait until a message for the request arrives ignoring the rest
             message_recv = False
 
             while not message_recv:
-                self.logger.info("Waiting for response message...")
+                self.logger.info(f"Waiting for response message... Time{datetime.datetime.now()}")
                 msg = await sub.next_msg(timeout=self.config.request_timeout)
-                self.logger.debug(f"Response message received: {msg.data}")
+                self.logger.debug(f"Response message received: {msg.data} Time: {datetime.datetime.now()}")
+                self.logger.info(f"After next_msg RequestID: {request_id} Time: {datetime.datetime.now()}")
 
                 kre_nats_message = self._create_grpc_response(msg.data)
 
