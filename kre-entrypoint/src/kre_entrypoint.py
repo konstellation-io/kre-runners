@@ -100,7 +100,7 @@ class EntrypointKRE:
             request_msg = self._create_kre_request_message(grpc_raw_msg, request_id, max_msg_size)
 
             # Create an ephemeral subscription for the request
-            sub = await self.js.publish(
+            sub = await self.js.subscribe(
                 stream=stream,
                 subject=input_subject,
                 config=ConsumerConfig(
