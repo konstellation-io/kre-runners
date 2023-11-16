@@ -101,6 +101,7 @@ func Start(handlerInit HandlerInit, defaultHandler Handler, handlersOpt ...map[s
 			nats.Durable(consumerName),
 			nats.ManualAck(),
 			nats.AckWait(22*time.Hour),
+			nats.MaxAckPending(cfg.NATS.MaxPendingAck),
 		)
 		if err != nil {
 			logger.Errorf("Error subscribing to NATS subject %s: %s", subject, err)

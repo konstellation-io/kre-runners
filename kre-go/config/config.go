@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/konstellation-io/kre/libs/simplelogger"
@@ -35,6 +36,7 @@ type ConfigNATS struct {
 	KeyValueStoreWorkflowName string
 	KeyValueStoreNodeName     string
 	MongoWriterSubject        string
+	MaxPendingAck             int
 }
 
 type InfluxDB struct {
@@ -42,6 +44,11 @@ type InfluxDB struct {
 }
 
 func NewConfig(logger *simplelogger.SimpleLogger) Config {
+	maxPendingAck, err := strconv.Atoi(getOptCfgFromEnv(logger, "KRT_MAX_PENDING_ACK"))
+	if err != nil {
+		maxPendingAck = -1
+	}
+
 	return Config{
 		WorkflowName: getCfgFromEnv(logger, "KRT_WORKFLOW_NAME"),
 		RuntimeID:    getCfgFromEnv(logger, "KRT_RUNTIME_ID"),
@@ -59,6 +66,7 @@ func NewConfig(logger *simplelogger.SimpleLogger) Config {
 			KeyValueStoreWorkflowName: getCfgFromEnv(logger, "KRT_NATS_KEY_VALUE_STORE_WORKFLOW"),
 			KeyValueStoreNodeName:     getCfgFromEnv(logger, "KRT_NATS_KEY_VALUE_STORE_NODE"),
 			MongoWriterSubject:        getCfgFromEnv(logger, "KRT_NATS_MONGO_WRITER"),
+			MaxPendingAck:             maxPendingAck,
 		},
 		MongoDB: MongoDB{
 			Address:     getCfgFromEnv(logger, "KRT_MONGO_URI"),
@@ -86,6 +94,7 @@ func getOptCfgFromEnv(logger *simplelogger.SimpleLogger, name string) string {
 		logger.Infof("The %q env var is missing", name)
 		return ""
 	}
+
 	return val
 }
 
