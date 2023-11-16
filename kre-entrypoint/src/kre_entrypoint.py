@@ -67,6 +67,8 @@ class EntrypointKRE:
 
         msg = None
         sub = None
+        # Wait until a message for the request arrives ignoring the rest
+        message_recv = False
         try:
             # As multiple requests can be sent to the same workflow, we need to track each
             # open gRPC stream to send the response to the correct gRPC stream
@@ -113,9 +115,6 @@ class EntrypointKRE:
                 f"Message published to NATS subject: '{output_subject}' from stream: '{stream}'"
             )
 
-            # Wait until a message for the request arrives ignoring the rest
-            message_recv = False
-
             while not message_recv:
                 self.logger.info("Waiting for response message...")
                 msg = await sub.next_msg(timeout=self.config.request_timeout)
@@ -128,10 +127,7 @@ class EntrypointKRE:
                     await self._respond_to_grpc_stream(
                         response, workflow, kre_nats_message.request_id
                     )
-                    await msg.ack() # These two instructions' order is important
-                    await sub.unsubscribe()
                     message_recv = True
-
                 else:
                     await msg.ack()
 
@@ -140,19 +136,17 @@ class EntrypointKRE:
             self.logger.error(err_msg)
             traceback.print_exc()
 
-            try:
-                if msg:
-                    await msg.ack()
-            except Exception as ackError:
-                err_msg = f"Exception on ack exception handling : {ackError}"
-                self.logger.error(err_msg)
-                traceback.print_exc()
-
-            if sub:
-                await sub.unsubscribe()
-
             if isinstance(err, GRPCError):
                 raise err
+
+        finally:
+            try:
+                if msg and not message_recv:
+                    await msg.ack() # These two instructions' order is important
+                if sub:
+                    await sub.unsubscribe()
+            except Exception as err:
+                self.logger.error(f"Error unsubscribing / ACKing: {err}")
 
     def _create_kre_request_message(
         self, raw_msg: bytes, request_id: str, max_msg_size: int

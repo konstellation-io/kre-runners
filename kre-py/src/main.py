@@ -100,6 +100,7 @@ class NodeRunner(Runner):
                     config=ConsumerConfig(
                         deliver_policy=DeliverPolicy.NEW,
                         ack_wait=22 * 3600,  # 22 hours
+                        max_ack_pending=self.config.nats_max_ack_pending,
                     ),
                     manual_ack=True,
                 )
