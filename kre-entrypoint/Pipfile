@@ -13,7 +13,7 @@ mock = "==4.0.3"
 
 [packages]
 nats-py = "==2.1.0"
-grpcio = "==1.46.1"
+grpcio = "==1.53.0"
 grpclib = "==0.4.2"
 grpcio-tools = "==1.46.1"
 influxdb-client = "==1.9.0"
