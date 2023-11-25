@@ -11,7 +11,7 @@ require (
 	github.com/nats-io/nats.go v1.25.0
 	github.com/stretchr/testify v1.8.2
 	go.mongodb.org/mongo-driver v1.9.1
-	google.golang.org/protobuf v1.28.0
+	google.golang.org/protobuf v1.28.1
 )
 
 require (
@@ -37,8 +37,8 @@ require (
 	github.com/opencontainers/image-spec v1.1.0-rc2 // indirect
 	github.com/opencontainers/runc v1.1.5 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
-	google.golang.org/genproto v0.0.0-20220617124728-180714bec0ad // indirect
-	google.golang.org/grpc v1.47.0 // indirect
+	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f // indirect
+	google.golang.org/grpc v1.53.0 // indirect
 )
 
 require (
